@@ -30,5 +30,7 @@ public class Archon extends Robot {
             Direction away = DirectionUtil.getDirectionAwayFrom(nearbyZombies, rc);
             tryMove(away);
         }
+
+        Clock.yield();
     }
 }
