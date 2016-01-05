@@ -16,6 +16,7 @@ public class Archon extends Robot {
 
     @Override
     public void doTurn(RobotController rc) throws GameActionException {
+        /*
         if (!rc.isCoreReady()) {
             scanSurroundings(rc);
             return;
@@ -42,6 +43,7 @@ public class Archon extends Robot {
         else if (rc.getTeamParts() > RobotType.GUARD.partCost) {
             tryBuild(RobotType.GUARD);
         }
+        */
     }
 
     private MapLocation findMostParts(RobotController rc) {

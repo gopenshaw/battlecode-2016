@@ -1,5 +1,5 @@
 <object-stream>
-  <game-map width="30" height="30" origin="421,144" seed="1337" rounds="2000" mapName="turrets">
+  <game-map width="30" height="30" origin="421,144" seed="1337" rounds="2000" mapName="scout">
     <initialRubble>
       <double-array>0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0</double-array>
       <double-array>0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0</double-array>
@@ -66,42 +66,10 @@
     </initialParts>
     <zombieSpawnSchedule/>
     <initialRobots>
-      <initial-robot originOffsetX="4" originOffsetY="2" type="ARCHON" team="A"/>
-      <initial-robot originOffsetX="5" originOffsetY="6" type="TURRET" team="A"/>
-      <initial-robot originOffsetX="5" originOffsetY="13" type="RANGEDZOMBIE" team="ZOMBIE"/>
-      <initial-robot originOffsetX="6" originOffsetY="7" type="TURRET" team="A"/>
-      <initial-robot originOffsetX="6" originOffsetY="12" type="RANGEDZOMBIE" team="ZOMBIE"/>
-      <initial-robot originOffsetX="7" originOffsetY="6" type="TURRET" team="A"/>
-      <initial-robot originOffsetX="7" originOffsetY="13" type="RANGEDZOMBIE" team="ZOMBIE"/>
-      <initial-robot originOffsetX="8" originOffsetY="7" type="TURRET" team="A"/>
-      <initial-robot originOffsetX="8" originOffsetY="12" type="RANGEDZOMBIE" team="ZOMBIE"/>
-      <initial-robot originOffsetX="8" originOffsetY="13" type="BIGZOMBIE" team="ZOMBIE"/>
-      <initial-robot originOffsetX="9" originOffsetY="6" type="TURRET" team="A"/>
-      <initial-robot originOffsetX="9" originOffsetY="12" type="RANGEDZOMBIE" team="ZOMBIE"/>
-      <initial-robot originOffsetX="10" originOffsetY="7" type="TURRET" team="A"/>
-      <initial-robot originOffsetX="10" originOffsetY="13" type="RANGEDZOMBIE" team="ZOMBIE"/>
-      <initial-robot originOffsetX="11" originOffsetY="2" type="ARCHON" team="A"/>
-      <initial-robot originOffsetX="11" originOffsetY="6" type="TURRET" team="A"/>
-      <initial-robot originOffsetX="11" originOffsetY="12" type="RANGEDZOMBIE" team="ZOMBIE"/>
-      <initial-robot originOffsetX="12" originOffsetY="13" type="RANGEDZOMBIE" team="ZOMBIE"/>
-      <initial-robot originOffsetX="17" originOffsetY="16" type="RANGEDZOMBIE" team="ZOMBIE"/>
-      <initial-robot originOffsetX="18" originOffsetY="17" type="RANGEDZOMBIE" team="ZOMBIE"/>
-      <initial-robot originOffsetX="18" originOffsetY="23" type="TURRET" team="B"/>
-      <initial-robot originOffsetX="18" originOffsetY="27" type="ARCHON" team="B"/>
-      <initial-robot originOffsetX="19" originOffsetY="16" type="RANGEDZOMBIE" team="ZOMBIE"/>
-      <initial-robot originOffsetX="19" originOffsetY="22" type="TURRET" team="B"/>
-      <initial-robot originOffsetX="20" originOffsetY="17" type="RANGEDZOMBIE" team="ZOMBIE"/>
-      <initial-robot originOffsetX="20" originOffsetY="23" type="TURRET" team="B"/>
-      <initial-robot originOffsetX="21" originOffsetY="16" type="BIGZOMBIE" team="ZOMBIE"/>
-      <initial-robot originOffsetX="21" originOffsetY="17" type="RANGEDZOMBIE" team="ZOMBIE"/>
-      <initial-robot originOffsetX="21" originOffsetY="22" type="TURRET" team="B"/>
-      <initial-robot originOffsetX="22" originOffsetY="16" type="RANGEDZOMBIE" team="ZOMBIE"/>
-      <initial-robot originOffsetX="22" originOffsetY="23" type="TURRET" team="B"/>
-      <initial-robot originOffsetX="23" originOffsetY="17" type="RANGEDZOMBIE" team="ZOMBIE"/>
-      <initial-robot originOffsetX="23" originOffsetY="22" type="TURRET" team="B"/>
-      <initial-robot originOffsetX="24" originOffsetY="16" type="RANGEDZOMBIE" team="ZOMBIE"/>
-      <initial-robot originOffsetX="24" originOffsetY="23" type="TURRET" team="B"/>
-      <initial-robot originOffsetX="25" originOffsetY="27" type="ARCHON" team="B"/>
+      <initial-robot originOffsetX="7" originOffsetY="10" type="SCOUT" team="A"/>
+      <initial-robot originOffsetX="13" originOffsetY="24" type="ARCHON" team="B"/>
+      <initial-robot originOffsetX="16" originOffsetY="5" type="ARCHON" team="A"/>
+      <initial-robot originOffsetX="22" originOffsetY="19" type="SCOUT" team="B"/>
     </initialRobots>
   </game-map>
 </object-stream>
