@@ -50,8 +50,19 @@ public abstract class Robot {
         return rc.senseNearbyRobots(senseRadius, Team.ZOMBIE);
     }
 
-    protected void tryMoveToward(MapLocation zombieLocation) throws GameActionException {
-        tryMove(rc.getLocation().directionTo(zombieLocation));
+    protected void tryMoveToward(MapLocation location) throws GameActionException {
+        MapLocation currentLocation = rc.getLocation();
+        Direction moveDirection = currentLocation.directionTo(location);
+
+        if (location.isAdjacentTo(currentLocation)) {
+            double rubble = rc.senseRubble(location);
+            if (rubble >= 100) {
+                rc.clearRubble(moveDirection);
+                return;
+            }
+        }
+
+        tryMove(moveDirection);
     }
 
     protected void tryMove(Direction direction) throws GameActionException {
@@ -85,6 +96,16 @@ public abstract class Robot {
                 rc.move(right);
                 return;
             }
+        }
+
+        tryClearRubble(direction);
+    }
+
+    private void tryClearRubble(Direction direction) throws GameActionException {
+        MapLocation nextLocation = rc.getLocation().add(direction);
+        double rubble = rc.senseRubble(nextLocation);
+        if (rubble > 100) {
+            rc.clearRubble(direction);
         }
     }
 
