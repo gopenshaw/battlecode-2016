@@ -1,0 +1,34 @@
+package alpha;
+
+import battlecode.common.*;
+
+public class Archon extends Robot {
+    public Archon(RobotController rc) {
+        super(rc);
+    }
+
+    public void run(RobotController rc) {
+        try {
+            while(true) {
+                doTurn(rc);
+            }
+        }
+        catch (GameActionException e) {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public void doTurn(RobotController rc) throws GameActionException {
+        if (!rc.isCoreReady()) {
+            Clock.yield();
+            return;
+        }
+
+        RobotInfo[] nearbyZombies = senseNearbyZombies();
+        if (nearbyZombies.length > 0) {
+            Direction away = DirectionUtil.getDirectionAwayFrom(nearbyZombies, rc);
+            tryMove(away);
+        }
+    }
+}
