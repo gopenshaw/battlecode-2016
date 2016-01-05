@@ -6,11 +6,15 @@ import battlecode.common.RobotType;
 public class RobotPlayer {
 
     public static void run(RobotController rc) {
-        if (rc.getType() == RobotType.ARCHON) {
+        RobotType type = rc.getType();
+        if (type == RobotType.ARCHON) {
             new Archon(rc).run(rc);
-        }
-        else if (rc.getType() == RobotType.SOLDIER) {
+        } else if (type == RobotType.SOLDIER) {
             new Soldier(rc).run(rc);
+        } else if (type == RobotType.TURRET) {
+            new Turret(rc).run(rc);
+        } else if (type == RobotType.TTM) {
+            new TTM(rc).run(rc);
         }
     }
 }

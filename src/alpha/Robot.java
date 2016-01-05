@@ -4,7 +4,7 @@ import battlecode.common.*;
 
 import java.util.Random;
 
-public class Robot {
+public abstract class Robot {
     protected final Random rand;
     protected final Team team;
     protected final Team enemy;
@@ -18,6 +18,21 @@ public class Robot {
         enemy = team.opponent();
         senseRadius = rc.getType().sensorRadiusSquared;
     }
+
+    public void run(RobotController rc) {
+        try {
+            while(true) {
+                doTurn(rc);
+                Clock.yield();
+            }
+        }
+        catch (GameActionException e) {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    protected abstract void doTurn(RobotController rc) throws GameActionException;
 
     protected RobotInfo[] senseNearbyEnemies() {
         return rc.senseNearbyRobots(senseRadius, enemy);
@@ -59,5 +74,11 @@ public class Robot {
                 return;
             }
         }
+    }
+
+    protected boolean shouldSelfDestruct() {
+        int nearbyZombies = senseNearbyZombies().length;
+        int estimatedDamage = nearbyZombies * 10;
+        return rc.getHealth() < estimatedDamage;
     }
 }

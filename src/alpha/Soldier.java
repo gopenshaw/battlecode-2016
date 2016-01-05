@@ -7,21 +7,9 @@ public class Soldier extends Robot {
         super(rc);
     }
 
-    public void run(RobotController rc) {
-        try {
-            while(true) {
-                doTurn(rc);
-            }
-        }
-        catch (GameActionException e) {
-            System.out.println(e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
+    @Override
     public void doTurn(RobotController rc) throws GameActionException {
         if (!rc.isCoreReady()) {
-            Clock.yield();
             return;
         }
 
@@ -32,9 +20,6 @@ public class Soldier extends Robot {
         else {
             moveRandom(rc);
         }
-
-        Clock.yield();
-        return;
     }
 
     private void moveRandom(RobotController rc) throws GameActionException {

@@ -1,14 +1,17 @@
 package alpha;
 
-import battlecode.common.*;
+import battlecode.common.Direction;
+import battlecode.common.GameActionException;
+import battlecode.common.RobotController;
+import battlecode.common.RobotInfo;
 
-public class Archon extends Robot {
-    public Archon(RobotController rc) {
+public class TTM extends Robot{
+    public TTM(RobotController rc) {
         super(rc);
     }
 
     @Override
-    public void doTurn(RobotController rc) throws GameActionException {
+    protected void doTurn(RobotController rc) throws GameActionException {
         if (!rc.isCoreReady()) {
             return;
         }
