@@ -13,6 +13,8 @@ public class RobotPlayer {
             new Soldier(rc).run(rc);
         } else if (type == RobotType.TURRET) {
             new Turret(rc).run(rc);
+        } else if (type == RobotType.GUARD) {
+            new Guard(rc).run(rc);
         }
     }
 }

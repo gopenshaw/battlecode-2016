@@ -17,6 +17,11 @@ public class Archon extends Robot {
         if (nearbyZombies.length > 0) {
             Direction away = DirectionUtil.getDirectionAwayFrom(nearbyZombies, rc);
             tryMove(away);
+            return;
+        }
+
+        if (rc.getTeamParts() > RobotType.GUARD.partCost) {
+            tryBuild(RobotType.GUARD);
         }
     }
 }

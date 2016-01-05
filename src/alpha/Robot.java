@@ -8,8 +8,12 @@ public abstract class Robot {
     protected final Random rand;
     protected final Team team;
     protected final Team enemy;
-    protected int senseRadius;
     private final RobotController rc;
+
+    protected int senseRadius;
+
+    private final Direction[] directions = {Direction.NORTH, Direction.NORTH_EAST, Direction.EAST,
+        Direction.SOUTH_EAST, Direction.SOUTH, Direction.SOUTH_WEST, Direction.WEST, Direction.NORTH_WEST};
 
     public Robot(RobotController rc) {
         this.rc = rc;
@@ -33,7 +37,6 @@ public abstract class Robot {
     }
 
     protected void updateType(RobotController rc) {
-        rc = rc;
         senseRadius = rc.getType().sensorRadiusSquared;
     }
 
@@ -45,6 +48,10 @@ public abstract class Robot {
 
     protected RobotInfo[] senseNearbyZombies() {
         return rc.senseNearbyRobots(senseRadius, Team.ZOMBIE);
+    }
+
+    protected void tryMoveToward(MapLocation zombieLocation) throws GameActionException {
+        tryMove(rc.getLocation().directionTo(zombieLocation));
     }
 
     protected void tryMove(Direction direction) throws GameActionException {
@@ -81,9 +88,14 @@ public abstract class Robot {
         }
     }
 
-    protected boolean shouldSelfDestruct() {
-        int nearbyZombies = senseNearbyZombies().length;
-        int estimatedDamage = nearbyZombies * 10;
-        return rc.getHealth() < estimatedDamage;
+    protected void tryBuild(RobotType robotType) throws GameActionException {
+        //--Assuming we have the parts to build
+        //--Build robot in some random direction
+        for (int i = 0; i < 8; i++) {
+            if (rc.canBuild(directions[i], robotType)) {
+                rc.build(directions[i], robotType);
+                return;
+            }
+        }
     }
 }
