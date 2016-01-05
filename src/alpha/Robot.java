@@ -109,15 +109,17 @@ public abstract class Robot {
         }
     }
 
-    protected void tryBuild(RobotType robotType) throws GameActionException {
+    protected boolean tryBuild(RobotType robotType) throws GameActionException {
         //--Assuming we have the parts to build
         //--Build robot in some random direction
         for (int i = 0; i < 8; i++) {
             if (rc.canBuild(directions[i], robotType)) {
                 rc.build(directions[i], robotType);
-                return;
+                return true;
             }
         }
+
+        return false;
     }
 
     protected RobotInfo findAttackableRobot(RobotInfo[] robots) {
@@ -128,5 +130,9 @@ public abstract class Robot {
         }
 
         return null;
+    }
+
+    protected Direction getRandomDirection() {
+        return directions[rand.nextInt(8)];
     }
 }

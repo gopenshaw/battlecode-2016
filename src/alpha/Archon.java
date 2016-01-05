@@ -8,6 +8,7 @@ public class Archon extends Robot {
 
     private MapLocation[][] surroundings = new MapLocation[SENSE_WIDTH][SENSE_WIDTH];
     private boolean[][] locationValid = new boolean[SENSE_WIDTH][SENSE_WIDTH];
+    private boolean scoutBuilt = false;
 
     public Archon(RobotController rc) {
         super(rc);
@@ -33,7 +34,12 @@ public class Archon extends Robot {
             return;
         }
 
-        if (rc.getTeamParts() > RobotType.GUARD.partCost) {
+        if (!scoutBuilt) {
+            if (rc.getTeamParts() > RobotType.SCOUT.partCost) {
+                scoutBuilt = tryBuild(RobotType.SCOUT);
+            }
+        }
+        else if (rc.getTeamParts() > RobotType.GUARD.partCost) {
             tryBuild(RobotType.GUARD);
         }
     }
