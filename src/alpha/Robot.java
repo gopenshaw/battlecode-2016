@@ -119,4 +119,14 @@ public abstract class Robot {
             }
         }
     }
+
+    protected RobotInfo findAttackableRobot(RobotInfo[] robots) {
+        for (RobotInfo r : robots) {
+            if (rc.canAttackLocation(r.location)) {
+                return r;
+            }
+        }
+
+        return null;
+    }
 }

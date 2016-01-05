@@ -1,30 +1,49 @@
 package alpha;
 
-import battlecode.common.GameActionException;
-import battlecode.common.MapLocation;
-import battlecode.common.RobotController;
-import battlecode.common.RobotInfo;
+import battlecode.common.*;
 
 public class Guard extends Robot{
+    private final int SIGNAL_RADIUS = 36;
+
     public Guard(RobotController rc) {
         super(rc);
     }
 
     @Override
     protected void doTurn(RobotController rc) throws GameActionException {
+        RobotInfo[] nearbyZombies = senseNearbyZombies();
+        if (nearbyZombies.length > 0) {
+            RobotInfo attackableZombie = findAttackableRobot(nearbyZombies);
+            if (attackableZombie == null) {
+                rc.broadcastSignal(SIGNAL_RADIUS);
+
+                if (rc.isCoreReady()) {
+                    tryMoveToward(nearbyZombies[0].location);
+                }
+            }
+            else {
+                if (rc.isWeaponReady()) {
+                    rc.attackLocation(attackableZombie.location);
+                }
+            }
+
+            return;
+        }
+
         if (!rc.isCoreReady()) {
             return;
         }
 
-        RobotInfo[] nearbyZombies = senseNearbyZombies();
-        if (nearbyZombies.length > 0) {
-            MapLocation zombieLocation = nearbyZombies[0].location;
-            if (rc.canAttackLocation(zombieLocation)) {
-                rc.attackLocation(zombieLocation);
+        Signal[] signals = rc.emptySignalQueue();
+        MapLocation teamLocation = null;
+        for (Signal s : signals) {
+            if (s.getTeam() == team) {
+                teamLocation = s.getLocation();
             }
-            else {
-                tryMoveToward(zombieLocation);
-            }
+        }
+
+        if (teamLocation != null) {
+            tryMoveToward(teamLocation);
         }
     }
 }
