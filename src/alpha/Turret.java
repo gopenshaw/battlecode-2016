@@ -9,6 +9,13 @@ public class Turret extends Robot {
 
     @Override
     protected void doTurn(RobotController rc) throws GameActionException {
+        updateType(rc);
+
+        if (rc.getType() == RobotType.TTM) {
+            doTTMTurn(rc);
+            return;
+        }
+
         if (!rc.isCoreReady()) {
             return;
         }
@@ -28,6 +35,18 @@ public class Turret extends Robot {
             if (rc.canAttackLocation(zombieLocation)) {
                 rc.attackLocation(zombieLocation);
             }
+        }
+    }
+
+    private void doTTMTurn(RobotController rc) throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        RobotInfo[] nearbyZombies = senseNearbyZombies();
+        if (nearbyZombies.length > 0) {
+            Direction away = DirectionUtil.getDirectionAwayFrom(nearbyZombies, rc);
+            tryMove(away);
         }
     }
 

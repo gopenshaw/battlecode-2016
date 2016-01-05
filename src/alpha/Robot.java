@@ -8,7 +8,7 @@ public abstract class Robot {
     protected final Random rand;
     protected final Team team;
     protected final Team enemy;
-    protected final int senseRadius;
+    protected int senseRadius;
     private final RobotController rc;
 
     public Robot(RobotController rc) {
@@ -30,6 +30,11 @@ public abstract class Robot {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    protected void updateType(RobotController rc) {
+        rc = rc;
+        senseRadius = rc.getType().sensorRadiusSquared;
     }
 
     protected abstract void doTurn(RobotController rc) throws GameActionException;
