@@ -1,5 +1,6 @@
 package alpha;
 
+import battlecode.common.MapLocation;
 import battlecode.common.RobotInfo;
 
 public class Util {
@@ -15,5 +16,16 @@ public class Util {
         }
 
         return minIndex < 0 ? null : robots[minIndex];
+    }
+
+    public static boolean anyCanAttack(RobotInfo[] robots, MapLocation location) {
+        for (RobotInfo robot : robots) {
+            if (robot.type.canAttack()
+                    && robot.location.distanceSquaredTo(location) <= robot.type.attackRadiusSquared) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

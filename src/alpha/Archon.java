@@ -14,8 +14,8 @@ public class Archon extends Robot {
         super(rc);
     }
 
-    private RobotType[] buildQueue = {RobotType.SCOUT, RobotType.GUARD, RobotType.GUARD, RobotType.GUARD,
-        RobotType.GUARD};
+    private RobotType[] buildQueue = {RobotType.SCOUT, RobotType.GUARD, RobotType.VIPER,
+            RobotType.GUARD, RobotType.GUARD, RobotType.GUARD};
 
     private int queuePosition = 0;
 

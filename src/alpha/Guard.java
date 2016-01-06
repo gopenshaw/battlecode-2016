@@ -12,39 +12,48 @@ public class Guard extends Robot{
     @Override
     protected void doTurn(RobotController rc) throws GameActionException {
         RobotInfo[] nearbyZombies = senseNearbyZombies();
-        if (nearbyZombies.length > 0) {
-            RobotInfo attackableZombie = findAttackableRobot(nearbyZombies);
-            if (attackableZombie == null) {
-                rc.broadcastSignal(SIGNAL_RADIUS);
+        RobotInfo[] nearbyEnemies = senseNearbyEnemies();
 
-                if (rc.isCoreReady()) {
-                    tryMoveToward(nearbyZombies[0].location);
-                }
-            }
-            else {
-                if (rc.isWeaponReady()) {
-                    rc.attackLocation(attackableZombie.location);
-                }
-            }
-
+        RobotInfo robotToAttack = findPriorityRobotToAttack(nearbyZombies, nearbyEnemies);
+        if (robotToAttack != null
+                && rc.isWeaponReady()) {
+            rc.attackLocation(robotToAttack.location);
             return;
+        }
+
+        if (nearbyZombies.length > 0) {
+            rc.broadcastSignal(SIGNAL_RADIUS);
         }
 
         if (!rc.isCoreReady()) {
             return;
         }
 
+        MapLocation helpLocation = getHelpLocation(rc);
+        if (helpLocation != null) {
+            tryMoveToward(helpLocation);
+        }
+    }
+
+    private MapLocation getHelpLocation(RobotController rc) {
         Signal[] signals = rc.emptySignalQueue();
-        MapLocation teamLocation = null;
+        MapLocation helpLocation = null;
         for (Signal s : signals) {
             if (s.getTeam() == team
                     && s.getMessage() == null) {
-                teamLocation = s.getLocation();
+                helpLocation = s.getLocation();
             }
         }
+        return helpLocation;
+    }
 
-        if (teamLocation != null) {
-            tryMoveToward(teamLocation);
+    private RobotInfo findPriorityRobotToAttack(RobotInfo[] nearbyZombies, RobotInfo[] nearbyEnemies) {
+        RobotInfo attackableZombie = findAttackableRobot(nearbyZombies);
+        if (attackableZombie != null) {
+            return attackableZombie;
         }
+
+        RobotInfo attackableEnemy = findAttackableRobot(nearbyEnemies);
+        return attackableEnemy;
     }
 }

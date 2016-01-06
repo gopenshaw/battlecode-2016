@@ -44,7 +44,7 @@ public class Viper extends Robot {
 
             int[] message = s.getMessage();
             if (message == null) continue;
-            
+
             rc.setIndicatorString(2, "received team signal: " + message[0] + " " + message[1]);
             int currentEnemy = message[1];
             if (currentEnemy == enemyId

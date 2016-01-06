@@ -73,8 +73,56 @@ public abstract class Robot {
         tryMove(moveDirection);
     }
 
+    protected boolean trySafeMove(Direction direction,
+                               RobotInfo[] nearbyEnemies,
+                               RobotInfo[] nearbyZombies) throws GameActionException {
+        MapLocation currentLocation = rc.getLocation();
+        MapLocation next = currentLocation.add(direction);
+        if (canMoveSafely(direction, next, nearbyEnemies, nearbyZombies)) {
+            rc.move(direction);
+            return true;
+        }
+
+        Direction left = direction.rotateLeft();
+        next = currentLocation.add(left);
+        if (canMoveSafely(left, next, nearbyEnemies, nearbyZombies)) {
+            rc.move(left);
+            return true;
+        }
+
+        Direction right = direction.rotateRight();
+        next = currentLocation.add(right);
+        if (canMoveSafely(right, next, nearbyEnemies, nearbyZombies)) {
+            rc.move(right);
+            return true;
+        }
+
+        for (int i = 0; i < 2; i++) {
+            left = left.rotateLeft();
+            next = currentLocation.add(left);
+            if (canMoveSafely(left, next, nearbyEnemies, nearbyZombies)) {
+                rc.move(left);
+                return true;
+            }
+
+            right = right.rotateRight();
+            next = currentLocation.add(right);
+            if (canMoveSafely(right, next, nearbyEnemies, nearbyZombies)) {
+                rc.move(right);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean canMoveSafely(Direction direction, MapLocation next, RobotInfo[] nearbyEnemies, RobotInfo[] nearbyZombies) {
+        return rc.canMove(direction)
+                && !Util.anyCanAttack(nearbyEnemies, next)
+                && !Util.anyCanAttack(nearbyZombies, next);
+    }
+
     protected void tryMove(Direction direction) throws GameActionException {
-        rc.setIndicatorString(0, "trying to move " + direction);
         if (rc.canMove(direction)) {
             rc.move(direction);
             return;
@@ -145,5 +193,10 @@ public abstract class Robot {
 
     protected Direction getRandomDirection() {
         return directions[rand.nextInt(8)];
+    }
+
+    protected void setIndicatorString(int i, String s) {
+        int roundNum = rc.getRoundNum();
+        rc.setIndicatorString(i, String.format("%d: %s", roundNum, s));
     }
 }

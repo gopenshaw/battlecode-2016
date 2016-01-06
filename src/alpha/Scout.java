@@ -13,12 +13,11 @@ public class Scout extends Robot {
 
     @Override
     protected void doTurn(RobotController rc) throws GameActionException {
+        RobotInfo[] nearbyEnemies = senseNearbyEnemies();
         if (rc.getRoundNum() > lastRoundBroadcasted + BROADCAST_DELAY) {
-            RobotInfo[] nearbyEnemies = senseNearbyEnemies();
             for (RobotInfo enemy : nearbyEnemies) {
                 if (enemy.type == RobotType.ARCHON) {
                     int encodedLocation = LocationUtil.encode(enemy.location);
-                    rc.setIndicatorString(1, "encoded " + encodedLocation);
                     rc.broadcastMessageSignal(encodedLocation, enemy.ID, 2000);
                 }
             }
@@ -34,6 +33,10 @@ public class Scout extends Robot {
             direction = direction.rotateLeft().rotateLeft();
         }
 
-        tryMove(direction);
+        boolean moved = trySafeMove(direction, nearbyEnemies, senseNearbyZombies());
+        if (!moved) {
+            setIndicatorString(2, "could not find safe move");
+            tryMove(direction);
+        }
     }
 }
