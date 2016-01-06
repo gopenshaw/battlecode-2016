@@ -8,7 +8,6 @@ public class Archon extends Robot {
 
     private MapLocation[][] surroundings = new MapLocation[SENSE_WIDTH][SENSE_WIDTH];
     private boolean[][] locationValid = new boolean[SENSE_WIDTH][SENSE_WIDTH];
-    private boolean scoutBuilt = false;
 
     public Archon(RobotController rc) {
         super(rc);
@@ -18,9 +17,22 @@ public class Archon extends Robot {
             RobotType.GUARD, RobotType.GUARD, RobotType.GUARD};
 
     private int queuePosition = 0;
+    private MapLocation base = null;
+
+    private final int SQR_DIST_TO_BASE = 20;
 
     @Override
     public void doTurn(RobotController rc) throws GameActionException {
+        if (rc.getRoundNum() == 0) {
+            rc.broadcastSignal(2000);
+            return;
+        }
+
+        if (rc.getRoundNum() == 1) {
+            Signal[] otherArchons = rc.emptySignalQueue();
+            base = findAverageMapLocation(rc.getLocation(), otherArchons);
+        }
+
         if (!rc.isCoreReady()) {
             scanSurroundings(rc);
             return;
@@ -35,6 +47,13 @@ public class Archon extends Robot {
             return;
         }
 
+        MapLocation currentLocation = rc.getLocation();
+        if (base != null
+                && currentLocation.distanceSquaredTo(base) > SQR_DIST_TO_BASE) {
+            tryMoveToward(base);
+            return;
+        }
+
         MapLocation mostParts = findMostParts(rc);
         if (mostParts != null) {
             tryMoveToward(mostParts);
@@ -46,6 +65,24 @@ public class Archon extends Robot {
                 queuePosition++;
             }
         }
+    }
+
+    private MapLocation findAverageMapLocation(MapLocation location, Signal[] locations) {
+        int x = location.x;
+        int y = location.y;
+        int count = 1;
+        for (Signal s : locations) {
+            if (s.getTeam() != team) {
+                continue;
+            }
+
+            MapLocation loc = s.getLocation();
+            x += loc.x;
+            y += loc.y;
+            count++;
+        }
+
+        return new MapLocation(x / count, y / count);
     }
 
     private MapLocation findMostParts(RobotController rc) {
