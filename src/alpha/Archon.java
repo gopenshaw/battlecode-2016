@@ -27,8 +27,10 @@ public class Archon extends Robot {
         }
 
         RobotInfo[] nearbyZombies = senseNearbyZombies();
-        if (nearbyZombies.length > 0) {
-            Direction away = DirectionUtil.getDirectionAwayFrom(nearbyZombies, rc);
+        RobotInfo[] nearbyEnemies = senseNearbyEnemies();
+        if (nearbyZombies.length > 0
+                || nearbyEnemies.length > 0) {
+            Direction away = DirectionUtil.getDirectionAwayFrom(nearbyEnemies, nearbyZombies, rc);
             tryMove(away);
             return;
         }

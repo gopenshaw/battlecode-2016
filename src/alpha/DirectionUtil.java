@@ -7,17 +7,27 @@ import battlecode.common.RobotInfo;
 
 public class DirectionUtil {
     public static Direction getDirectionAwayFrom(RobotInfo[] robots, RobotController rc) {
-        Direction[] directions = new Direction[robots.length];
+        return getDirectionAwayFrom(robots, new RobotInfo[0], rc);
+    }
+
+    public static Direction getDirectionAwayFrom(RobotInfo[] robots1, RobotInfo[] robots2, RobotController rc) {
+        Direction[] directions = new Direction[robots1.length + robots2.length];
         MapLocation currentLocation = rc.getLocation();
-        for (int i = 0; i < robots.length; i++) {
-            MapLocation enemyLocation = robots[i].location;
+        for (int i = 0; i < robots1.length; i++) {
+            MapLocation enemyLocation = robots1[i].location;
             directions[i] = enemyLocation.directionTo(currentLocation);
+        }
+
+        int offset = robots1.length;
+        for (int i = 0; i < robots2.length; i++) {
+            MapLocation enemyLocation = robots2[i].location;
+            directions[offset + i] = enemyLocation.directionTo(currentLocation);
         }
 
         return getAverageDirection(directions);
     }
 
-    public static Direction getAverageDirection(Direction[] directions) {
+    private static Direction getAverageDirection(Direction[] directions) {
         int x = 0;
         int y = 0;
         for (Direction d : directions) {
