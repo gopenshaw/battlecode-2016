@@ -3,7 +3,7 @@ package alpha;
 import battlecode.common.*;
 
 public class Guard extends Robot{
-    private final int SIGNAL_RADIUS = 36;
+    private final int SIGNAL_RADIUS = RobotType.GUARD.sensorRadiusSquared * 2;
 
     public Guard(RobotController rc) {
         super(rc);
