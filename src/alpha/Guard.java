@@ -37,7 +37,8 @@ public class Guard extends Robot{
         Signal[] signals = rc.emptySignalQueue();
         MapLocation teamLocation = null;
         for (Signal s : signals) {
-            if (s.getTeam() == team) {
+            if (s.getTeam() == team
+                    && s.getMessage() == null) {
                 teamLocation = s.getLocation();
             }
         }

@@ -14,6 +14,11 @@ public class Archon extends Robot {
         super(rc);
     }
 
+    private RobotType[] buildQueue = {RobotType.SCOUT, RobotType.GUARD, RobotType.GUARD, RobotType.GUARD,
+        RobotType.GUARD};
+
+    private int queuePosition = 0;
+
     @Override
     public void doTurn(RobotController rc) throws GameActionException {
         if (!rc.isCoreReady()) {
@@ -34,13 +39,10 @@ public class Archon extends Robot {
             return;
         }
 
-        if (!scoutBuilt) {
-            if (rc.getTeamParts() > RobotType.SCOUT.partCost) {
-                scoutBuilt = tryBuild(RobotType.SCOUT);
+        if (queuePosition < buildQueue.length) {
+            if (tryBuild(buildQueue[queuePosition])) {
+                queuePosition++;
             }
-        }
-        else if (rc.getTeamParts() > RobotType.VIPER.partCost) {
-            tryBuild(RobotType.VIPER);
         }
     }
 

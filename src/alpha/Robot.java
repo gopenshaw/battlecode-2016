@@ -118,7 +118,10 @@ public abstract class Robot {
     }
 
     protected boolean tryBuild(RobotType robotType) throws GameActionException {
-        //--Assuming we have the parts to build
+        if (rc.getTeamParts() < robotType.partCost) {
+            return false;
+        }
+
         //--Build robot in some random direction
         for (int i = 0; i < 8; i++) {
             if (rc.canBuild(directions[i], robotType)) {
