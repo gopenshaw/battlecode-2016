@@ -66,10 +66,14 @@
     </initialParts>
     <zombieSpawnSchedule/>
     <initialRobots>
-      <initial-robot originOffsetX="7" originOffsetY="10" type="SCOUT" team="A"/>
-      <initial-robot originOffsetX="13" originOffsetY="24" type="ARCHON" team="B"/>
-      <initial-robot originOffsetX="16" originOffsetY="5" type="ARCHON" team="A"/>
-      <initial-robot originOffsetX="22" originOffsetY="19" type="SCOUT" team="B"/>
+      <initial-robot originOffsetX="3" originOffsetY="5" type="ARCHON" team="A"/>
+      <initial-robot originOffsetX="5" originOffsetY="2" type="ARCHON" team="A"/>
+      <initial-robot originOffsetX="5" originOffsetY="4" type="SCOUT" team="A"/>
+      <initial-robot originOffsetX="10" originOffsetY="2" type="ARCHON" team="A"/>
+      <initial-robot originOffsetX="19" originOffsetY="27" type="ARCHON" team="B"/>
+      <initial-robot originOffsetX="24" originOffsetY="25" type="SCOUT" team="B"/>
+      <initial-robot originOffsetX="24" originOffsetY="27" type="ARCHON" team="B"/>
+      <initial-robot originOffsetX="26" originOffsetY="24" type="ARCHON" team="B"/>
     </initialRobots>
   </game-map>
 </object-stream>
