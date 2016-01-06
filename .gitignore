@@ -25,6 +25,5 @@ lib/*
 bc.conf
 build.xml
 ivy.xml
-test/*
 .ivy/*
 
