@@ -1,5 +1,5 @@
 <object-stream>
-  <game-map width="30" height="30" origin="421,144" seed="1337" rounds="2000" mapName="scout">
+  <game-map width="30" height="30" origin="10,-14990" seed="1337" rounds="2000" mapName="scout">
     <initialRubble>
       <double-array>0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0</double-array>
       <double-array>0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0</double-array>

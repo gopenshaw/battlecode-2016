@@ -11,6 +11,7 @@ public abstract class Robot {
     private final RobotController rc;
 
     protected int senseRadius;
+    protected int attackRadius;
 
     private final Direction[] directions = {Direction.NORTH, Direction.NORTH_EAST, Direction.EAST,
         Direction.SOUTH_EAST, Direction.SOUTH, Direction.SOUTH_WEST, Direction.WEST, Direction.NORTH_WEST};
@@ -20,7 +21,8 @@ public abstract class Robot {
         rand = new Random(rc.getID());
         team = rc.getTeam();
         enemy = team.opponent();
-        senseRadius = rc.getType().sensorRadiusSquared;
+
+        updateTypeParams(rc);
     }
 
     public void run(RobotController rc) {
@@ -36,14 +38,20 @@ public abstract class Robot {
         }
     }
 
-    protected void updateType(RobotController rc) {
-        senseRadius = rc.getType().sensorRadiusSquared;
+    protected void updateTypeParams(RobotController rc) {
+        RobotType type = rc.getType();
+        senseRadius = type.sensorRadiusSquared;
+        attackRadius = type.attackRadiusSquared;
     }
 
     protected abstract void doTurn(RobotController rc) throws GameActionException;
 
     protected RobotInfo[] senseNearbyEnemies() {
         return rc.senseNearbyRobots(senseRadius, enemy);
+    }
+
+    protected RobotInfo[] senseAttackableEnemies() {
+        return rc.senseNearbyRobots(attackRadius, enemy);
     }
 
     protected RobotInfo[] senseNearbyZombies() {

@@ -9,7 +9,7 @@ public class Turret extends Robot {
 
     @Override
     protected void doTurn(RobotController rc) throws GameActionException {
-        updateType(rc);
+        updateTypeParams(rc);
 
         if (rc.getType() == RobotType.TTM) {
             doTTMTurn(rc);
