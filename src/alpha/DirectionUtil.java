@@ -27,6 +27,10 @@ public class DirectionUtil {
         return getAverageDirection(directions);
     }
 
+    public static Direction getDirectionToward(RobotInfo[] robots, RobotController rc) {
+        return getDirectionAwayFrom(robots, rc).opposite();
+    }
+
     private static Direction getAverageDirection(Direction[] directions) {
         int x = 0;
         int y = 0;

@@ -32,6 +32,12 @@ public class Guard extends Robot{
         MapLocation helpLocation = getHelpLocation(rc);
         if (helpLocation != null) {
             tryMoveToward(helpLocation);
+            return;
+        }
+
+        if (nearbyEnemies.length > 0) {
+            Direction towardEnemy = DirectionUtil.getDirectionToward(nearbyEnemies, rc);
+            tryMove(towardEnemy);
         }
     }
 

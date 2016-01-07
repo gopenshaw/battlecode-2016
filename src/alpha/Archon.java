@@ -37,6 +37,15 @@ public class Archon extends Robot {
             return;
         }
 
+        if (archonId == 1 && !scoutBuilt) {
+            if (!rc.isCoreReady()) Clock.yield();
+
+            if (tryBuild(RobotType.SCOUT)) {
+                scoutBuilt = true;
+                return;
+            }
+        }
+
         RobotInfo[] nearbyZombies = senseNearbyZombies();
         RobotInfo[] nearbyEnemies = senseNearbyEnemies();
         if (Util.anyCanAttack(nearbyEnemies)
@@ -65,7 +74,7 @@ public class Archon extends Robot {
             }
         }
         else {
-            tryBuild(RobotType.SOLDIER);
+            tryBuild(RobotType.GUARD);
         }
     }
 
@@ -137,12 +146,6 @@ public class Archon extends Robot {
             base = findAverageMapLocation(rc.getLocation(), otherArchons);
         }
 
-        if (archonId == 1 && !scoutBuilt) {
-            if (tryBuild(RobotType.SCOUT)) {
-                scoutBuilt = true;
-                return true;
-            }
-        }
         return false;
     }
 

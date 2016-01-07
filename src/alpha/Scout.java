@@ -9,7 +9,7 @@ public class Scout extends Robot {
 
     Direction direction = Direction.SOUTH;
     int lastRoundBroadcasted = 0;
-    final int BROADCAST_DELAY = 10;
+    final int BROADCAST_DELAY = 50;
 
     @Override
     protected void doTurn(RobotController rc) throws GameActionException {

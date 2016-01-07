@@ -1,7 +1,6 @@
 package bernie;
 
 import battlecode.common.*;
-import scala.tools.nsc.backend.icode.analysis.CopyPropagation;
 
 public class Soldier extends Robot {
     private MapLocation lastKnownEnemyLocation = null;
