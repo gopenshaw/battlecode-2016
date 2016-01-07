@@ -31,7 +31,6 @@ public class Archon extends Robot {
     public void doTurn(RobotController rc) throws GameActionException {
         if (doEarlyGameActions(rc)) return;
 
-        scanSurroundings(rc);
         readSignals(rc);
 
         if (!rc.isCoreReady()) {
@@ -58,12 +57,6 @@ public class Archon extends Robot {
         if (archonId == 2) {
             if (tryToActivateNeutrals(rc, currentLocation)) return;
             if (!rc.isCoreReady()) return;
-        }
-
-        MapLocation mostParts = findMostParts(rc);
-        if (mostParts != null) {
-            tryMoveToward(mostParts);
-            return;
         }
 
         if (queuePosition < buildQueue.length) {
