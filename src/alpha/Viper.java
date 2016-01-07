@@ -45,12 +45,12 @@ public class Viper extends Robot {
             int[] message = s.getMessage();
             if (message == null) continue;
 
-            rc.setIndicatorString(2, "received team signal: " + message[0] + " " + message[1]);
-            int currentEnemy = message[1];
-            if (currentEnemy == enemyId
+            RobotData sg = SignalUtil.readSignal(s, rc.getLocation());
+            setIndicatorString(0, "found a signal w/ a message");
+            if (sg.robotId == enemyId
                     || enemyId == 0) {
-                enemyLocation = LocationUtil.decode(message[0], rc.getLocation());
-                enemyId = currentEnemy;
+                enemyLocation = sg.location;
+                enemyId = sg.robotId;
             }
 
             break;

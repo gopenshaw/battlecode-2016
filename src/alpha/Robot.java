@@ -58,6 +58,10 @@ public abstract class Robot {
         return rc.senseNearbyRobots(senseRadius, Team.ZOMBIE);
     }
 
+    public RobotInfo[] senseNearbyNeutrals() {
+        return rc.senseNearbyRobots(senseRadius, Team.NEUTRAL);
+    }
+
     protected void tryMoveToward(MapLocation location) throws GameActionException {
         MapLocation currentLocation = rc.getLocation();
         Direction moveDirection = currentLocation.directionTo(location);

@@ -28,4 +28,14 @@ public class Util {
 
         return false;
     }
+
+    public static boolean anyCanAttack(RobotInfo[] robots) {
+        for (RobotInfo robot : robots) {
+            if (robot.type.canAttack()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

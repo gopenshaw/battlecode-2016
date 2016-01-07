@@ -17,12 +17,22 @@ public class Scout extends Robot {
         if (rc.getRoundNum() > lastRoundBroadcasted + BROADCAST_DELAY) {
             for (RobotInfo enemy : nearbyEnemies) {
                 if (enemy.type == RobotType.ARCHON) {
-                    int encodedLocation = LocationUtil.encode(enemy.location);
-                    rc.broadcastMessageSignal(encodedLocation, enemy.ID, 2000);
+                    setIndicatorString(1, "reporting archon");
+                    SignalUtil.reportEnemy(RobotType.ARCHON, enemy, rc);
+                    lastRoundBroadcasted = rc.getRoundNum();
+                    return;
                 }
             }
+        }
 
-            lastRoundBroadcasted = rc.getRoundNum();
+        RobotInfo[] nearbyNeutrals = senseNearbyNeutrals();
+        if (rc.getRoundNum() > lastRoundBroadcasted + BROADCAST_DELAY) {
+            for (RobotInfo neutral : nearbyNeutrals) {
+                setIndicatorString(1, "reporting neutral");
+                SignalUtil.reportEnemy(neutral.type, neutral, rc);
+                lastRoundBroadcasted = rc.getRoundNum();
+                return;
+            }
         }
 
         if (!rc.isCoreReady()) {

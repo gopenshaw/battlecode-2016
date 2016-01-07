@@ -2,6 +2,8 @@ package alpha;
 
 import battlecode.common.*;
 
+import java.util.*;
+
 public class Archon extends Robot {
     private final int SENSE_WIDTH =
             (int) (Math.floor(Math.sqrt(RobotType.ARCHON.sensorRadiusSquared)) * 2 + 1);
@@ -13,35 +15,33 @@ public class Archon extends Robot {
         super(rc);
     }
 
-    private RobotType[] buildQueue = {RobotType.SCOUT, RobotType.GUARD, RobotType.VIPER,
-            RobotType.GUARD, RobotType.GUARD, RobotType.GUARD};
-
     private int queuePosition = 0;
+    private RobotType[] buildQueue = {RobotType.GUARD, RobotType.GUARD,
+            RobotType.TURRET, RobotType.TURRET, RobotType.TURRET};
+
     private MapLocation base = null;
+    private RobotData neutralRobot = null;
+    private int archonId = 1; //--unique number in [1,6]
+    private boolean scoutBuilt = false;
+    private Map<Integer, RobotData> neutralRobots = new HashMap<Integer, RobotData>();
 
     private final int SQR_DIST_TO_BASE = 20;
 
     @Override
     public void doTurn(RobotController rc) throws GameActionException {
-        if (rc.getRoundNum() == 0) {
-            rc.broadcastSignal(2000);
-            return;
-        }
+        if (doEarlyGameActions(rc)) return;
 
-        if (rc.getRoundNum() == 1) {
-            Signal[] otherArchons = rc.emptySignalQueue();
-            base = findAverageMapLocation(rc.getLocation(), otherArchons);
-        }
+        scanSurroundings(rc);
+        readSignals(rc);
 
         if (!rc.isCoreReady()) {
-            scanSurroundings(rc);
             return;
         }
 
         RobotInfo[] nearbyZombies = senseNearbyZombies();
         RobotInfo[] nearbyEnemies = senseNearbyEnemies();
-        if (nearbyZombies.length > 0
-                || nearbyEnemies.length > 0) {
+        if (Util.anyCanAttack(nearbyEnemies)
+                || Util.anyCanAttack(nearbyZombies)) {
             Direction away = DirectionUtil.getDirectionAwayFrom(nearbyEnemies, nearbyZombies, rc);
             tryMove(away);
             return;
@@ -49,9 +49,15 @@ public class Archon extends Robot {
 
         MapLocation currentLocation = rc.getLocation();
         if (base != null
+                && archonId != 2
                 && currentLocation.distanceSquaredTo(base) > SQR_DIST_TO_BASE) {
             tryMoveToward(base);
             return;
+        }
+
+        if (archonId == 2) {
+            if (tryToActivateNeutrals(rc, currentLocation)) return;
+            if (!rc.isCoreReady()) return;
         }
 
         MapLocation mostParts = findMostParts(rc);
@@ -63,6 +69,99 @@ public class Archon extends Robot {
         if (queuePosition < buildQueue.length) {
             if (tryBuild(buildQueue[queuePosition])) {
                 queuePosition++;
+            }
+        }
+        else {
+            tryBuild(RobotType.GUARD);
+        }
+    }
+
+    private boolean tryToActivateNeutrals(RobotController rc, MapLocation currentLocation) throws GameActionException {
+        if (neutralRobot != null) {
+            if (currentLocation.isAdjacentTo(neutralRobot.location)) {
+                rc.activate(neutralRobot.location);
+                setIndicatorString(0, "activating " + neutralRobot);
+                neutralRobots.remove(neutralRobot.robotId);
+                neutralRobot = null;
+                return true;
+            }
+            else {
+                tryMoveToward(neutralRobot.location);
+            }
+        }
+        else if (!neutralRobots.isEmpty()) {
+            neutralRobot = findClosestNeutralRobot(neutralRobots.values(), currentLocation);
+            tryMoveToward(neutralRobot.location);
+            return true;
+        }
+
+        return false;
+    }
+
+    private RobotData findClosestNeutralRobot(Collection<RobotData> values, MapLocation currentLocation) {
+        RobotData closestRobot = null;
+        int shortestDistance = Integer.MAX_VALUE;
+        for (RobotData robotData : values) {
+            int distance = robotData.location.distanceSquaredTo(currentLocation);
+            if (distance < shortestDistance) {
+                closestRobot = robotData;
+                shortestDistance = distance;
+            }
+        }
+
+        return closestRobot;
+    }
+
+    private void readSignals(RobotController rc) {
+        Signal[] signals = rc.emptySignalQueue();
+        for (Signal s : signals) {
+            if (s.getTeam() == enemy
+                    || s.getMessage() == null) {
+                continue;
+            }
+
+            RobotData robotData = SignalUtil.readSignal(s, rc.getLocation());
+            if (robotData.team == Team.NEUTRAL) {
+                if (!neutralRobots.containsKey(robotData.robotId)) {
+                    setIndicatorString(0, "adding neutral robot to dictionary " + robotData.location);
+                    neutralRobots.put(robotData.robotId, robotData);
+                }
+            }
+        }
+    }
+
+    private boolean doEarlyGameActions(RobotController rc) throws GameActionException {
+        if (rc.getRoundNum() == 0) {
+            rc.broadcastSignal(2000);
+            return true;
+        }
+
+        if (rc.getRoundNum() == 1) {
+            Signal[] otherArchons = rc.emptySignalQueue();
+            setArchonId(otherArchons, rc);
+            setIndicatorString(1, "my id is " + archonId);
+
+            base = findAverageMapLocation(rc.getLocation(), otherArchons);
+        }
+
+        if (archonId == 1 && !scoutBuilt) {
+            if (tryBuild(RobotType.SCOUT)) {
+                scoutBuilt = true;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void setArchonId(Signal[] otherArchons, RobotController rc) {
+        int myId = rc.getID();
+        for (Signal s : otherArchons) {
+            if (s.getTeam() == enemy) {
+                continue;
+            }
+
+            if (s.getID() < myId) {
+                archonId++;
             }
         }
     }
