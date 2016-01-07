@@ -1,4 +1,4 @@
-package alpha;
+package bernie;
 
 import battlecode.common.*;
 
@@ -52,6 +52,10 @@ public abstract class Robot {
 
     protected RobotInfo[] senseAttackableEnemies() {
         return rc.senseNearbyRobots(attackRadius, enemy);
+    }
+
+    protected RobotInfo[] senseAttackableZombies() {
+        return rc.senseNearbyRobots(attackRadius, Team.ZOMBIE);
     }
 
     protected RobotInfo[] senseNearbyZombies() {
@@ -193,16 +197,6 @@ public abstract class Robot {
         }
 
         return null;
-    }
-
-    protected RobotInfo findAttackableZombieOrRobot(RobotInfo[] nearbyZombies, RobotInfo[] nearbyEnemies) {
-        RobotInfo attackableZombie = findAttackableRobot(nearbyZombies);
-        if (attackableZombie != null) {
-            return attackableZombie;
-        }
-
-        RobotInfo attackableEnemy = findAttackableRobot(nearbyEnemies);
-        return attackableEnemy;
     }
 
     protected Direction getRandomDirection() {

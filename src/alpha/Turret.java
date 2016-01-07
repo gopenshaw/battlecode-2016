@@ -25,8 +25,34 @@ public class Turret extends Robot {
             RobotInfo zombieToAttack = getBestAttackableZombie(nearbyZombies, rc);
             if (zombieToAttack != null) {
                 rc.attackLocation(zombieToAttack.location);
+                return;
             }
         }
+
+        RobotInfo[] attackableEnemies = senseAttackableEnemies();
+        if (attackableEnemies.length > 0) {
+            RobotInfo robotToAttack = getLowestHealthAttackableRobot(attackableEnemies, rc);
+            if (robotToAttack != null) {
+                rc.attackLocation(robotToAttack.location);
+                return;
+            }
+        }
+    }
+
+    private RobotInfo getLowestHealthAttackableRobot(RobotInfo[] robots, RobotController rc) {
+        double lowestHealth = 1000000;
+        RobotInfo lowestAttackable = null;
+        for (RobotInfo robot : robots) {
+            if (rc.canAttackLocation(robot.location)) {
+                double health = robot.health;
+                if (health < lowestHealth) {
+                    lowestHealth = health;
+                    lowestAttackable = robot;
+                }
+            }
+        }
+
+        return lowestAttackable;
     }
 
     private RobotInfo getBestAttackableZombie(RobotInfo[] zombies, RobotController rc) {

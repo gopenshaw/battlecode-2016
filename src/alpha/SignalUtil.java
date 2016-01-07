@@ -5,6 +5,8 @@ import battlecode.common.*;
 import static org.junit.Assert.assertEquals;
 
 public class SignalUtil {
+    public static final int ENTIRE_MAP_RADIUS = 20000;
+
     private static RobotType[] robotTypeEncoding = {RobotType.ARCHON, RobotType.BIGZOMBIE, RobotType.FASTZOMBIE,
         RobotType.GUARD, RobotType.RANGEDZOMBIE, RobotType.SCOUT, RobotType.SOLDIER, RobotType.STANDARDZOMBIE,
         RobotType.TTM, RobotType.TURRET, RobotType.VIPER, RobotType.ZOMBIEDEN };
@@ -14,7 +16,7 @@ public class SignalUtil {
     public static void reportEnemy(RobotType robotType, RobotInfo robotInfo, RobotController rc) throws GameActionException {
         int encodedLocation = LocationUtil.encode(robotInfo.location);
         int dataField = buildData(robotType, robotInfo.ID, robotInfo.team);
-        rc.broadcastMessageSignal(encodedLocation, dataField, 2000);
+        rc.broadcastMessageSignal(encodedLocation, dataField, ENTIRE_MAP_RADIUS);
     }
 
     public static RobotData readSignal(Signal incoming, MapLocation validLocation) {

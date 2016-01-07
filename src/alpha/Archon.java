@@ -65,7 +65,7 @@ public class Archon extends Robot {
             }
         }
         else {
-            tryBuild(RobotType.GUARD);
+            tryBuild(RobotType.SOLDIER);
         }
     }
 
@@ -125,7 +125,7 @@ public class Archon extends Robot {
 
     private boolean doEarlyGameActions(RobotController rc) throws GameActionException {
         if (rc.getRoundNum() == 0) {
-            rc.broadcastSignal(2000);
+            rc.broadcastSignal(SignalUtil.ENTIRE_MAP_RADIUS);
             return true;
         }
 

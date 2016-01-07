@@ -14,7 +14,7 @@ public class Guard extends Robot{
         RobotInfo[] nearbyZombies = senseNearbyZombies();
         RobotInfo[] nearbyEnemies = senseNearbyEnemies();
 
-        RobotInfo robotToAttack = findPriorityRobotToAttack(nearbyZombies, nearbyEnemies);
+        RobotInfo robotToAttack = findAttackableZombieOrRobot(nearbyZombies, nearbyEnemies);
         if (robotToAttack != null
                 && rc.isWeaponReady()) {
             rc.attackLocation(robotToAttack.location);
@@ -45,15 +45,5 @@ public class Guard extends Robot{
             }
         }
         return helpLocation;
-    }
-
-    private RobotInfo findPriorityRobotToAttack(RobotInfo[] nearbyZombies, RobotInfo[] nearbyEnemies) {
-        RobotInfo attackableZombie = findAttackableRobot(nearbyZombies);
-        if (attackableZombie != null) {
-            return attackableZombie;
-        }
-
-        RobotInfo attackableEnemy = findAttackableRobot(nearbyEnemies);
-        return attackableEnemy;
     }
 }
