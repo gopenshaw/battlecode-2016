@@ -7,7 +7,7 @@ public class Archon extends Robot {
         super(rc);
     }
 
-    RobotType[] buildQueue = {RobotType.TURRET, RobotType.SCOUT, RobotType.TURRET};
+    RobotType[] buildQueue = {RobotType.SCOUT};
     int buildQueuePosition = 0;
 
     @Override
@@ -16,11 +16,23 @@ public class Archon extends Robot {
             return;
         }
 
+        if (buildRobot()) {
+            return;
+        }
+    }
+
+    private boolean buildRobot() throws GameActionException {
         if (buildQueuePosition < buildQueue.length) {
             if (tryBuild(buildQueue[buildQueuePosition])) {
                 buildQueuePosition++;
+                return true;
             }
         }
+        else {
+            if (tryBuild(RobotType.TURRET)) return true;
+        }
+
+        return false;
     }
 
     protected boolean tryBuild(RobotType robotType) throws GameActionException {

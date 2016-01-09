@@ -12,6 +12,7 @@ public abstract class Robot {
 
     protected int senseRadius;
     protected int attackRadius;
+    protected MapLocation currentLocation;
 
     protected final Direction[] directions = {Direction.NORTH, Direction.NORTH_EAST, Direction.EAST,
         Direction.SOUTH_EAST, Direction.SOUTH, Direction.SOUTH_WEST, Direction.WEST, Direction.NORTH_WEST};
@@ -28,15 +29,16 @@ public abstract class Robot {
     protected abstract void doTurn() throws GameActionException;
 
     public void run(RobotController rc) {
-        try {
-            while(true) {
+        while (true) {
+            try {
+                currentLocation = rc.getLocation();
                 doTurn();
                 Clock.yield();
             }
-        }
-        catch (GameActionException e) {
-            System.out.println(e.getMessage());
-            e.printStackTrace();
+            catch (GameActionException e) {
+                System.out.println(e.getMessage());
+                e.printStackTrace();
+            }
         }
     }
 
@@ -54,6 +56,10 @@ public abstract class Robot {
 
     protected RobotInfo[] senseNearbyEnemies() {
         return rc.senseNearbyRobots(senseRadius, enemy);
+    }
+
+    protected RobotInfo[] senseNearbyZombies() {
+        return rc.senseNearbyRobots(senseRadius, Team.ZOMBIE);
     }
 
     protected RobotInfo getLowestHealthAttackable(RobotInfo[] robots) {

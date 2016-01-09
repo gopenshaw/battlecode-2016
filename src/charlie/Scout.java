@@ -1,32 +1,73 @@
 package charlie;
 
-import battlecode.common.GameActionException;
-import battlecode.common.RobotController;
-import battlecode.common.RobotInfo;
+import battlecode.common.*;
 
 public class Scout extends Robot {
+    private int signalsBroadcast = 0;
+    private boolean broadcastRubbleDone = false;
+
+    private StringBuilder broadcast = new StringBuilder();
+
     public Scout(RobotController rc) {
         super(rc);
     }
 
     @Override
     protected void doTurn() throws GameActionException {
-        rc.broadcastMessageSignal(0, rc.getRoundNum(), senseRadius * 2);
-        /*
-        RobotInfo[] enemies = senseNearbyEnemies();
-        setIndicatorString(0, String.format("sensed %d robots", enemies.length));
-        int signalsSent = 0;
-        StringBuilder sb = new StringBuilder();
-        for (RobotInfo enemy : enemies) {
-            rc.broadcastMessageSignal(Serializer.encode(enemy.location), (int) enemy.health, senseRadius * 2);
-            sb.append(enemy.location + " " + enemy.health + "; ");
-            if (++signalsSent >= 20) {
-                break;
+        signalsBroadcast = 0;
+
+        broadcastZombies();
+        broadcastEnemies();
+
+        broadcastParts();
+
+        setIndicatorString(0, broadcast.toString());
+        broadcast = new StringBuilder();
+    }
+
+    private void broadcastParts() throws GameActionException {
+        if (broadcastRubbleDone) return;
+        int currentX = currentLocation.x;
+        int currentY = currentLocation.y;
+        for (int i = -5; i <= 5; i++) {
+            for (int j = -5; j <= 5; j++) {
+                int x = currentX + i;
+                int y = currentY + j;
+                MapLocation mapLocation = new MapLocation(x, y);
+                if (rc.onTheMap(mapLocation)) {
+                    double rubble = rc.senseParts(mapLocation);
+                    if (rubble > 0) {
+                        if (++signalsBroadcast > GameConstants.MESSAGE_SIGNALS_PER_TURN) {
+                            return;
+                        }
+
+                        SignalUtil.broadcastParts(mapLocation, senseRadius * 2, rc);
+                    }
+                }
             }
         }
 
-        setIndicatorString(1, sb.toString());
-        setIndicatorString(2, "messages completed");
-        */
+        broadcastRubbleDone = true;
+    }
+
+    private void broadcastEnemies() throws GameActionException {
+        RobotInfo[] enemies = senseNearbyEnemies();
+        broadcastRobots(enemies);
+    }
+
+    private void broadcastZombies() throws GameActionException {
+        RobotInfo[] zombies = senseNearbyZombies();
+        broadcastRobots(zombies);
+    }
+
+    private void broadcastRobots(RobotInfo[] robots) throws GameActionException {
+        for (RobotInfo robot : robots) {
+            if (++signalsBroadcast > GameConstants.MESSAGE_SIGNALS_PER_TURN) {
+                break;
+            }
+
+            SignalUtil.broadcastEnemy(robot, senseRadius * 2, rc);
+            broadcast.append(robot.location + " " + robot.health + "; ");
+        }
     }
 }
