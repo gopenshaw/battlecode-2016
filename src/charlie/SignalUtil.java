@@ -41,20 +41,13 @@ public class SignalUtil {
                 radius);
     }
 
+    public static MapLocation getPartsLocation(Signal s, MapLocation validLocation) {
+        return Serializer.decode(s.getMessage()[1], validLocation);
+    }
+
     public static void broadcastEnemy(RobotInfo robot, int radius, RobotController rc) throws GameActionException {
         rc.broadcastMessageSignal(encode(SignalType.ENEMY),
                 encode(robot),
                 radius);
-    }
-
-    private static int buildData(SignalType type) {
-        if (type == SignalType.PARTS) {
-            return 1;
-        }
-        else if (type == SignalType.ENEMY) {
-            return 2;
-        }
-
-        return 0;
     }
 }

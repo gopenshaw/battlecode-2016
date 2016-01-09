@@ -1,6 +1,7 @@
 package charlie;
 
 import battlecode.common.*;
+import charlie.dataStructures.BoundedQueue;
 
 public class Archon extends Robot {
     public Archon(RobotController rc) {
@@ -10,14 +11,54 @@ public class Archon extends Robot {
     RobotType[] buildQueue = {RobotType.SCOUT};
     int buildQueuePosition = 0;
 
+    BoundedQueue<MapLocation> partsLocations = new BoundedQueue<MapLocation>(50);
+    MapLocation partsDestination = null;
+
     @Override
     public void doTurn() throws GameActionException {
+        Signal[] signals = rc.emptySignalQueue();
+        scanForParts(signals);
+
         if (!rc.isCoreReady()) {
             return;
         }
 
         if (buildRobot()) {
             return;
+        }
+
+        goToParts();
+    }
+
+    private void scanForParts(Signal[] signals) {
+        for (Signal s : signals) {
+            if (s.getTeam() == team
+                    && SignalUtil.getType(s) == SignalType.PARTS) {
+                partsLocations.add(SignalUtil.getPartsLocation(s, currentLocation));
+            }
+        }
+
+        setIndicatorString(0, partsLocations.getSize() + " parts locations in queue");
+    }
+
+    private void goToParts() throws GameActionException {
+        if (currentLocation.equals(partsDestination)) {
+            partsDestination = null;
+        }
+
+        if (partsDestination != null
+                && rc.canSense(partsDestination)
+                && rc.senseParts(partsDestination) == 0) {
+            partsDestination = null;
+        }
+
+        if (partsDestination != null
+            || partsLocations.getSize() > 0) {
+            if (partsDestination == null) {
+                partsDestination = partsLocations.remove();
+            }
+
+            tryMoveToward(partsDestination);
         }
     }
 

@@ -62,16 +62,110 @@ public abstract class Robot {
         return rc.senseNearbyRobots(senseRadius, Team.ZOMBIE);
     }
 
-    protected RobotInfo getLowestHealthAttackable(RobotInfo[] robots) {
-        double lowestHealth = 100000;
-        RobotInfo lowestHealthRobot = null;
-        for (RobotInfo robot : robots) {
-            if (robot.health < lowestHealth) {
-                lowestHealth = robot.health;
-                lowestHealthRobot = robot;
+    protected void tryMoveToward(MapLocation location) throws GameActionException {
+        MapLocation currentLocation = rc.getLocation();
+        Direction moveDirection = currentLocation.directionTo(location);
+
+        if (location.isAdjacentTo(currentLocation)) {
+            double rubble = rc.senseRubble(location);
+            if (rubble >= 100) {
+                rc.clearRubble(moveDirection);
+                return;
             }
         }
 
-        return lowestHealthRobot;
+        tryMove(moveDirection);
+    }
+
+    protected boolean trySafeMove(Direction direction,
+                                  RobotInfo[] nearbyEnemies,
+                                  RobotInfo[] nearbyZombies) throws GameActionException {
+        MapLocation currentLocation = rc.getLocation();
+        MapLocation next = currentLocation.add(direction);
+        if (canMoveSafely(direction, next, nearbyEnemies, nearbyZombies)) {
+            rc.move(direction);
+            return true;
+        }
+
+        Direction left = direction.rotateLeft();
+        next = currentLocation.add(left);
+        if (canMoveSafely(left, next, nearbyEnemies, nearbyZombies)) {
+            rc.move(left);
+            return true;
+        }
+
+        Direction right = direction.rotateRight();
+        next = currentLocation.add(right);
+        if (canMoveSafely(right, next, nearbyEnemies, nearbyZombies)) {
+            rc.move(right);
+            return true;
+        }
+
+        for (int i = 0; i < 2; i++) {
+            left = left.rotateLeft();
+            next = currentLocation.add(left);
+            if (canMoveSafely(left, next, nearbyEnemies, nearbyZombies)) {
+                rc.move(left);
+                return true;
+            }
+
+            right = right.rotateRight();
+            next = currentLocation.add(right);
+            if (canMoveSafely(right, next, nearbyEnemies, nearbyZombies)) {
+                rc.move(right);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean canMoveSafely(Direction direction, MapLocation next, RobotInfo[] nearbyEnemies, RobotInfo[] nearbyZombies) {
+        return rc.canMove(direction)
+                && !Util.anyCanAttack(nearbyEnemies, next)
+                && !Util.anyCanAttack(nearbyZombies, next);
+    }
+
+    protected void tryMove(Direction direction) throws GameActionException {
+        if (rc.canMove(direction)) {
+            rc.move(direction);
+            return;
+        }
+
+        Direction left = direction.rotateLeft();
+        if (rc.canMove(left)) {
+            rc.move(left);
+            return;
+        }
+
+        Direction right = direction.rotateRight();
+        if (rc.canMove(right)) {
+            rc.move(right);
+            return;
+        }
+
+        for (int i = 0; i < 2; i++) {
+            left = left.rotateLeft();
+            if (rc.canMove(left)) {
+                rc.move(left);
+                return;
+            }
+
+            right = right.rotateRight();
+            if (rc.canMove(right)) {
+                rc.move(right);
+                return;
+            }
+        }
+
+        tryClearRubble(direction);
+    }
+
+    private void tryClearRubble(Direction direction) throws GameActionException {
+        MapLocation nextLocation = rc.getLocation().add(direction);
+        double rubble = rc.senseRubble(nextLocation);
+        if (rubble > 100) {
+            rc.clearRubble(direction);
+        }
     }
 }
