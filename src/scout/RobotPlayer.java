@@ -10,7 +10,7 @@ public class RobotPlayer {
 
     public static void run(RobotController rcIn) {
         rc = rcIn;
-        circlePath = new CirclePath(rc.getLocation(), 100, rc);
+        circlePath = new CirclePath(rc.getLocation(), 4, rc);
 
         while (true) {
             try {
@@ -32,6 +32,7 @@ public class RobotPlayer {
             return;
         }
 
+        rc.setIndicatorString(0, "rotations completed " + circlePath.getRotationsCompleted());
         tryMove(circlePath.getNextDirection(currentLocation));
     }
 

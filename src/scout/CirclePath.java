@@ -11,16 +11,21 @@ public class CirclePath {
     private final RobotController rc;
     private final int TOLERANCE;
 
-    private final Direction INITIAL_DIRECTION = Direction.NORTH;
+
+    private Direction rotationCountDirection = null;
+    private int rotationCount;
 
     public CirclePath(MapLocation center, int radiusSquared, RobotController rc) {
         this.center = center;
         this.radiusSquared = radiusSquared;
         this.TOLERANCE = radiusSquared;
         this.rc = rc;
+
+        rotationCountDirection = Direction.NORTH;
     }
 
     public Direction getNextDirection(MapLocation currentLocation) throws GameActionException {
+        countRotations(currentLocation);
         Direction pathDirection = getNextPathDirection(currentLocation);
 
         //--make sure direction is on map
@@ -31,9 +36,32 @@ public class CirclePath {
         return pathDirection;
     }
 
+    public int getRotationsCompleted() {
+        return rotationCount;
+    }
+
+    private void countRotations(MapLocation currentLocation) {
+        if (currentLocation.equals(center)) {
+            return;
+        }
+
+        if (currentLocation.x == center.x) {
+            if (currentLocation.y > center.y) {
+                rotationCountDirection = Direction.SOUTH;
+            }
+            else  {
+                if (rotationCountDirection != Direction.NORTH) {
+                    rotationCount++;
+                }
+
+                rotationCountDirection = Direction.NORTH;
+            }
+        }
+    }
+
     private Direction getNextPathDirection(MapLocation currentLocation) {
         if (currentLocation.equals(center)) {
-            return INITIAL_DIRECTION;
+            return Direction.NORTH;
         }
 
         int distanceFromCenter = currentLocation.distanceSquaredTo(center);
