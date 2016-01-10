@@ -168,4 +168,25 @@ public abstract class Robot {
             rc.clearRubble(direction);
         }
     }
+
+    protected RobotInfo findAttackableRobot(RobotInfo[] robots) {
+        for (RobotInfo r : robots) {
+            if (rc.canAttackLocation(r.location)) {
+                return r;
+            }
+        }
+
+        return null;
+    }
+
+    protected RobotInfo findAttackableZombieOrRobot(RobotInfo[] nearbyZombies, RobotInfo[] nearbyEnemies) {
+        RobotInfo attackableZombie = findAttackableRobot(nearbyZombies);
+        if (attackableZombie != null) {
+            return attackableZombie;
+        }
+
+        RobotInfo attackableEnemy = findAttackableRobot(nearbyEnemies);
+        return attackableEnemy;
+    }
+
 }

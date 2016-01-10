@@ -6,6 +6,8 @@ public class Scout extends Robot {
     private int signalsBroadcast = 0;
     private boolean broadcastRubbleDone = false;
 
+    private Direction previousDirection = null;
+
     private StringBuilder broadcast = new StringBuilder();
 
     public Scout(RobotController rc) {
@@ -21,8 +23,37 @@ public class Scout extends Robot {
 
         broadcastParts();
 
+        tryExplore();
+
         setIndicatorString(0, broadcast.toString());
         broadcast = new StringBuilder();
+    }
+
+    private void tryExplore() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        if (signalsBroadcast > 0 || nextToWall()) {
+            previousDirection = directions[rand.nextInt(8)];
+        }
+        else {
+            if (previousDirection == null) {
+                previousDirection = directions[rand.nextInt(8)];
+            }
+
+            tryMove(previousDirection);
+        }
+    }
+
+    private boolean nextToWall() throws GameActionException {
+        for (int i = 0; i < directions.length; i++) {
+            if (!rc.onTheMap(currentLocation.add(directions[i]))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void broadcastParts() throws GameActionException {
