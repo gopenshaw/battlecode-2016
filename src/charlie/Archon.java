@@ -19,15 +19,26 @@ public class Archon extends Robot {
         Signal[] signals = rc.emptySignalQueue();
         scanForParts(signals);
 
-        if (!rc.isCoreReady()) {
-            return;
-        }
+        if (!rc.isCoreReady()) return;
 
-        if (buildRobot()) {
-            return;
-        }
+        if (moveAwayFromEnemiesAndZombies()) return;
+
+        if (buildRobot()) return;
 
         goToParts();
+    }
+
+    private boolean moveAwayFromEnemiesAndZombies() throws GameActionException {
+        RobotInfo[] nearbyZombies = senseNearbyZombies();
+        RobotInfo[] enemies = senseNearbyEnemies();
+        if (nearbyZombies.length > 0
+                || enemies.length > 0) {
+            Direction away = DirectionUtil.getDirectionAwayFrom(enemies, nearbyZombies, currentLocation);
+            tryMove(away);
+            return true;
+        }
+
+        return false;
     }
 
     private void scanForParts(Signal[] signals) {
