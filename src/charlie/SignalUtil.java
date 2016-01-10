@@ -11,7 +11,7 @@ public class SignalUtil {
             return SignalType.BASIC;
         }
 
-        int type = message[0];
+        int type = message[0] % 10;
         return typeEncoding[type];
     }
 
@@ -19,6 +19,10 @@ public class SignalUtil {
         int[] message = signal.getMessage();
         return new RobotData(Serializer.decode(message[1] / 10000, validLocation),
                 message[1] % 10000);
+    }
+
+    public static int getRoundNumber(Signal signal) {
+        return signal.getMessage()[0] / 10;
     }
 
     public static int encode(SignalType type) {
@@ -45,9 +49,9 @@ public class SignalUtil {
         return Serializer.decode(s.getMessage()[1], validLocation);
     }
 
-    public static void broadcastEnemy(RobotInfo robot, int radius, RobotController rc) throws GameActionException {
-        rc.broadcastMessageSignal(encode(SignalType.ENEMY),
-                encode(robot),
+    public static void broadcastEnemy(RobotInfo robot, int radius, int roundNumber, RobotController rc) throws GameActionException {
+        rc.broadcastMessageSignal(encode(SignalType.ENEMY) + roundNumber * 10,
+                encode(robot), //--LLLLLLHHH
                 radius);
     }
 }

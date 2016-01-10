@@ -13,6 +13,7 @@ public abstract class Robot {
     protected int senseRadius;
     protected int attackRadius;
     protected MapLocation currentLocation;
+    protected int roundNumber;
 
     protected final Direction[] directions = {Direction.NORTH, Direction.NORTH_EAST, Direction.EAST,
         Direction.SOUTH_EAST, Direction.SOUTH, Direction.SOUTH_WEST, Direction.WEST, Direction.NORTH_WEST};
@@ -32,6 +33,7 @@ public abstract class Robot {
         while (true) {
             try {
                 currentLocation = rc.getLocation();
+                roundNumber = rc.getRoundNum();
                 doTurn();
                 Clock.yield();
             }

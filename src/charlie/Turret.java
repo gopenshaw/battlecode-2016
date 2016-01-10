@@ -15,21 +15,36 @@ public class Turret extends Robot {
             return;
         }
 
+        RobotInfo[] zombies = senseNearbyZombies();
+        if (zombies.length > 0) {
+            RobotInfo priorityZombie = getPriorityAttackableZombie(zombies);
+            if (priorityZombie != null) {
+                rc.attackLocation(priorityZombie.location);
+                return;
+            }
+        }
+
         MapLocation attackLocation = checkBroadcastForEnemy(signals);
 
         if (attackLocation != null) {
             setIndicatorString(0, "health " + " " + attackLocation);
             rc.attackLocation(attackLocation);
         }
-        else {
-            RobotInfo[] zombies = senseNearbyZombies();
-            RobotInfo[] enemies = senseNearbyEnemies();
-            RobotInfo robotToAttack = findAttackableZombieOrRobot(zombies, enemies);
-            if (robotToAttack != null
-                && rc.canAttackLocation(robotToAttack.location)) {
-                rc.attackLocation(robotToAttack.location);
+    }
+
+    private RobotInfo getPriorityAttackableZombie(RobotInfo[] zombies) {
+        RobotInfo zombieToAttack = null;
+        int highestPriority = -1;
+        for (RobotInfo r : zombies) {
+            int priority = ZombieUtil.getAttackPriority(r.type);
+            if (priority > highestPriority
+                    && rc.canAttackLocation(r.location)) {
+                zombieToAttack = r;
+                highestPriority = priority;
             }
         }
+
+        return zombieToAttack;
     }
 
     private MapLocation checkBroadcastForEnemy(Signal[] signals) {
@@ -37,7 +52,8 @@ public class Turret extends Robot {
         int lowestHealth = 1000000;
         for (int i = 0; i < signals.length; i++) {
             if (signals[i].getTeam() == team
-                    && SignalUtil.getType(signals[i]) == SignalType.ENEMY) {
+                    && SignalUtil.getType(signals[i]) == SignalType.ENEMY
+                    && SignalUtil.getRoundNumber(signals[i]) == roundNumber) {
                 RobotData robotData = SignalUtil.getRobotData(signals[i], currentLocation);
                 if (robotData.health < lowestHealth
                         && rc.canAttackLocation(robotData.location)) {

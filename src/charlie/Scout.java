@@ -23,7 +23,7 @@ public class Scout extends Robot {
 
         broadcastParts();
 
-        tryExplore();
+        //tryExplore();
 
         setIndicatorString(0, broadcast.toString());
         broadcast = new StringBuilder();
@@ -97,7 +97,7 @@ public class Scout extends Robot {
                 break;
             }
 
-            SignalUtil.broadcastEnemy(robot, senseRadius * 2, rc);
+            SignalUtil.broadcastEnemy(robot, senseRadius * 2, roundNumber, rc);
             broadcast.append(robot.location + " " + robot.health + "; ");
         }
     }

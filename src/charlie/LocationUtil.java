@@ -2,6 +2,8 @@ package charlie;
 
 import battlecode.common.MapLocation;
 
+import java.util.ArrayList;
+
 public class LocationUtil {
     public static int encode(MapLocation location) {
         return (location.x % 1000) * 1000 + (location.y % 1000);
@@ -29,5 +31,17 @@ public class LocationUtil {
         }
 
         return candidate;
+    }
+
+    public static MapLocation findAverageLocation(ArrayList<MapLocation> mapLocations) {
+        int x = 0;
+        int y = 0;
+        int count = mapLocations.size();
+        for (MapLocation location : mapLocations) {
+            x += location.x;
+            y += location.y;
+        }
+
+        return new MapLocation(x / count, y / count);
     }
 }
