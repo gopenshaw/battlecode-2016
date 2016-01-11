@@ -136,27 +136,6 @@ public abstract class Robot {
                 && !RobotUtil.anyCanAttack(nearbyZombies, next);
     }
 
-    protected void tryMoveClockwise(Direction direction) throws GameActionException {
-        if (rc.canMove(direction)) {
-            rc.move(direction);
-            return;
-        }
-
-        Direction right = direction.rotateRight();
-        if (rc.canMove(right)) {
-            rc.move(right);
-            return;
-        }
-
-        for (int i = 0; i < 6; i++) {
-            right = right.rotateRight();
-            if (rc.canMove(right)) {
-                rc.move(right);
-                return;
-            }
-        }
-    }
-
     protected void tryMove(Direction direction) throws GameActionException {
         if (rc.canMove(direction)) {
             rc.move(direction);

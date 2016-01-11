@@ -5,27 +5,37 @@ import bernie.nav.SquarePath;
 import bernie.util.SignalUtil;
 
 public class Scout extends Robot {
-    private final SquarePath squarePath;
+    private static final int INITIAL_RADIUS = 4;
+    private static final int RADIUS_INCREMENT = 0;
     private final int BROADCAST_RADIUS = senseRadius * 4;
-    StringBuilder sb = new StringBuilder();
+
+    private final SquarePath squarePath;
+    private int previousRotations;
 
     public Scout(RobotController rc) {
         super(rc);
-        squarePath = new SquarePath(currentLocation, 1000, rc);
+        squarePath = new SquarePath(currentLocation, INITIAL_RADIUS, rc);
     }
 
     @Override
     protected void doTurn() throws GameActionException {
         broadcastZombies();
 
-        setIndicatorString(0, sb.toString());
-        sb = new StringBuilder();
+        explore();
+    }
 
-        if (rc.isCoreReady()) {
-            Direction circleDirection = squarePath.getNextDirection(currentLocation);
-            setIndicatorString(2, "circle direction: " + circleDirection);
-            tryMoveClockwise(circleDirection);
+    private void explore() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
         }
+
+        if (squarePath.getRotationsCompleted() > previousRotations) {
+            previousRotations = squarePath.getRotationsCompleted();
+            squarePath.updateRadius(squarePath.getRadius() + RADIUS_INCREMENT);
+        }
+
+        Direction circleDirection = squarePath.getNextDirection(currentLocation);
+        tryMove(circleDirection);
     }
 
     private void broadcastZombies() throws GameActionException {
@@ -36,7 +46,6 @@ public class Scout extends Robot {
     private void broadcastRobots(RobotInfo[] robots) throws GameActionException {
         for (RobotInfo robot : robots) {
             SignalUtil.broadcastEnemy(robot, BROADCAST_RADIUS, roundNumber, rc);
-            sb.append(robot.location + "; ");
 
             if (rc.getMessageSignalCount() == GameConstants.MESSAGE_SIGNALS_PER_TURN) {
                 break;
