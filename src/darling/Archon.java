@@ -4,15 +4,19 @@ import battlecode.common.*;
 import darling.message.MessageBuilder;
 import darling.message.MessageParser;
 import darling.util.AverageMapLocation;
+import darling.util.BoundedQueue;
 import darling.util.DirectionUtil;
 import darling.util.RobotUtil;
 
 public class Archon extends Robot {
     RobotType[] buildQueue = {RobotType.SCOUT};
     int buildQueuePosition = 0;
+    boolean[][] recordedParts = new boolean[GameConstants.MAP_MAX_WIDTH][GameConstants.MAP_MAX_HEIGHT];
+    BoundedQueue<MapLocation> partsLocations = new BoundedQueue<MapLocation>(10);
 
     AverageMapLocation pastZombieLocation = new AverageMapLocation(4);
     private final int MAX_ZOMBIE_DISTANCE = 100;
+    private MapLocation partLocation = null;
 
     public Archon(RobotController rc) {
         super(rc);
@@ -25,7 +29,36 @@ public class Archon extends Robot {
         observeSignals();
         runFromRobotsAndZombiesThatCanAttack();
         buildRobot();
+        getParts();
         moveTowardZombies();
+    }
+
+    private void getParts() throws GameActionException {
+        if (partLocation != null
+                && currentLocation.equals(partLocation)) {
+            partLocation = null;
+        }
+       
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        if (partLocation == null) {
+            if (partsLocations.isEmpty()) {
+                return;
+            }
+            else {
+                partLocation = partsLocations.remove();
+            }
+        }
+
+        if (rc.canSense(partLocation)
+                && rc.senseParts(partLocation) == 0) {
+            partLocation = null;
+            return;
+        }
+
+        tryMoveToward(partLocation);
     }
 
     private void runFromRobotsAndZombiesThatCanAttack() throws GameActionException {
@@ -70,6 +103,14 @@ public class Archon extends Robot {
                 MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
                 if (parser.getMessageType() == MessageType.ZOMBIE) {
                     pastZombieLocation.add(parser.getRobotData().location);
+                }
+                else if (parser.getMessageType() == MessageType.PARTS) {
+                    PartsData partsData = parser.getPartsData();
+                    if (!recordedParts[partsData.location.x % 100][partsData.location.y % 100]) {
+                        recordedParts[partsData.location.x % 100][partsData.location.y % 100] = true;
+                        partsLocations.add(partsData.location);
+                        setIndicatorString(0, "adding parts " + partsData.location);
+                    }
                 }
             }
         }

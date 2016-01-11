@@ -29,9 +29,38 @@ public class Scout extends Robot {
     protected void doTurn() throws GameActionException {
         senseEnemiesAndZombies();
         broadcastZombies();
+        broadcastParts();
         readSignals();
         explore();
         updatePath();
+    }
+
+    private void broadcastParts() throws GameActionException {
+        boolean shouldCheck = roundNumber % 10 == id % 10;
+        if (!shouldCheck) {
+            return;
+        }
+
+        int x = currentLocation.x;
+        int y = currentLocation.y;
+
+        for (int i = -4; i <= 4; i++) {
+            for (int j = -4; j <= 4; j++) {
+                MapLocation location = new MapLocation(x + i, y + j);
+                if (rc.onTheMap(location)) {
+                    int parts = (int)rc.senseParts(location);
+                    if (parts > 0) {
+                        if (rc.getMessageSignalCount() >= GameConstants.MESSAGE_SIGNALS_PER_TURN) {
+                            return;
+                        }
+
+                        MessageBuilder builder = new MessageBuilder();
+                        builder.buildPartsMessage(location, parts);
+                        rc.broadcastMessageSignal(builder.getFirst(), builder.getSecond(), senseRadius * 2);
+                    }
+                }
+            }
+        }
     }
 
     private void senseEnemiesAndZombies() {

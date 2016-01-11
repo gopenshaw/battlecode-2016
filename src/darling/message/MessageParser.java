@@ -3,6 +3,7 @@ package darling.message;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotType;
 import darling.MessageType;
+import darling.PartsData;
 import darling.RobotData;
 
 public class MessageParser {
@@ -32,5 +33,14 @@ public class MessageParser {
         int health = first >>> 15;
         RobotType type = Serializer.decodeRobotType((second >>> 3) & 0xF);
         return new RobotData(id, location, health, type);
+    }
+
+    //--Parts message format
+    //--First integer : parts amount
+    //--Second integer: 20 bit location, 3 bit message type
+    public PartsData getPartsData() {
+        MapLocation location = Serializer.decodeMapLocation(second >>> 3, validLocation);
+        int amount = first;
+        return new PartsData(location, amount);
     }
 }

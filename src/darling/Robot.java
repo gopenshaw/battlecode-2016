@@ -10,6 +10,7 @@ public abstract class Robot {
     protected final Team team;
     protected final Team enemy;
     protected final RobotController rc;
+    protected final int id;
 
     protected int senseRadius;
     protected int attackRadius;
@@ -26,6 +27,7 @@ public abstract class Robot {
         team = rc.getTeam();
         enemy = team.opponent();
         currentLocation = rc.getLocation();
+        id = rc.getID();
 
         updateTypeParams(rc);
     }

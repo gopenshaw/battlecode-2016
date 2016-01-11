@@ -6,7 +6,7 @@ import battlecode.common.RobotType;
 import darling.MessageType;
 
 public class MessageBuilder {
-    //--Message format
+    //--Robot message format (Enemy, Zombie, ID)
     //--First integer : 3 bits open, 14 bit health, 15 bit id
     //--Second integer: 20 bit location, 4 bit robot type, 3 bit message type
 
@@ -18,6 +18,15 @@ public class MessageBuilder {
         second = (Serializer.encode(zombie.location) << 7)
                 + (Serializer.encode(zombie.type) << 3)
                 + Serializer.encode(MessageType.ZOMBIE);
+    }
+
+    //--Parts message format
+    //--First integer : parts amount
+    //--Second integer: 20 bit location, 3 bit message type
+    public void buildPartsMessage(MapLocation location, int amount) {
+        first = amount;
+        second = (Serializer.encode(location) << 3)
+                + Serializer.encode(MessageType.PARTS);
     }
 
     public void buildEnemyMessage(RobotInfo enemy) {
