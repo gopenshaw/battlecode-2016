@@ -1,5 +1,5 @@
 package charlie;
 
 public enum SignalType {
-    BASIC, PARTS, ENEMY, PING
+    BASIC, PARTS, ENEMY, ID, PING
 }

@@ -3,7 +3,26 @@ package charlie;
 import battlecode.common.*;
 
 public class SignalUtil {
-    private static final SignalType[] typeEncoding = {SignalType.PING, SignalType.PARTS, SignalType.ENEMY};
+    private static final SignalType[] typeEncoding = {SignalType.PING, SignalType.PARTS, SignalType.ENEMY,
+        SignalType.ID};
+
+    private static final RobotType[] robotTypeEncoding = {RobotType.ARCHON, RobotType.BIGZOMBIE, RobotType.FASTZOMBIE,
+            RobotType.GUARD, RobotType.RANGEDZOMBIE, RobotType.SCOUT, RobotType.SOLDIER, RobotType.STANDARDZOMBIE,
+            RobotType.TTM, RobotType.TURRET, RobotType.VIPER, RobotType.ZOMBIEDEN };
+
+    public static RobotType getRobotType(Signal signal) {
+        //--For ID signals
+        return robotTypeEncoding[signal.getMessage()[1]];
+    }
+
+    private static int encode(RobotType robotType) {
+        int encoded = 0;
+        while (robotTypeEncoding[encoded] != robotType) {
+            encoded++;
+        }
+
+        return encoded;
+    }
 
     public static SignalType getType(Signal signal) {
         int[] message = signal.getMessage();
@@ -52,6 +71,12 @@ public class SignalUtil {
     public static void broadcastEnemy(RobotInfo robot, int radius, int roundNumber, RobotController rc) throws GameActionException {
         rc.broadcastMessageSignal(encode(SignalType.ENEMY) + roundNumber * 10,
                 encode(robot), //--LLLLLLHHH
+                radius);
+    }
+
+    public static void broadcastID(RobotType type, int radius, RobotController rc) throws GameActionException {
+        rc.broadcastMessageSignal(encode(SignalType.ID),
+                encode(type),
                 radius);
     }
 }
