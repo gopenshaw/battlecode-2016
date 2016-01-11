@@ -6,11 +6,12 @@ public class RobotPlayer {
 
     private static RobotController rc;
     private static MapLocation currentLocation;
-    static CirclePath circlePath;
+    static SquarePath circlePath;
+    private static int previousRotations;
 
     public static void run(RobotController rcIn) {
         rc = rcIn;
-        circlePath = new CirclePath(rc.getLocation(), 4, rc);
+        circlePath = new SquarePath(rc.getLocation(), 4, rc);
 
         while (true) {
             try {
@@ -33,6 +34,11 @@ public class RobotPlayer {
         }
 
         rc.setIndicatorString(0, "rotations completed " + circlePath.getRotationsCompleted());
+        if (circlePath.getRotationsCompleted() > previousRotations) {
+            circlePath.updateRadius(circlePath.getRadius() + 10);
+            previousRotations = circlePath.getRotationsCompleted();
+        }
+
         tryMove(circlePath.getNextDirection(currentLocation));
     }
 

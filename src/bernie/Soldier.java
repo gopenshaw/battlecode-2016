@@ -1,13 +1,14 @@
 package bernie;
 
 import battlecode.common.*;
+import battlecode.common.Signal;
 import bernie.util.DirectionUtil;
 import bernie.util.RobotUtil;
 import bernie.util.SignalUtil;
-import scala.xml.PrettyPrinter;
 
 public class Soldier extends Robot {
-    private MapLocation zombieDen;
+    private MapLocation enemyLocation;
+    StringBuilder sb = new StringBuilder();
 
     public Soldier(RobotController rc) {
         super(rc);
@@ -16,24 +17,27 @@ public class Soldier extends Robot {
     @Override
     public void doTurn() throws GameActionException {
         readSignals();
+        setIndicatorString(0, sb.toString());
+        sb = new StringBuilder();
+        setIndicatorString(1, "" + currentLocation);
 
         tryAttackAndKite();
 
-        tryMoveTowardZombieDen();
+        tryMoveTowardEnemies();
     }
 
-    private void tryMoveTowardZombieDen() throws GameActionException {
+    private void tryMoveTowardEnemies() throws GameActionException {
         if (!rc.isCoreReady()) {
             return;
         }
 
-        if (zombieDen != null) {
-            if (rc.canSense(zombieDen)
-                    && rc.senseRobotAtLocation(zombieDen) == null) {
-                zombieDen = null;
+        if (enemyLocation != null) {
+            if (rc.canSense(enemyLocation)
+                    && rc.senseRobotAtLocation(enemyLocation) == null) {
+                enemyLocation = null;
             }
             else {
-                tryMoveToward(zombieDen);
+                tryMoveToward(enemyLocation);
             }
         }
     }
@@ -68,9 +72,9 @@ public class Soldier extends Robot {
         Signal[] signals = rc.emptySignalQueue();
         for (Signal s : signals) {
             if (s.getTeam() == team
-                    && SignalUtil.getType(s) == SignalType.ENEMY
-                    && SignalUtil.getRobotData(s, currentLocation).type == RobotType.ZOMBIEDEN) {
-                zombieDen = SignalUtil.getRobotData(s, currentLocation).location;
+                    && SignalUtil.getType(s) == SignalType.ENEMY) {
+                sb.append(SignalUtil.getRobotData(s, currentLocation));
+                enemyLocation = SignalUtil.getRobotData(s, currentLocation).location;
             }
         }
     }

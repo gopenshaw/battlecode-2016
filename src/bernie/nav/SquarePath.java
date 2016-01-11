@@ -1,44 +1,66 @@
-package scout;
+package bernie.nav;
 
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 
-public class CirclePath {
+public class SquarePath {
     private final MapLocation center;
-    private final int radiusSquared;
     private final RobotController rc;
-    private final int TOLERANCE;
 
+    private int radius;
+    private int top;
+    private int bottom;
+    private int left;
+    private int right;
 
+    private Direction previousDirection = null;
     private Direction rotationCountDirection = null;
     private int rotationCount;
 
-    public CirclePath(MapLocation center, int radiusSquared, RobotController rc) {
+    public SquarePath(MapLocation center, int radius, RobotController rc) {
         this.center = center;
-        this.radiusSquared = radiusSquared;
-        this.TOLERANCE = radiusSquared;
+        this.radius = radius;
         this.rc = rc;
+        this.radius = radius;
+        updateBoundaries();
 
         rotationCountDirection = Direction.NORTH;
     }
-
     public Direction getNextDirection(MapLocation currentLocation) throws GameActionException {
         countRotations(currentLocation);
         Direction pathDirection = getNextPathDirection(currentLocation);
 
         //--make sure direction is on map
-        while (!rc.onTheMap(currentLocation.add(pathDirection))) {
-            pathDirection = pathDirection.rotateRight();
+        if (!rc.onTheMap(currentLocation.add(pathDirection))) {
+            pathDirection = pathDirection.rotateRight().rotateRight();
         }
 
+        previousDirection = pathDirection;
         return pathDirection;
     }
 
     public int getRotationsCompleted() {
         return rotationCount;
     }
+
+    public void updateRadius(int newRadius) {
+        this.radius = newRadius;
+        updateBoundaries();
+    }
+
+    public int getRadius() {
+        return radius;
+    }
+
+    private void updateBoundaries() {
+        top = center.y - radius;
+        bottom = center.y + radius;
+        right = center.x + radius;
+        left = center.x - radius;
+    }
+
 
     private void countRotations(MapLocation currentLocation) {
         if (currentLocation.equals(center)) {
@@ -64,21 +86,27 @@ public class CirclePath {
             return Direction.NORTH;
         }
 
-        int distanceFromCenter = currentLocation.distanceSquaredTo(center);
-        if (distanceFromCenter < radiusSquared) {
-            return center.directionTo(currentLocation);
+        if (previousDirection == Direction.NORTH) {
+            if (currentLocation.y <= top) {
+                return Direction.EAST;
+            }
         }
-        else if (distanceFromCenter > radiusSquared + TOLERANCE) {
-            return currentLocation.directionTo(center);
+        else if (previousDirection == Direction.EAST) {
+            if (currentLocation.x >= right) {
+                return Direction.SOUTH;
+            }
+        }
+        else if (previousDirection == Direction.SOUTH) {
+            if (currentLocation.y >= bottom) {
+                return Direction.WEST;
+            }
         }
         else {
-            Direction towardCenter = currentLocation.directionTo(center);
-            Direction tangent = towardCenter.rotateLeft().rotateLeft();
-            while (!rc.canMove(tangent)) {
-                tangent = tangent.rotateRight();
+            if (currentLocation.x <= left) {
+                return Direction.NORTH;
             }
-
-            return tangent;
         }
+
+        return previousDirection;
     }
 }

@@ -33,8 +33,8 @@ public class SignalUtil {
 
     public static RobotData getRobotData(Signal signal, MapLocation validLocation) {
         int[] message = signal.getMessage();
-        return new RobotData(Serializer.decode(message[1] / 10000, validLocation),
-                message[1] % 10000,
+        return new RobotData(Serializer.decode(message[1] % 1000000, validLocation),
+                message[1] / 1000000,
                 robotTypeEncoding[message[0] / 10]);
     }
 
@@ -54,7 +54,7 @@ public class SignalUtil {
     }
 
     private static int encode(RobotInfo robot) {
-        return (int)robot.health + Serializer.encode(robot.location) * 10000;
+        return (int)robot.health * 1000000 + Serializer.encode(robot.location);
     }
 
     public static void broadcastParts(MapLocation mapLocation, int radius, RobotController rc) throws GameActionException {
@@ -68,8 +68,9 @@ public class SignalUtil {
     }
 
     public static void broadcastEnemy(RobotInfo robot, int radius, int roundNumber, RobotController rc) throws GameActionException {
+        rc.setIndicatorString(1, encode(SignalType.ENEMY, robot.type) + ":" + encode(robot));
         rc.broadcastMessageSignal(encode(SignalType.ENEMY, robot.type),
-                encode(robot), //--LLLLLLHHH
+                encode(robot), //--HHHHLLLLLL
                 radius);
     }
 
