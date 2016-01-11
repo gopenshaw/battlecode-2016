@@ -4,6 +4,7 @@ import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
+import scala.tools.cmd.gen.AnyVals;
 
 public class SquarePath {
     private final MapLocation center;
@@ -26,6 +27,7 @@ public class SquarePath {
         this.radius = radius;
         updateBoundaries();
 
+        previousDirection = Direction.NORTH;
         rotationCountDirection = Direction.NORTH;
     }
     public Direction getNextDirection(MapLocation currentLocation) throws GameActionException {
@@ -108,5 +110,9 @@ public class SquarePath {
         }
 
         return previousDirection;
+    }
+
+    public MapLocation getCenter() {
+        return center;
     }
 }

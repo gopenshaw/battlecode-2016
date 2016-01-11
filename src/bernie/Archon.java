@@ -1,10 +1,11 @@
 package bernie;
 
 import battlecode.common.*;
+import bernie.message.MessageBuilder;
+import bernie.message.MessageParser;
 import bernie.util.AverageMapLocation;
 import bernie.util.DirectionUtil;
 import bernie.util.RobotUtil;
-import bernie.util.SignalUtil;
 
 public class Archon extends Robot {
     RobotType[] buildQueue = {RobotType.SCOUT};
@@ -20,6 +21,9 @@ public class Archon extends Robot {
     @Override
     public void doTurn() throws GameActionException {
         repairRobots();
+        MessageBuilder messageBuilder = new MessageBuilder();
+        messageBuilder.buildIdMessage(rc.getHealth(), rc.getID(), RobotType.ARCHON, currentLocation);
+        rc.broadcastMessageSignal(messageBuilder.getFirst(), messageBuilder.getSecond(), 100);
         observeSignals();
 
         if (!rc.isCoreReady()) {
@@ -50,10 +54,13 @@ public class Archon extends Robot {
     private void observeSignals() {
         Signal[] signals = rc.emptySignalQueue();
         for (Signal s : signals) {
-            if (s.getTeam() == team
-                    || SignalUtil.getType(s) == SignalType.ENEMY
-                    || SignalUtil.getRobotData(s, currentLocation).type.isZombie) {
-                pastZombieLocation.add(SignalUtil.getRobotData(s, currentLocation).location);
+            if (s.getTeam() == team) {
+                int[] message = s.getMessage();
+                if (message == null) continue;
+                MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
+                if (parser.getMessageType() == MessageType.ZOMBIE) {
+                    pastZombieLocation.add(parser.getRobotData().location);
+                }
             }
         }
     }

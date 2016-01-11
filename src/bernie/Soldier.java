@@ -2,13 +2,12 @@ package bernie;
 
 import battlecode.common.*;
 import battlecode.common.Signal;
+import bernie.message.MessageParser;
 import bernie.util.DirectionUtil;
 import bernie.util.RobotUtil;
-import bernie.util.SignalUtil;
 
 public class Soldier extends Robot {
     private MapLocation enemyLocation;
-    StringBuilder sb = new StringBuilder();
 
     public Soldier(RobotController rc) {
         super(rc);
@@ -17,9 +16,6 @@ public class Soldier extends Robot {
     @Override
     public void doTurn() throws GameActionException {
         readSignals();
-        setIndicatorString(0, sb.toString());
-        sb = new StringBuilder();
-        setIndicatorString(1, "" + currentLocation);
 
         tryAttackAndKite();
 
@@ -71,10 +67,16 @@ public class Soldier extends Robot {
     private void readSignals() {
         Signal[] signals = rc.emptySignalQueue();
         for (Signal s : signals) {
-            if (s.getTeam() == team
-                    && SignalUtil.getType(s) == SignalType.ENEMY) {
-                sb.append(SignalUtil.getRobotData(s, currentLocation));
-                enemyLocation = SignalUtil.getRobotData(s, currentLocation).location;
+            if (s.getTeam() == team) {
+                int[] message = s.getMessage();
+                if (message == null) continue;
+                MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
+                setIndicatorString(0, "message type " + parser.getMessageType());
+                if (parser.getMessageType() == MessageType.ZOMBIE) {
+                    enemyLocation = parser.getRobotData().location;
+                    setIndicatorString(1, "id " + parser.getRobotData().id);
+                    setIndicatorString(2, "health " + parser.getRobotData().health);
+                }
             }
         }
     }
