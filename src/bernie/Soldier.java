@@ -20,6 +20,19 @@ public class Soldier extends Robot {
         tryAttackAndKite();
 
         tryMoveTowardEnemies();
+
+        spreadOut();
+    }
+
+    private void spreadOut() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        RobotInfo[] nearbyTeammates = rc.senseNearbyRobots(2, team);
+        if (nearbyTeammates.length > 3) {
+            tryMove(DirectionUtil.getDirectionAwayFrom(nearbyTeammates, rc));
+        }
     }
 
     private void tryMoveTowardEnemies() throws GameActionException {

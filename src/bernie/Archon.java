@@ -21,11 +21,14 @@ public class Archon extends Robot {
     @Override
     public void doTurn() throws GameActionException {
         repairRobots();
-        MessageBuilder messageBuilder = new MessageBuilder();
-        messageBuilder.buildIdMessage(rc.getHealth(), rc.getID(), RobotType.ARCHON, currentLocation);
-        rc.broadcastMessageSignal(messageBuilder.getFirst(), messageBuilder.getSecond(), 100);
+        broadcastID();
         observeSignals();
+        runFromRobotsAndZombiesThatCanAttack();
+        buildRobot();
+        moveTowardZombies();
+    }
 
+    private void runFromRobotsAndZombiesThatCanAttack() throws GameActionException {
         if (!rc.isCoreReady()) {
             return;
         }
@@ -36,19 +39,26 @@ public class Archon extends Robot {
                 || RobotUtil.anyCanAttack(nearbyZombies, currentLocation)) {
             Direction away = DirectionUtil.getDirectionAwayFrom(nearbyEnemies, nearbyZombies, rc);
             tryMove(away);
+        }
+    }
+
+    private void moveTowardZombies() throws GameActionException {
+        if (!rc.isCoreReady()) {
             return;
         }
 
-        buildRobot();
-
-        if (rc.isCoreReady()) {
-            MapLocation zombieLocation = pastZombieLocation.getAverage();
-            if (zombieLocation != null
-                && currentLocation.distanceSquaredTo(zombieLocation) > MAX_ZOMBIE_DISTANCE) {
-                tryMoveToward(zombieLocation);
-                setIndicatorString(2, "moving toward " + zombieLocation);
-            }
+        MapLocation zombieLocation = pastZombieLocation.getAverage();
+        if (zombieLocation != null
+            && currentLocation.distanceSquaredTo(zombieLocation) > MAX_ZOMBIE_DISTANCE) {
+            tryMoveToward(zombieLocation);
+            setIndicatorString(2, "moving toward " + zombieLocation);
         }
+    }
+
+    private void broadcastID() throws GameActionException {
+        MessageBuilder messageBuilder = new MessageBuilder();
+        messageBuilder.buildIdMessage(rc.getHealth(), rc.getID(), RobotType.ARCHON, currentLocation);
+        rc.broadcastMessageSignal(messageBuilder.getFirst(), messageBuilder.getSecond(), 100);
     }
 
     private void observeSignals() {
@@ -74,7 +84,8 @@ public class Archon extends Robot {
                 continue;
             }
 
-            if (r.health < lowestHealth) {
+            if (r.health < r.type.maxHealth
+                    && r.health < lowestHealth) {
                 lowestHealth = r.health;
                 robotToRepair = r;
             }
@@ -84,21 +95,20 @@ public class Archon extends Robot {
             return;
         }
 
-        if (robotToRepair.health < robotToRepair.type.maxHealth) {
-            rc.repair(robotToRepair.location);
-        }
+        rc.repair(robotToRepair.location);
     }
-    private boolean buildRobot() throws GameActionException {
+    private void buildRobot() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
         if (buildQueuePosition < buildQueue.length) {
             if (tryBuild(buildQueue[buildQueuePosition])) {
                 buildQueuePosition++;
-                return true;
             }
         }
         else {
-            if (tryBuild(RobotType.SOLDIER)) return true;
+            tryBuild(RobotType.SOLDIER);
         }
-
-        return false;
     }
 }

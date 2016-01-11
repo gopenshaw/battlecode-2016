@@ -8,24 +8,57 @@ import bernie.util.AverageMapLocation;
 
 public class Scout extends Robot {
     private static final int INITIAL_RADIUS = 4;
-    private static final int RADIUS_INCREMENT = 1;
+    private static final int RADIUS_INCREMENT = 2;
     private final int BROADCAST_RADIUS = senseRadius * 4;
 
-    private SquarePath squarePath;
-    private int previousRotations;
+    private SquarePath path;
 
     private AverageMapLocation previousArchonLocations = new AverageMapLocation(6);
+    private int enemiesSeen;
+    private int radiusIncreased;
+
+    private RobotInfo[] nearbyEnemies;
+    private RobotInfo[] nearbyZombies;
 
     public Scout(RobotController rc) {
         super(rc);
-        squarePath = new SquarePath(currentLocation, INITIAL_RADIUS, rc);
+        path = new SquarePath(currentLocation, INITIAL_RADIUS, rc);
     }
 
     @Override
     protected void doTurn() throws GameActionException {
+        senseEnemiesAndZombies();
         broadcastZombies();
         readSignals();
         explore();
+        updatePath();
+    }
+
+    private void senseEnemiesAndZombies() {
+        nearbyEnemies = senseNearbyEnemies();
+        nearbyZombies = senseNearbyZombies();
+    }
+
+    private void updatePath() {
+        MapLocation pathCenter = path.getCenter();
+        MapLocation archonLocation = previousArchonLocations.getAverage();
+        if (archonLocation != null
+                && pathCenter.distanceSquaredTo(archonLocation) > 25) {
+            path = new SquarePath(archonLocation, path.getRadius(), rc);
+        }
+
+        if (nearbyEnemies.length > 0
+                || nearbyZombies.length > 0) {
+            enemiesSeen = roundNumber;
+            setIndicatorString(1, "saw enemy");
+        }
+
+        if (roundNumber - enemiesSeen > 200
+                && roundNumber - radiusIncreased > 200) {
+            path.updateRadius(path.getRadius() + RADIUS_INCREMENT);
+            setIndicatorString(2, "growing path");
+            radiusIncreased = roundNumber;
+        }
     }
 
     private void explore() throws GameActionException {
@@ -33,14 +66,8 @@ public class Scout extends Robot {
             return;
         }
 
-        MapLocation pathCenter = squarePath.getCenter();
-        if (previousArchonLocations.getAverage() != null
-                && pathCenter.distanceSquaredTo(previousArchonLocations.getAverage()) > 25) {
-            squarePath = new SquarePath(previousArchonLocations.getAverage(), INITIAL_RADIUS, rc);
-        }
-
-        Direction circleDirection = squarePath.getNextDirection(currentLocation);
-        tryMove(circleDirection);
+        Direction circleDirection = path.getNextDirection(currentLocation);
+        trySafeMove(circleDirection, nearbyEnemies, nearbyZombies);
     }
 
     private void readSignals() {
@@ -59,15 +86,17 @@ public class Scout extends Robot {
                     }
                 }
             }
+            else {
+                setIndicatorString(0, "received enemy signal");
+            }
         }
 
-        setIndicatorString(0, "archon locs: " + sb.toString());
-        setIndicatorString(1, "average loc: " + previousArchonLocations.getAverage());
+//        setIndicatorString(0, "archon locs: " + sb.toString());
+//        setIndicatorString(1, "average loc: " + previousArchonLocations.getAverage());
     }
 
     private void broadcastZombies() throws GameActionException {
-        RobotInfo[] zombies = senseNearbyZombies();
-        for (RobotInfo zombie : zombies) {
+        for (RobotInfo zombie : nearbyZombies) {
             MessageBuilder builder = new MessageBuilder();
             builder.buildZombieMessage(zombie);
             rc.broadcastMessageSignal(builder.getFirst(), builder.getSecond(), BROADCAST_RADIUS);
