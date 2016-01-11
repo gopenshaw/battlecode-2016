@@ -8,95 +8,60 @@ public class Turret extends Robot {
     }
 
     @Override
-    protected void doTurn(RobotController rc) throws GameActionException {
-        updateTypeParams(rc);
-
-        if (rc.getType() == RobotType.TTM) {
-            doTTMTurn(rc);
-            return;
-        }
+    protected void doTurn() throws GameActionException {
+        Signal[] signals = rc.emptySignalQueue();
 
         if (!rc.isWeaponReady()) {
             return;
         }
 
-        RobotInfo[] nearbyZombies = senseNearbyZombies();
-        if (nearbyZombies.length > 0) {
-            RobotInfo zombieToAttack = getBestAttackableZombie(nearbyZombies, rc);
-            if (zombieToAttack != null) {
-                rc.attackLocation(zombieToAttack.location);
+        RobotInfo[] zombies = senseNearbyZombies();
+        if (zombies.length > 0) {
+            RobotInfo priorityZombie = getPriorityAttackableZombie(zombies);
+            if (priorityZombie != null) {
+                rc.attackLocation(priorityZombie.location);
                 return;
             }
         }
 
-        RobotInfo[] attackableEnemies = senseAttackableEnemies();
-        if (attackableEnemies.length > 0) {
-            RobotInfo robotToAttack = getLowestHealthAttackableRobot(attackableEnemies, rc);
-            if (robotToAttack != null) {
-                rc.attackLocation(robotToAttack.location);
-                return;
-            }
+        MapLocation attackLocation = checkBroadcastForEnemy(signals);
+
+        if (attackLocation != null) {
+            setIndicatorString(0, "health " + " " + attackLocation);
+            rc.attackLocation(attackLocation);
         }
     }
 
-    private RobotInfo getLowestHealthAttackableRobot(RobotInfo[] robots, RobotController rc) {
-        double lowestHealth = 1000000;
-        RobotInfo lowestAttackable = null;
-        for (RobotInfo robot : robots) {
-            if (rc.canAttackLocation(robot.location)) {
-                double health = robot.health;
-                if (health < lowestHealth) {
-                    lowestHealth = health;
-                    lowestAttackable = robot;
-                }
+    private RobotInfo getPriorityAttackableZombie(RobotInfo[] zombies) {
+        RobotInfo zombieToAttack = null;
+        int highestPriority = -1;
+        for (RobotInfo r : zombies) {
+            int priority = ZombieUtil.getAttackPriority(r.type);
+            if (priority > highestPriority
+                    && rc.canAttackLocation(r.location)) {
+                zombieToAttack = r;
+                highestPriority = priority;
             }
         }
 
-        return lowestAttackable;
+        return zombieToAttack;
     }
 
-    private RobotInfo getBestAttackableZombie(RobotInfo[] zombies, RobotController rc) {
-        //--If a ranged zombie exists, return the ranged zombie with lowest health
-        //--Otherwise return the zombie with lowest health
-        RobotInfo regularZombie = null;
-        RobotInfo priorityZombie = null;
-        double regularHealth = 10000;
-        double priorityHealth = 10000;
-
-        for (RobotInfo zombie : zombies) {
-            if (rc.canAttackLocation(zombie.location)) {
-                if (zombie.type != RobotType.STANDARDZOMBIE) {
-                    if (zombie.health < priorityHealth) {
-                        priorityHealth = zombie.health;
-                        priorityZombie = zombie;
-                    }
-                }
-                else if (priorityZombie != null) {
-                    continue;
-                }
-                else if (zombie.health < regularHealth){
-                    regularZombie = zombie;
-                    regularHealth = zombie.health;
+    private MapLocation checkBroadcastForEnemy(Signal[] signals) {
+        MapLocation attackLocation = null;
+        int lowestHealth = 1000000;
+        for (int i = 0; i < signals.length; i++) {
+            if (signals[i].getTeam() == team
+                    && SignalUtil.getType(signals[i]) == SignalType.ENEMY
+                    && SignalUtil.getRoundNumber(signals[i]) == roundNumber) {
+                RobotData robotData = SignalUtil.getRobotData(signals[i], currentLocation);
+                if (robotData.health < lowestHealth
+                        && rc.canAttackLocation(robotData.location)) {
+                    attackLocation = robotData.location;
+                    lowestHealth = robotData.health;
                 }
             }
         }
-
-        return priorityZombie == null ? regularZombie : priorityZombie;
-    }
-
-    private void doTTMTurn(RobotController rc) throws GameActionException {
-        if (!rc.isCoreReady()) {
-            return;
-        }
-
-        RobotInfo[] nearbyZombies = senseNearbyZombies();
-        if (nearbyZombies.length > 0) {
-            Direction away = DirectionUtil.getDirectionAwayFrom(nearbyZombies, rc);
-            tryMove(away);
-        }
-    }
-
-    private void convertToTTM(RobotController rc) throws GameActionException {
-        rc.pack();
+        return attackLocation;
     }
 }

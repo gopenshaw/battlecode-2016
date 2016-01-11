@@ -3,50 +3,102 @@ package team014;
 import battlecode.common.*;
 
 public class Scout extends Robot {
+    private int signalsBroadcast = 0;
+    private boolean broadcastRubbleDone = false;
+
+    private Direction previousDirection = null;
+
+    private StringBuilder broadcast = new StringBuilder();
+
     public Scout(RobotController rc) {
         super(rc);
     }
 
-    Direction direction = Direction.SOUTH;
-    int lastRoundBroadcasted = 0;
-    final int BROADCAST_DELAY = 50;
-
     @Override
-    protected void doTurn(RobotController rc) throws GameActionException {
-        RobotInfo[] nearbyEnemies = senseNearbyEnemies();
-        if (rc.getRoundNum() > lastRoundBroadcasted + BROADCAST_DELAY) {
-            for (RobotInfo enemy : nearbyEnemies) {
-                if (enemy.type == RobotType.ARCHON) {
-                    setIndicatorString(1, "reporting archon");
-                    SignalUtil.reportEnemy(RobotType.ARCHON, enemy, rc);
-                    lastRoundBroadcasted = rc.getRoundNum();
-                    return;
-                }
-            }
-        }
+    protected void doTurn() throws GameActionException {
+        signalsBroadcast = 0;
 
-        RobotInfo[] nearbyNeutrals = senseNearbyNeutrals();
-        if (rc.getRoundNum() > lastRoundBroadcasted + BROADCAST_DELAY) {
-            for (RobotInfo neutral : nearbyNeutrals) {
-                setIndicatorString(1, "reporting neutral");
-                SignalUtil.reportEnemy(neutral.type, neutral, rc);
-                lastRoundBroadcasted = rc.getRoundNum();
-                return;
-            }
-        }
+        broadcastZombies();
+        broadcastEnemies();
 
+        broadcastParts();
+
+        //tryExplore();
+
+        setIndicatorString(0, broadcast.toString());
+        broadcast = new StringBuilder();
+    }
+
+    private void tryExplore() throws GameActionException {
         if (!rc.isCoreReady()) {
             return;
         }
 
-        if (!rc.onTheMap(rc.getLocation().add(direction))) {
-            direction = direction.rotateLeft().rotateLeft();
+        if (signalsBroadcast > 0 || nextToWall()) {
+            previousDirection = directions[rand.nextInt(8)];
+        }
+        else {
+            if (previousDirection == null) {
+                previousDirection = directions[rand.nextInt(8)];
+            }
+
+            tryMove(previousDirection);
+        }
+    }
+
+    private boolean nextToWall() throws GameActionException {
+        for (int i = 0; i < directions.length; i++) {
+            if (!rc.onTheMap(currentLocation.add(directions[i]))) {
+                return true;
+            }
         }
 
-        boolean moved = trySafeMove(direction, nearbyEnemies, senseNearbyZombies());
-        if (!moved) {
-            setIndicatorString(2, "could not find safe move");
-            tryMove(direction);
+        return false;
+    }
+
+    private void broadcastParts() throws GameActionException {
+        if (broadcastRubbleDone) return;
+        int currentX = currentLocation.x;
+        int currentY = currentLocation.y;
+        for (int i = -5; i <= 5; i++) {
+            for (int j = -5; j <= 5; j++) {
+                int x = currentX + i;
+                int y = currentY + j;
+                MapLocation mapLocation = new MapLocation(x, y);
+                if (rc.onTheMap(mapLocation)) {
+                    double rubble = rc.senseParts(mapLocation);
+                    if (rubble > 0) {
+                        if (++signalsBroadcast > GameConstants.MESSAGE_SIGNALS_PER_TURN) {
+                            return;
+                        }
+
+                        SignalUtil.broadcastParts(mapLocation, senseRadius * 2, rc);
+                    }
+                }
+            }
+        }
+
+        broadcastRubbleDone = true;
+    }
+
+    private void broadcastEnemies() throws GameActionException {
+        RobotInfo[] enemies = senseNearbyEnemies();
+        broadcastRobots(enemies);
+    }
+
+    private void broadcastZombies() throws GameActionException {
+        RobotInfo[] zombies = senseNearbyZombies();
+        broadcastRobots(zombies);
+    }
+
+    private void broadcastRobots(RobotInfo[] robots) throws GameActionException {
+        for (RobotInfo robot : robots) {
+            if (++signalsBroadcast > GameConstants.MESSAGE_SIGNALS_PER_TURN) {
+                break;
+            }
+
+            SignalUtil.broadcastEnemy(robot, senseRadius * 2, roundNumber, rc);
+            broadcast.append(robot.location + " " + robot.health + "; ");
         }
     }
 }
