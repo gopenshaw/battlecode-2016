@@ -1,12 +1,17 @@
 package bernie;
 
 import battlecode.common.*;
+import bernie.util.AverageMapLocation;
 import bernie.util.DirectionUtil;
 import bernie.util.RobotUtil;
+import bernie.util.SignalUtil;
 
 public class Archon extends Robot {
     RobotType[] buildQueue = {RobotType.SCOUT};
     int buildQueuePosition = 0;
+
+    AverageMapLocation pastZombieLocation = new AverageMapLocation(4);
+    private final int MAX_ZOMBIE_DISTANCE = 100;
 
     public Archon(RobotController rc) {
         super(rc);
@@ -15,6 +20,7 @@ public class Archon extends Robot {
     @Override
     public void doTurn() throws GameActionException {
         repairRobots();
+        observeSignals();
 
         if (!rc.isCoreReady()) {
             return;
@@ -30,6 +36,26 @@ public class Archon extends Robot {
         }
 
         buildRobot();
+
+        if (rc.isCoreReady()) {
+            MapLocation zombieLocation = pastZombieLocation.getAverage();
+            if (zombieLocation != null
+                && currentLocation.distanceSquaredTo(zombieLocation) > MAX_ZOMBIE_DISTANCE) {
+                tryMoveToward(zombieLocation);
+                setIndicatorString(2, "moving toward " + zombieLocation);
+            }
+        }
+    }
+
+    private void observeSignals() {
+        Signal[] signals = rc.emptySignalQueue();
+        for (Signal s : signals) {
+            if (s.getTeam() == team
+                    || SignalUtil.getType(s) == SignalType.ENEMY
+                    || SignalUtil.getRobotData(s, currentLocation).type.isZombie) {
+                pastZombieLocation.add(SignalUtil.getRobotData(s, currentLocation).location);
+            }
+        }
     }
 
     private void repairRobots() throws GameActionException {
