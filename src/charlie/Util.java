@@ -1,6 +1,7 @@
 package charlie;
 
 import battlecode.common.MapLocation;
+import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 
 import java.util.ArrayList;
@@ -11,6 +12,22 @@ public class Util {
         int minIndex = -1;
 
         for (int i = 0; i < robots.length; i++) {
+            if (robots[i].health < minHealth) {
+                minIndex = i;
+                minHealth = robots[i].health;
+            }
+        }
+
+        return minIndex < 0 ? null : robots[minIndex];
+    }
+
+    public static RobotInfo getLowestHealthAttackableRobot(RobotInfo[] robots, RobotController rc) {
+        double minHealth = Double.MAX_VALUE;
+        int minIndex = -1;
+
+        for (int i = 0; i < robots.length; i++) {
+            if (!rc.canAttackLocation(robots[i].location)) continue;
+
             if (robots[i].health < minHealth) {
                 minIndex = i;
                 minHealth = robots[i].health;

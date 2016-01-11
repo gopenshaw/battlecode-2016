@@ -26,7 +26,7 @@ public class Turret extends Robot {
 
         RobotInfo[] attackableEnemies = senseAttackableEnemies();
         if (attackableEnemies.length > 0) {
-            RobotInfo robotToAttack = Util.getLowestHealthRobot(attackableEnemies);
+            RobotInfo robotToAttack = Util.getLowestHealthAttackableRobot(attackableEnemies, rc);
             if (robotToAttack != null) {
                 rc.attackLocation(robotToAttack.location);
                 return;
