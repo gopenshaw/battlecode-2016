@@ -24,12 +24,25 @@ public class Turret extends Robot {
             }
         }
 
+        RobotInfo[] attackableEnemies = senseAttackableEnemies();
+        if (attackableEnemies.length > 0) {
+            RobotInfo robotToAttack = Util.getLowestHealthRobot(attackableEnemies);
+            if (robotToAttack != null) {
+                rc.attackLocation(robotToAttack.location);
+                return;
+            }
+        }
+
         MapLocation attackLocation = checkBroadcastForEnemy(signals);
 
         if (attackLocation != null) {
             setIndicatorString(0, "health " + " " + attackLocation);
             rc.attackLocation(attackLocation);
         }
+    }
+
+    private RobotInfo[] senseAttackableEnemies() {
+        return rc.senseNearbyRobots(attackRadius, enemy);
     }
 
     private RobotInfo getPriorityAttackableZombie(RobotInfo[] zombies) {
