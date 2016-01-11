@@ -66,8 +66,8 @@
     </initialParts>
     <zombieSpawnSchedule/>
     <initialRobots>
-      <initial-robot originOffsetX="10" originOffsetY="20" type="SCOUT" team="A"/>
-      <initial-robot originOffsetX="19" originOffsetY="9" type="SCOUT" team="B"/>
+      <initial-robot originOffsetX="1" originOffsetY="26" type="SCOUT" team="A"/>
+      <initial-robot originOffsetX="28" originOffsetY="3" type="SCOUT" team="B"/>
     </initialRobots>
   </game-map>
 </object-stream>
