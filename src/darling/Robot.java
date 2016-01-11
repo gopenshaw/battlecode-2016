@@ -212,6 +212,10 @@ public abstract class Robot {
     }
 
     protected void setIndicatorString(int i, String s) {
+        if (!Config.DEBUG) {
+            return;
+        }
+
         int roundNum = rc.getRoundNum();
         rc.setIndicatorString(i, String.format("%d: %s", roundNum, s));
     }

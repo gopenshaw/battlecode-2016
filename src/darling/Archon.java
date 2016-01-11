@@ -38,7 +38,7 @@ public class Archon extends Robot {
                 && currentLocation.equals(partLocation)) {
             partLocation = null;
         }
-       
+
         if (!rc.isCoreReady()) {
             return;
         }
