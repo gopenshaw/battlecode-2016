@@ -1,18 +1,23 @@
 package team014;
 
 import battlecode.common.MapLocation;
+import battlecode.common.RobotType;
 
 public class RobotData {
     int health;
+    int id;
     MapLocation location;
+    RobotType type;
 
-    RobotData(MapLocation location, int health) {
+    public RobotData(int id, MapLocation location, int health, RobotType type) {
         this.health = health;
         this.location = location;
+        this.type = type;
+        this.id = id;
     }
 
     @Override
     public String toString() {
-        return location + " " + health + "; ";
+        return location + " " + health + " " + type + "; ";
     }
 }

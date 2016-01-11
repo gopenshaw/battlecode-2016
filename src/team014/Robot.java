@@ -1,6 +1,7 @@
 package team014;
 
 import battlecode.common.*;
+import team014.util.RobotUtil;
 
 import java.util.Random;
 
@@ -9,13 +10,15 @@ public abstract class Robot {
     protected final Team team;
     protected final Team enemy;
     protected final RobotController rc;
+    protected final int id;
 
     protected int senseRadius;
     protected int attackRadius;
+
     protected MapLocation currentLocation;
     protected int roundNumber;
 
-    protected final Direction[] directions = {Direction.NORTH, Direction.NORTH_EAST, Direction.EAST,
+    private final Direction[] directions = {Direction.NORTH, Direction.NORTH_EAST, Direction.EAST,
         Direction.SOUTH_EAST, Direction.SOUTH, Direction.SOUTH_WEST, Direction.WEST, Direction.NORTH_WEST};
 
     public Robot(RobotController rc) {
@@ -23,45 +26,52 @@ public abstract class Robot {
         rand = new Random(rc.getID());
         team = rc.getTeam();
         enemy = team.opponent();
+        currentLocation = rc.getLocation();
+        id = rc.getID();
 
-        updateTypeParams();
+        updateTypeParams(rc);
     }
 
-    protected abstract void doTurn() throws GameActionException;
-
-    public void run(RobotController rc) {
-        while (true) {
+    public void run() {
+        while(true) {
             try {
                 currentLocation = rc.getLocation();
                 roundNumber = rc.getRoundNum();
                 doTurn();
                 Clock.yield();
-            }
-            catch (GameActionException e) {
+            } catch (GameActionException e) {
                 System.out.println(e.getMessage());
                 e.printStackTrace();
             }
         }
     }
 
-    protected void updateTypeParams() {
+    protected void updateTypeParams(RobotController rc) {
         RobotType type = rc.getType();
         senseRadius = type.sensorRadiusSquared;
         attackRadius = type.attackRadiusSquared;
     }
 
-
-    protected void setIndicatorString(int i, String s) {
-        int roundNum = rc.getRoundNum();
-        rc.setIndicatorString(i, String.format("%d: %s", roundNum, s));
-    }
+    protected abstract void doTurn() throws GameActionException;
 
     protected RobotInfo[] senseNearbyEnemies() {
         return rc.senseNearbyRobots(senseRadius, enemy);
     }
 
+    protected RobotInfo[] senseAttackableEnemies() {
+        return rc.senseNearbyRobots(attackRadius, enemy);
+    }
+
+    protected RobotInfo[] senseAttackableZombies() {
+        return rc.senseNearbyRobots(attackRadius, Team.ZOMBIE);
+    }
+
     protected RobotInfo[] senseNearbyZombies() {
         return rc.senseNearbyRobots(senseRadius, Team.ZOMBIE);
+    }
+
+    public RobotInfo[] senseNearbyNeutrals() {
+        return rc.senseNearbyRobots(senseRadius, Team.NEUTRAL);
     }
 
     protected void tryMoveToward(MapLocation location) throws GameActionException {
@@ -80,8 +90,8 @@ public abstract class Robot {
     }
 
     protected boolean trySafeMove(Direction direction,
-                                  RobotInfo[] nearbyEnemies,
-                                  RobotInfo[] nearbyZombies) throws GameActionException {
+                               RobotInfo[] nearbyEnemies,
+                               RobotInfo[] nearbyZombies) throws GameActionException {
         MapLocation currentLocation = rc.getLocation();
         MapLocation next = currentLocation.add(direction);
         if (canMoveSafely(direction, next, nearbyEnemies, nearbyZombies)) {
@@ -124,8 +134,8 @@ public abstract class Robot {
 
     private boolean canMoveSafely(Direction direction, MapLocation next, RobotInfo[] nearbyEnemies, RobotInfo[] nearbyZombies) {
         return rc.canMove(direction)
-                && !Util.anyCanAttack(nearbyEnemies, next)
-                && !Util.anyCanAttack(nearbyZombies, next);
+                && !RobotUtil.anyCanAttack(nearbyEnemies, next)
+                && !RobotUtil.anyCanAttack(nearbyZombies, next);
     }
 
     protected void tryMove(Direction direction) throws GameActionException {
@@ -171,6 +181,22 @@ public abstract class Robot {
         }
     }
 
+    protected boolean tryBuild(RobotType robotType) throws GameActionException {
+        if (rc.getTeamParts() < robotType.partCost) {
+            return false;
+        }
+
+        //--Build robot in some random direction
+        for (int i = 0; i < 8; i++) {
+            if (rc.canBuild(directions[i], robotType)) {
+                rc.build(directions[i], robotType);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     protected RobotInfo findAttackableRobot(RobotInfo[] robots) {
         for (RobotInfo r : robots) {
             if (rc.canAttackLocation(r.location)) {
@@ -181,14 +207,16 @@ public abstract class Robot {
         return null;
     }
 
-    protected RobotInfo findAttackableZombieOrRobot(RobotInfo[] nearbyZombies, RobotInfo[] nearbyEnemies) {
-        RobotInfo attackableZombie = findAttackableRobot(nearbyZombies);
-        if (attackableZombie != null) {
-            return attackableZombie;
-        }
-
-        RobotInfo attackableEnemy = findAttackableRobot(nearbyEnemies);
-        return attackableEnemy;
+    protected Direction getRandomDirection() {
+        return directions[rand.nextInt(8)];
     }
 
+    protected void setIndicatorString(int i, String s) {
+        if (!Config.DEBUG) {
+            return;
+        }
+
+        int roundNum = rc.getRoundNum();
+        rc.setIndicatorString(i, String.format("%d: %s", roundNum, s));
+    }
 }

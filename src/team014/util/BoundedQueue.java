@@ -1,4 +1,4 @@
-package team014.dataStructures;
+package team014.util;
 
 public class BoundedQueue<T> {
 

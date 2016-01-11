@@ -1,8 +1,8 @@
-package team014;
+package team014.util;
 
 import battlecode.common.MapLocation;
 
-public class Serializer {
+public class LocationUtil {
     public static int encode(MapLocation location) {
         return (location.x % 1000) * 1000 + (location.y % 1000);
     }

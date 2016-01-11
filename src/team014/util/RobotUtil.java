@@ -1,11 +1,9 @@
-package team014;
+package team014.util;
 
 import battlecode.common.MapLocation;
 import battlecode.common.RobotInfo;
 
-import java.util.ArrayList;
-
-public class Util {
+public class RobotUtil {
     public static RobotInfo getLowestHealthRobot(RobotInfo[] robots) {
         double minHealth = Double.MAX_VALUE;
         int minIndex = -1;
@@ -18,20 +16,6 @@ public class Util {
         }
 
         return minIndex < 0 ? null : robots[minIndex];
-    }
-
-    public static RobotInfo getLowestHealthRobot(ArrayList<RobotInfo> robots) {
-        double minHealth = Double.MAX_VALUE;
-        int minIndex = -1;
-
-        for (int i = 0; i < robots.size(); i++) {
-            if (robots.get(i).health < minHealth) {
-                minIndex = i;
-                minHealth = robots.get(i).health;
-            }
-        }
-
-        return minIndex < 0 ? null : robots.get(minIndex);
     }
 
     public static boolean anyCanAttack(RobotInfo[] robots, MapLocation location) {

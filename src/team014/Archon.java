@@ -1,131 +1,118 @@
 package team014;
 
 import battlecode.common.*;
-import team014.dataStructures.AverageMapLocation;
-import team014.dataStructures.BoundedQueue;
+import team014.message.MessageBuilder;
+import team014.message.MessageParser;
+import team014.util.AverageMapLocation;
+import team014.util.BoundedQueue;
+import team014.util.DirectionUtil;
+import team014.util.RobotUtil;
 
 public class Archon extends Robot {
-    private int id;
-    private boolean scoutBuilt;
-    private MapLocation baseLocation;
-    private int archonCount;
+    RobotType[] buildQueue = {RobotType.SCOUT};
+    int buildQueuePosition = 0;
+    boolean[][] recordedParts = new boolean[GameConstants.MAP_MAX_WIDTH][GameConstants.MAP_MAX_HEIGHT];
+    BoundedQueue<MapLocation> partsLocations = new BoundedQueue<MapLocation>(10);
+
+    AverageMapLocation pastZombieLocation = new AverageMapLocation(4);
+    private final int MAX_ZOMBIE_DISTANCE = 100;
+    private MapLocation partLocation = null;
 
     public Archon(RobotController rc) {
         super(rc);
     }
 
-    RobotType[] buildQueue = {};
-    int buildQueuePosition = 0;
-
-    BoundedQueue<MapLocation> partsLocations = new BoundedQueue<MapLocation>(50);
-    MapLocation partsDestination = null;
-
-    AverageMapLocation pastZombieLocation = new AverageMapLocation(4);
-
     @Override
     public void doTurn() throws GameActionException {
-        getIdAndBaseLocation();
-        if (roundNumber < 2) return;
-
-        Signal[] signals = rc.emptySignalQueue();
-        getArchonCount(signals);
-        scanForParts(signals);
-
         repairRobots();
-
-        noticeZombies();
-
-        if (!rc.isCoreReady()) return;
-
-        if (moveTowardBase()) return;
-
-        //if (moveAwayFromEnemiesAndZombies()) return;
-
-        if (buildRobot()) return;
-
-        if (makeSpace()) return;
-
-        //goToParts();
+        broadcastID();
+        observeSignals();
+        runFromRobotsAndZombiesThatCanAttack();
+        buildRobot();
+        getParts();
+        moveTowardZombies();
     }
 
-    private void getArchonCount(Signal[] signals) throws GameActionException {
-        archonCount = 1;
-        for (Signal s : signals) {
-            if (s.getTeam() == team
-                && SignalUtil.getType(s) == SignalType.ID
-                && SignalUtil.getRobotType(s) == RobotType.ARCHON) {
-                archonCount++;
-            }
+    private void getParts() throws GameActionException {
+        if (partLocation != null
+                && currentLocation.equals(partLocation)) {
+            partLocation = null;
         }
 
-        setIndicatorString(2, "archon count is " + archonCount);
-        SignalUtil.broadcastID(RobotType.ARCHON, getBaseRadius() * 3, rc);
-    }
+        if (!rc.isCoreReady()) {
+            return;
+        }
 
-    private boolean makeSpace() throws GameActionException {
-        RobotInfo[] adjacentRobots = rc.senseNearbyRobots(2);
-        if (adjacentRobots.length > 3) {
-            MapLocation zombieLocation = pastZombieLocation.getAverage();
-            if (zombieLocation == null) {
-                tryMove(DirectionUtil.getDirectionAwayFrom(adjacentRobots, currentLocation));
+        if (partLocation == null) {
+            if (partsLocations.isEmpty()) {
+                return;
             }
             else {
-                tryMove(zombieLocation.directionTo(currentLocation));
+                partLocation = partsLocations.remove();
             }
         }
 
-        return false;
+        if (rc.canSense(partLocation)
+                && rc.senseParts(partLocation) == 0) {
+            partLocation = null;
+            return;
+        }
+
+        tryMoveToward(partLocation);
     }
 
-    private void noticeZombies() {
+    private void runFromRobotsAndZombiesThatCanAttack() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
         RobotInfo[] nearbyZombies = senseNearbyZombies();
-        for (int i = 0; i < nearbyZombies.length && i < 5; i++) {
-            pastZombieLocation.add(nearbyZombies[i].location);
+        RobotInfo[] nearbyEnemies = senseNearbyEnemies();
+        if (RobotUtil.anyCanAttack(nearbyEnemies, currentLocation)
+                || RobotUtil.anyCanAttack(nearbyZombies, currentLocation)) {
+            Direction away = DirectionUtil.getDirectionAwayFrom(nearbyEnemies, nearbyZombies, rc);
+            tryMove(away);
         }
     }
 
-    private boolean moveTowardBase() throws GameActionException {
-        if (currentLocation.distanceSquaredTo(baseLocation) > getBaseRadius()) {
-            tryMoveToward(baseLocation);
-            return true;
+    private void moveTowardZombies() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
         }
 
-        return false;
+        MapLocation zombieLocation = pastZombieLocation.getAverage();
+        if (zombieLocation != null
+            && currentLocation.distanceSquaredTo(zombieLocation) > MAX_ZOMBIE_DISTANCE) {
+            tryMoveToward(zombieLocation);
+            setIndicatorString(2, "moving toward " + zombieLocation);
+        }
     }
 
-    private int getBaseRadius() {
-        int baseGrowth = (int)Math.sqrt(roundNumber);
-        return 10 + baseGrowth;
+    private void broadcastID() throws GameActionException {
+        MessageBuilder messageBuilder = new MessageBuilder();
+        messageBuilder.buildIdMessage(rc.getHealth(), rc.getID(), RobotType.ARCHON, currentLocation);
+        rc.broadcastMessageSignal(messageBuilder.getFirst(), messageBuilder.getSecond(), 100);
     }
 
-    private void getIdAndBaseLocation() throws GameActionException {
-        int radiusSquared = 2000;
-        if (roundNumber == 0) {
-            rc.broadcastSignal(radiusSquared);
-
-            Signal[] signals = rc.emptySignalQueue();
-            for (Signal s : signals) {
-                if (s.getTeam() == team) {
-                    id++;
+    private void observeSignals() {
+        Signal[] signals = rc.emptySignalQueue();
+        for (Signal s : signals) {
+            if (s.getTeam() == team) {
+                int[] message = s.getMessage();
+                if (message == null) continue;
+                MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
+                if (parser.getMessageType() == MessageType.ZOMBIE) {
+                    pastZombieLocation.add(parser.getRobotData().location);
+                }
+                else if (parser.getMessageType() == MessageType.PARTS) {
+                    PartsData partsData = parser.getPartsData();
+                    if (!recordedParts[partsData.location.x % 100][partsData.location.y % 100]) {
+                        recordedParts[partsData.location.x % 100][partsData.location.y % 100] = true;
+                        partsLocations.add(partsData.location);
+                        setIndicatorString(0, "adding parts " + partsData.location);
+                    }
                 }
             }
-
-            setIndicatorString(1, "id " + id);
-        }
-
-        if (roundNumber == 1) {
-            rc.broadcastSignal(radiusSquared);
-
-            AverageMapLocation averageMapLocation = new AverageMapLocation(GameConstants.NUMBER_OF_ARCHONS_MAX);
-            averageMapLocation.add(currentLocation);
-            Signal[] signals = rc.emptySignalQueue();
-            for (Signal s : signals) {
-                if (s.getTeam() == team) {
-                    averageMapLocation.add(s.getLocation());
-                }
-            }
-
-            baseLocation = averageMapLocation.getAverage();
         }
     }
 
@@ -138,7 +125,8 @@ public class Archon extends Robot {
                 continue;
             }
 
-            if (r.health < lowestHealth) {
+            if (r.health < r.type.maxHealth
+                    && r.health < lowestHealth) {
                 lowestHealth = r.health;
                 robotToRepair = r;
             }
@@ -148,96 +136,20 @@ public class Archon extends Robot {
             return;
         }
 
-        if (robotToRepair.health < robotToRepair.type.maxHealth) {
-            rc.repair(robotToRepair.location);
-        }
+        rc.repair(robotToRepair.location);
     }
-
-    private boolean moveAwayFromEnemiesAndZombies() throws GameActionException {
-        RobotInfo[] nearbyZombies = senseNearbyZombies();
-        RobotInfo[] enemies = senseNearbyEnemies();
-        if (nearbyZombies.length > 0
-                || enemies.length > 0) {
-            Direction away = DirectionUtil.getDirectionAwayFrom(enemies, nearbyZombies, currentLocation);
-            tryMove(away);
-            return true;
-        }
-
-        return false;
-    }
-
-    private void scanForParts(Signal[] signals) {
-        for (Signal s : signals) {
-            if (s.getTeam() == team
-                    && SignalUtil.getType(s) == SignalType.PARTS) {
-                partsLocations.add(SignalUtil.getPartsLocation(s, currentLocation));
-            }
-        }
-
-        setIndicatorString(0, partsLocations.getSize() + " parts locations in queue");
-    }
-
-    private void goToParts() throws GameActionException {
-        if (currentLocation.equals(partsDestination)) {
-            partsDestination = null;
-        }
-
-        if (partsDestination != null
-                && rc.canSense(partsDestination)
-                && rc.senseParts(partsDestination) == 0) {
-            partsDestination = null;
-        }
-
-        if (partsDestination != null
-            || partsLocations.getSize() > 0) {
-            if (partsDestination == null) {
-                partsDestination = partsLocations.remove();
-            }
-
-            tryMoveToward(partsDestination);
-        }
-    }
-
-    private boolean buildRobot() throws GameActionException {
-        if (rand.nextInt() % archonCount != id) {
-            //--balance building between the archons
-            return false;
+    private void buildRobot() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
         }
 
         if (buildQueuePosition < buildQueue.length) {
             if (tryBuild(buildQueue[buildQueuePosition])) {
                 buildQueuePosition++;
-                return true;
             }
         }
         else {
-            if (id == 0
-                && !scoutBuilt) {
-                if (tryBuild(RobotType.SCOUT)) {
-                    scoutBuilt = true;
-                    return true;
-                }
-            }
-
-            if (tryBuild(RobotType.TURRET)) return true;
+            tryBuild(RobotType.SOLDIER);
         }
-
-        return false;
-    }
-
-    protected boolean tryBuild(RobotType robotType) throws GameActionException {
-        if (rc.getTeamParts() < robotType.partCost) {
-            return false;
-        }
-
-        //--Build robot in some random direction
-        for (int i = 0; i < 8; i++) {
-            if (rc.canBuild(directions[i], robotType)) {
-                rc.build(directions[i], robotType);
-                return true;
-            }
-        }
-
-        return false;
     }
 }
