@@ -1,9 +1,9 @@
-package bernie;
+package bernie.util;
 
 import battlecode.common.MapLocation;
 import battlecode.common.RobotInfo;
 
-public class Util {
+public class RobotUtil {
     public static RobotInfo getLowestHealthRobot(RobotInfo[] robots) {
         double minHealth = Double.MAX_VALUE;
         int minIndex = -1;

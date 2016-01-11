@@ -1,8 +1,8 @@
-package bernie;
+package bernie.util;
 
 import battlecode.common.MapLocation;
 
-public class LocationUtil {
+public class Serializer {
     public static int encode(MapLocation location) {
         return (location.x % 1000) * 1000 + (location.y % 1000);
     }

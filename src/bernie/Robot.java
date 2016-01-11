@@ -1,6 +1,7 @@
 package bernie;
 
 import battlecode.common.*;
+import bernie.util.RobotUtil;
 
 import java.util.Random;
 
@@ -8,10 +9,13 @@ public abstract class Robot {
     protected final Random rand;
     protected final Team team;
     protected final Team enemy;
-    private final RobotController rc;
+    protected final RobotController rc;
 
     protected int senseRadius;
     protected int attackRadius;
+
+    protected MapLocation currentLocation;
+    protected int roundNumber;
 
     private final Direction[] directions = {Direction.NORTH, Direction.NORTH_EAST, Direction.EAST,
         Direction.SOUTH_EAST, Direction.SOUTH, Direction.SOUTH_WEST, Direction.WEST, Direction.NORTH_WEST};
@@ -21,20 +25,22 @@ public abstract class Robot {
         rand = new Random(rc.getID());
         team = rc.getTeam();
         enemy = team.opponent();
+        currentLocation = rc.getLocation();
 
         updateTypeParams(rc);
     }
 
-    public void run(RobotController rc) {
-        try {
-            while(true) {
-                doTurn(rc);
+    public void run() {
+        while(true) {
+            try {
+                currentLocation = rc.getLocation();
+                roundNumber = rc.getRoundNum();
+                doTurn();
                 Clock.yield();
+            } catch (GameActionException e) {
+                System.out.println(e.getMessage());
+                e.printStackTrace();
             }
-        }
-        catch (GameActionException e) {
-            System.out.println(e.getMessage());
-            e.printStackTrace();
         }
     }
 
@@ -44,7 +50,7 @@ public abstract class Robot {
         attackRadius = type.attackRadiusSquared;
     }
 
-    protected abstract void doTurn(RobotController rc) throws GameActionException;
+    protected abstract void doTurn() throws GameActionException;
 
     protected RobotInfo[] senseNearbyEnemies() {
         return rc.senseNearbyRobots(senseRadius, enemy);
@@ -126,8 +132,8 @@ public abstract class Robot {
 
     private boolean canMoveSafely(Direction direction, MapLocation next, RobotInfo[] nearbyEnemies, RobotInfo[] nearbyZombies) {
         return rc.canMove(direction)
-                && !Util.anyCanAttack(nearbyEnemies, next)
-                && !Util.anyCanAttack(nearbyZombies, next);
+                && !RobotUtil.anyCanAttack(nearbyEnemies, next)
+                && !RobotUtil.anyCanAttack(nearbyZombies, next);
     }
 
     protected void tryMove(Direction direction) throws GameActionException {

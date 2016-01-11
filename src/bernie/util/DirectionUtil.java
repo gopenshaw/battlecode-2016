@@ -1,4 +1,4 @@
-package bernie;
+package bernie.util;
 
 import battlecode.common.Direction;
 import battlecode.common.MapLocation;
