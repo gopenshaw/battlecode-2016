@@ -21,7 +21,7 @@ public class MessageBuilder {
     }
 
     public void buildEnemyMessage(RobotInfo enemy, int roundNumber) {
-        first = ((roundNumber % 4 << 29) + (int) enemy.health << 15) + enemy.ID;
+        first = (roundNumber % 4 << 29) + ((int) enemy.health << 15) + enemy.ID;
         second = (Serializer.encode(enemy.location) << 7)
                 + (Serializer.encode(enemy.type) << 3)
                 + Serializer.encode(MessageType.ENEMY);
