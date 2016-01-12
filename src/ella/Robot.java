@@ -197,6 +197,32 @@ public abstract class Robot {
         return false;
     }
 
+    protected boolean tryBuild(RobotType robotType, Direction initialDirection) throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return false;
+        }
+
+        if (rc.getTeamParts() < robotType.partCost) {
+            return false;
+        }
+
+        int startingPosition = getDirectionNumber(initialDirection);
+        if (startingPosition < 0) {
+            startingPosition = 0;
+        }
+
+        int[] d = {0, 1, 7, 2, 6, 3, 5, 4};
+        for (int i = 0; i < 8; i++) {
+            Direction direction = directions[(startingPosition + d[i]) % 8];
+            if (rc.canBuild(direction, robotType)) {
+                rc.build(direction, robotType);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     protected RobotInfo findAttackableRobot(RobotInfo[] robots) {
         for (RobotInfo r : robots) {
             if (rc.canAttackLocation(r.location)) {
@@ -214,5 +240,15 @@ public abstract class Robot {
     protected void setIndicatorString(int i, String s) {
         int roundNum = rc.getRoundNum();
         rc.setIndicatorString(i, String.format("%d: %s", roundNum, s));
+    }
+
+    protected int getDirectionNumber(Direction direction) {
+        for (int i = 0; i < 8; i++) {
+            if (directions[i] == direction) {
+                return i;
+            }
+        }
+
+        return -1;
     }
 }
