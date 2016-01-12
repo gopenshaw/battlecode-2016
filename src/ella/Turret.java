@@ -54,11 +54,12 @@ public class Turret extends Robot{
                 }
 
                 MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
-                if (parser.getMessageType() == MessageType.ZOMBIE
-                        && parser.isCurrent(roundNumber)) {
-                    MapLocation zombieLocation = parser.getRobotData().location;
-                    if (rc.canAttackLocation(zombieLocation)) {
-                        rc.attackLocation(zombieLocation);
+                if (parser.isCurrent(roundNumber)
+                        && (parser.getMessageType() == MessageType.ZOMBIE
+                            || parser.getMessageType() == MessageType.ENEMY)) {
+                    MapLocation attackLocation = parser.getRobotData().location;
+                    if (rc.canAttackLocation(attackLocation)) {
+                        rc.attackLocation(attackLocation);
                         return;
                     }
                 }
