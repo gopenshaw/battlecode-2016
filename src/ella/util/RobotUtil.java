@@ -50,4 +50,14 @@ public class RobotUtil {
 
         return count;
     }
+
+    public static RobotInfo getRobotOfType(RobotInfo[] robots, RobotType type) {
+        for (int i = 0; i < robots.length; i++) {
+            if (robots[i].type == type) {
+                return robots[i];
+            }
+        }
+
+        return null;
+    }
 }

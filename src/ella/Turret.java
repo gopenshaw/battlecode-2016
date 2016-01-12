@@ -8,6 +8,7 @@ import ella.util.ZombieUtil;
 public class Turret extends Robot{
     private Signal[] roundSignals;
     private MapLocation requestLocation;
+    private RobotInfo[] nearbyZombies;
 
     public Turret(RobotController rc) {
         super(rc);
@@ -16,6 +17,7 @@ public class Turret extends Robot{
     @Override
     protected void doTurn() throws GameActionException {
         roundSignals = rc.emptySignalQueue();
+        nearbyZombies = senseNearbyZombies();
         attackEnemiesAndZombies();
         requestSpace();
         spreadOut();
@@ -30,7 +32,6 @@ public class Turret extends Robot{
             return;
         }
 
-        RobotInfo[] nearbyZombies = senseNearbyZombies();
         RobotInfo zombieToAttack = getPriorityAttackableZombie(nearbyZombies);
         if (zombieToAttack != null) {
             rc.attackLocation(zombieToAttack.location);
@@ -74,7 +75,7 @@ public class Turret extends Robot{
         int turretArchonCount = RobotUtil.getCountOfType(neighbors, RobotType.TURRET);
         turretArchonCount += RobotUtil.getCountOfType(neighbors, RobotType.ARCHON);
         if (turretArchonCount >= 7) {
-            rc.broadcastSignal(1);
+            rc.broadcastSignal(2);
         }
     }
 
@@ -94,6 +95,11 @@ public class Turret extends Robot{
     }
 
     private void spreadOut() throws GameActionException {
+        if (rc.getType() == RobotType.TURRET
+                && nearbyZombies.length > 0) {
+            return;
+        }
+
         if (requestLocation == null) {
             for (Signal s : roundSignals) {
                 if (s.getTeam() == team
