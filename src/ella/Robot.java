@@ -238,8 +238,10 @@ public abstract class Robot {
     }
 
     protected void setIndicatorString(int i, String s) {
-        int roundNum = rc.getRoundNum();
-        rc.setIndicatorString(i, String.format("%d: %s", roundNum, s));
+        if (Config.DEBUG) {
+            int roundNum = rc.getRoundNum();
+            rc.setIndicatorString(i, String.format("%d: %s", roundNum, s));
+        }
     }
 
     protected int getDirectionNumber(Direction direction) {
