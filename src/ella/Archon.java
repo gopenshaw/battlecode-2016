@@ -3,6 +3,7 @@ package ella;
 import battlecode.common.*;
 import ella.message.MessageBuilder;
 import ella.message.MessageParser;
+import ella.nav.Bug;
 import ella.util.AverageMapLocation;
 import ella.util.DirectionUtil;
 import ella.util.RobotUtil;
@@ -92,7 +93,7 @@ public class Archon extends Robot {
             towardCenterEstimate = Direction.NORTH;
             return;
         }
-        
+
         towardCenterEstimate = DirectionUtil.getDirectionAwayFrom(offMap, currentLocation);
         setIndicatorString(2, "toward center: " + towardCenterEstimate);
         setIndicatorString(0, "count: " + offMap.size());
@@ -157,7 +158,7 @@ public class Archon extends Robot {
         }
 
         if (!currentLocation.isAdjacentTo(baseLocation)) {
-            tryMoveToward(baseLocation);
+            tryMove(Bug.getDirection(currentLocation));
         }
     }
 
@@ -189,6 +190,8 @@ public class Archon extends Robot {
             }
 
             baseLocation = averageMapLocation.getAverage();
+            Bug.init(rc);
+            Bug.setDestination(baseLocation);
         }
     }
 
