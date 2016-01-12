@@ -1,6 +1,7 @@
 package ella;
 
 import battlecode.common.*;
+import ella.message.MessageParser;
 import ella.util.ZombieUtil;
 
 public class Turret extends Robot{
@@ -17,41 +18,6 @@ public class Turret extends Robot{
         attackEnemiesAndZombies();
         requestSpace();
         spreadOut();
-    }
-
-    private void requestSpace() throws GameActionException {
-        if (rc.getType() == RobotType.TTM) {
-            return;
-        }
-
-        RobotInfo[] neighbors = rc.senseNearbyRobots(2, team);
-        if (neighbors.length >= 6) {
-            rc.broadcastSignal(2);
-        }
-    }
-
-    private void spreadOut() throws GameActionException {
-        if (requestLocation == null) {
-            for (Signal s : roundSignals) {
-                if (s.getTeam() == team
-                        && s.getMessage() == null) {
-                    requestLocation = s.getLocation();
-                    rc.pack();
-                    return;
-                }
-            }
-        }
-
-        if (requestLocation == null
-                || !rc.isCoreReady()) {
-            return;
-        }
-
-        if (rc.getType() == RobotType.TTM) {
-            tryMove(requestLocation.directionTo(currentLocation));
-            rc.unpack();
-            requestLocation = null;
-        }
     }
 
     private void attackEnemiesAndZombies() throws GameActionException {
@@ -77,6 +43,34 @@ public class Turret extends Robot{
                 return;
             }
         }
+
+        for (Signal s : roundSignals) {
+            if (s.getTeam() == team) {
+                int[] message = s.getMessage();
+                if (message != null) {
+                    MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
+                    if (parser.getMessageType() == MessageType.ZOMBIE
+                            && parser.isCurrent(roundNumber)) {
+                        MapLocation zombieLocation = parser.getRobotData().location;
+                        if (rc.canAttackLocation(zombieLocation)) {
+                            rc.attackLocation(zombieLocation);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void requestSpace() throws GameActionException {
+        if (rc.getType() == RobotType.TTM) {
+            return;
+        }
+
+        RobotInfo[] neighbors = rc.senseNearbyRobots(2, team);
+        if (neighbors.length >= 7) {
+            rc.broadcastSignal(1);
+        }
     }
 
     private RobotInfo getPriorityAttackableZombie(RobotInfo[] zombies) {
@@ -92,5 +86,29 @@ public class Turret extends Robot{
         }
 
         return zombieToAttack;
+    }
+
+    private void spreadOut() throws GameActionException {
+        if (requestLocation == null) {
+            for (Signal s : roundSignals) {
+                if (s.getTeam() == team
+                        && s.getMessage() == null) {
+                    requestLocation = s.getLocation();
+                    rc.pack();
+                    return;
+                }
+            }
+        }
+
+        if (requestLocation == null
+                || !rc.isCoreReady()) {
+            return;
+        }
+
+        if (rc.getType() == RobotType.TTM) {
+            tryMove(requestLocation.directionTo(currentLocation));
+            rc.unpack();
+            requestLocation = null;
+        }
     }
 }

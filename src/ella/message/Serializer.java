@@ -2,7 +2,7 @@ package ella.message;
 
 import battlecode.common.MapLocation;
 import battlecode.common.RobotType;
-import bernie.MessageType;
+import ella.MessageType;
 
 public class Serializer {
     //--Max 8 types

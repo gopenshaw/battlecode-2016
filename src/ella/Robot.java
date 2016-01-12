@@ -17,7 +17,7 @@ public abstract class Robot {
     protected MapLocation currentLocation;
     protected int roundNumber;
 
-    private final Direction[] directions = {Direction.NORTH, Direction.NORTH_EAST, Direction.EAST,
+    protected final Direction[] directions = {Direction.NORTH, Direction.NORTH_EAST, Direction.EAST,
         Direction.SOUTH_EAST, Direction.SOUTH, Direction.SOUTH_WEST, Direction.WEST, Direction.NORTH_WEST};
 
     public Robot(RobotController rc) {

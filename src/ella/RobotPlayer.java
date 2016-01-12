@@ -11,6 +11,8 @@ public class RobotPlayer {
             new Archon(rc).run();
         } else if (type == RobotType.TURRET) {
             new Turret(rc).run();
+        } else if (type == RobotType.SCOUT) {
+            new Scout(rc).run();
         }
     }
 }

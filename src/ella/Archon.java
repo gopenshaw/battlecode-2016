@@ -6,6 +6,8 @@ import ella.util.AverageMapLocation;
 public class Archon extends Robot {
     private int id;
     private MapLocation baseLocation;
+    private boolean builtScout;
+    private int turretCount;
 
     public Archon(RobotController rc) {
         super(rc);
@@ -16,9 +18,21 @@ public class Archon extends Robot {
         getIdAndBaseLocation();
         if (roundNumber < 2) return;
 
+        countRobots();
         repairRobots();
         moveTowardBase();
-        tryBuild(RobotType.TURRET);
+        buildRobot();
+        clearRubble();
+    }
+
+    private void countRobots() {
+        turretCount = 0;
+        RobotInfo[] nearbyFriendlies = rc.senseNearbyRobots(senseRadius, team);
+        for (RobotInfo r : nearbyFriendlies) {
+            if (r.type == RobotType.TURRET) {
+                turretCount++;
+            }
+        }
     }
 
     private void repairRobots() throws GameActionException {
@@ -82,6 +96,30 @@ public class Archon extends Robot {
             }
 
             baseLocation = averageMapLocation.getAverage();
+        }
+    }
+
+    private void buildRobot() throws GameActionException {
+        if (!builtScout
+                && turretCount > 5 + id) {
+            if (tryBuild(RobotType.SCOUT)) {
+                builtScout = true;
+            }
+        }
+
+        tryBuild(RobotType.TURRET);
+    }
+
+    private void clearRubble() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        for (int i = 0; i < 8; i++) {
+            if (rc.senseRubble(currentLocation.add(directions[i])) >= 100) {
+                rc.clearRubble(directions[i]);
+                return;
+            }
         }
     }
 }

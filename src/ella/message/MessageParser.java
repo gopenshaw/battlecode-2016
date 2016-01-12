@@ -2,15 +2,13 @@ package ella.message;
 
 import battlecode.common.MapLocation;
 import battlecode.common.RobotType;
-import bernie.MessageType;
-import bernie.RobotData;
+import ella.MessageType;
+import ella.RobotData;
 
 public class MessageParser {
     //--Message format
-    //--First integer : 3 bits open, 14 bit health, 15 bit id
+    //--First integer : 1 bit open, 2 bit round number, 14 bit health, 15 bit id
     //--Second integer: 20 bit location, 4 bit robot type, 3 bit message type
-    //--TODO should we have round number??
-    //----only really need round number parity (1 bit)
 
     private final int first;
     private final int second;
@@ -32,5 +30,9 @@ public class MessageParser {
         int health = first >>> 15;
         RobotType type = Serializer.decodeRobotType((second >>> 3) & 0xF);
         return new RobotData(id, location, health, type);
+    }
+
+    public boolean isCurrent(int roundNumber) {
+        return roundNumber % 4 == (first >>> 29) % 4;
     }
 }
