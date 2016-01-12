@@ -4,6 +4,8 @@ import battlecode.common.Direction;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotInfo;
 
+import java.util.ArrayList;
+
 public class DirectionUtil {
     public static Direction getDirectionAwayFrom(RobotInfo[] robots, MapLocation currentLocation) {
         return getDirectionAwayFrom(robots, new RobotInfo[0], currentLocation);
@@ -20,6 +22,15 @@ public class DirectionUtil {
         for (int i = 0; i < robots2.length; i++) {
             MapLocation enemyLocation = robots2[i].location;
             directions[offset + i] = enemyLocation.directionTo(currentLocation);
+        }
+
+        return getAverageDirection(directions);
+    }
+
+    public static Direction getDirectionAwayFrom(ArrayList<MapLocation> locations, MapLocation currentLocation) {
+        Direction[] directions = new Direction[locations.size()];
+        for (int i = 0; i < locations.size(); i++) {
+            directions[i] = locations.get(i).directionTo(currentLocation);
         }
 
         return getAverageDirection(directions);

@@ -3,8 +3,12 @@ package team014;
 import battlecode.common.*;
 import team014.message.MessageBuilder;
 import team014.message.MessageParser;
+import team014.nav.Bug;
 import team014.util.AverageMapLocation;
+import team014.util.DirectionUtil;
 import team014.util.RobotUtil;
+
+import java.util.ArrayList;
 
 public class Archon extends Robot {
     private int id;
@@ -16,6 +20,7 @@ public class Archon extends Robot {
     private int buildCounter = 0;
     private int closeTurretCount;
     private int minTurretCount;
+    private Direction towardCenterEstimate;
 
     public Archon(RobotController rc) {
         super(rc);
@@ -23,6 +28,7 @@ public class Archon extends Robot {
 
     @Override
     protected void doTurn() throws GameActionException {
+        checkRelativeLocation();
         getIdAndBaseLocation();
         if (roundNumber < 2) return;
 
@@ -30,10 +36,78 @@ public class Archon extends Robot {
         broadcastTurretCount();
         getMinTurretCount();
         repairRobots();
+        moveAwayFromEnemiesAndZombies();
         moveTowardBase();
         requestSpace();
         buildRobot();
         clearRubble();
+    }
+
+    private void checkRelativeLocation() throws GameActionException {
+        if (roundNumber != 0) {
+            return;
+        }
+
+        MapLocation[] locations = MapLocation.getAllMapLocationsWithinRadiusSq(currentLocation, senseRadius);
+        ArrayList<MapLocation> offMap = new ArrayList<MapLocation>();
+        boolean xFound = false;
+        boolean yFound = false;
+        int x = currentLocation.x;
+        int y = currentLocation.y;
+        for (MapLocation loc : locations) {
+            if (loc.x != x
+                    && loc.y != y) {
+                continue;
+            }
+
+            if (loc.x == x
+                    && xFound) {
+                continue;
+            }
+
+            if (loc.y == y
+                    && yFound) {
+                continue;
+            }
+
+            if (!rc.onTheMap(loc)) {
+                offMap.add(loc);
+                if (loc.x == x) {
+                    xFound = true;
+                }
+
+                if (loc.y == y) {
+                    yFound = true;
+                }
+
+                if (offMap.size() == 2) {
+                    towardCenterEstimate = DirectionUtil.getDirectionAwayFrom(offMap, currentLocation);
+                    setIndicatorString(2, "toward center: " + towardCenterEstimate);
+                    setIndicatorString(0, "count: " + offMap.size());
+                    return;
+                }
+            }
+        }
+
+        if (offMap.size() == 0) {
+            towardCenterEstimate = Direction.NORTH;
+            return;
+        }
+
+        towardCenterEstimate = DirectionUtil.getDirectionAwayFrom(offMap, currentLocation);
+        setIndicatorString(2, "toward center: " + towardCenterEstimate);
+        setIndicatorString(0, "count: " + offMap.size());
+    }
+
+    private void moveAwayFromEnemiesAndZombies() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        RobotInfo[] nearbyZombies = senseNearbyZombies();
+        if (RobotUtil.anyCanAttack(nearbyZombies, currentLocation)) {
+            tryMove(DirectionUtil.getDirectionAwayFrom(nearbyZombies, currentLocation));
+        }
     }
 
     private void countRobots() throws GameActionException {
@@ -83,8 +157,8 @@ public class Archon extends Robot {
             return;
         }
 
-        if (currentLocation.distanceSquaredTo(baseLocation) > 2) {
-            tryMoveToward(baseLocation);
+        if (!currentLocation.isAdjacentTo(baseLocation)) {
+            tryMove(Bug.getDirection(currentLocation));
         }
     }
 
@@ -116,6 +190,8 @@ public class Archon extends Robot {
             }
 
             baseLocation = averageMapLocation.getAverage();
+            Bug.init(rc);
+            Bug.setDestination(baseLocation);
         }
     }
 
@@ -128,7 +204,7 @@ public class Archon extends Robot {
     private void buildRobot() throws GameActionException {
         if (!builtScout
                 && teamTurretCount > 5 + id) {
-            if (tryBuild(RobotType.SCOUT)) {
+            if (tryBuild(RobotType.SCOUT, towardCenterEstimate)) {
                 builtScout = true;
             }
         }
@@ -150,7 +226,7 @@ public class Archon extends Robot {
             return;
         }
 
-        if (tryBuild(typeToBuild)) {
+        if (tryBuild(typeToBuild, towardCenterEstimate)) {
             buildCounter++;
         }
     }

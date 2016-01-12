@@ -2,8 +2,8 @@ package team014.message;
 
 import battlecode.common.MapLocation;
 import battlecode.common.RobotType;
-import team014.RobotData;
 import team014.MessageType;
+import team014.RobotData;
 
 public class MessageParser {
     //--Message format
