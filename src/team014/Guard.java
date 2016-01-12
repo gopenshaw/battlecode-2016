@@ -1,9 +1,6 @@
 package team014;
 
-import battlecode.common.GameActionException;
-import battlecode.common.RobotController;
-import battlecode.common.RobotInfo;
-import battlecode.common.RobotType;
+import battlecode.common.*;
 import team014.util.DirectionUtil;
 import team014.util.RobotUtil;
 
@@ -11,6 +8,7 @@ public class Guard extends Robot {
     private RobotInfo[] attackableZombies;
     private RobotInfo[] nearbyZombies;
     private RobotInfo[] adjacentTeammates;
+    private RobotInfo[] nearbyTeammates;
 
     public Guard(RobotController rc) {
         super(rc);
@@ -19,14 +17,22 @@ public class Guard extends Robot {
     @Override
     protected void doTurn() throws GameActionException {
         senseRobots();
-        attackZombies();
-        moveTowardZombies();
-        spreadOut();
+        if (roundNumber < 1800) {
+            attackZombies();
+            moveTowardZombies();
+        }
+        else {
+            moveAwayFromZombies();
+        }
+        moveHome();
+        clearRubble();
+        moveRandom();
     }
 
     private void senseRobots() {
         attackableZombies = senseAttackableZombies();
         nearbyZombies = senseNearbyZombies();
+        nearbyTeammates = rc.senseNearbyRobots(senseRadius, team);
         adjacentTeammates = rc.senseNearbyRobots(2, team);
     }
 
@@ -56,13 +62,49 @@ public class Guard extends Robot {
         }
     }
 
-    private void spreadOut() throws GameActionException {
+    private void moveAwayFromZombies() throws GameActionException {
         if (!rc.isCoreReady()) {
             return;
         }
 
-        if (adjacentTeammates.length > 6) {
-            tryMove(DirectionUtil.getDirectionAwayFrom(adjacentTeammates, currentLocation));
+        if (nearbyZombies.length > 0) {
+            tryMove(DirectionUtil.getDirectionAwayFrom(nearbyZombies, currentLocation));
         }
+    }
+
+    private void clearRubble() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        for (int i = 0; i < 8; i++) {
+            MapLocation adjacent = currentLocation.add(directions[i]);
+            if (rc.senseRubble(adjacent) >= 100) {
+                rc.clearRubble(directions[i]);
+                return;
+            }
+        }
+    }
+
+    private void moveHome() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        int adjacentTurrets = RobotUtil.getCountOfType(adjacentTeammates, RobotType.TURRET);
+        if (adjacentTurrets == 0) {
+            RobotInfo nearbyTurret = RobotUtil.getRobotOfType(nearbyTeammates, RobotType.TURRET);
+            if (nearbyTurret != null) {
+                tryMoveToward(nearbyTurret.location);
+            }
+        }
+    }
+
+    private void moveRandom() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        tryMove(getRandomDirection());
     }
 }

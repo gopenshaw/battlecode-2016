@@ -8,6 +8,7 @@ import team014.util.ZombieUtil;
 public class Turret extends Robot {
     private Signal[] roundSignals;
     private MapLocation requestLocation;
+    private RobotInfo[] nearbyZombies;
 
     public Turret(RobotController rc) {
         super(rc);
@@ -16,6 +17,7 @@ public class Turret extends Robot {
     @Override
     protected void doTurn() throws GameActionException {
         roundSignals = rc.emptySignalQueue();
+        nearbyZombies = senseNearbyZombies();
         attackEnemiesAndZombies();
         requestSpace();
         spreadOut();
@@ -30,7 +32,6 @@ public class Turret extends Robot {
             return;
         }
 
-        RobotInfo[] nearbyZombies = senseNearbyZombies();
         RobotInfo zombieToAttack = getPriorityAttackableZombie(nearbyZombies);
         if (zombieToAttack != null) {
             rc.attackLocation(zombieToAttack.location);
@@ -48,15 +49,17 @@ public class Turret extends Robot {
         for (Signal s : roundSignals) {
             if (s.getTeam() == team) {
                 int[] message = s.getMessage();
-                if (message != null) {
-                    MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
-                    if (parser.getMessageType() == MessageType.ZOMBIE
-                            && parser.isCurrent(roundNumber)) {
-                        MapLocation zombieLocation = parser.getRobotData().location;
-                        if (rc.canAttackLocation(zombieLocation)) {
-                            rc.attackLocation(zombieLocation);
-                            return;
-                        }
+                if (message == null) {
+                    continue;
+                }
+
+                MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
+                if (parser.getMessageType() == MessageType.ZOMBIE
+                        && parser.isCurrent(roundNumber)) {
+                    MapLocation zombieLocation = parser.getRobotData().location;
+                    if (rc.canAttackLocation(zombieLocation)) {
+                        rc.attackLocation(zombieLocation);
+                        return;
                     }
                 }
             }
@@ -92,6 +95,11 @@ public class Turret extends Robot {
     }
 
     private void spreadOut() throws GameActionException {
+        if (rc.getType() == RobotType.TURRET
+                && nearbyZombies.length > 0) {
+            return;
+        }
+
         if (requestLocation == null) {
             for (Signal s : roundSignals) {
                 if (s.getTeam() == team
