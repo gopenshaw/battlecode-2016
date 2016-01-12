@@ -17,8 +17,13 @@ public class Guard extends Robot {
     @Override
     protected void doTurn() throws GameActionException {
         senseRobots();
-        attackZombies();
-        moveTowardZombies();
+        if (roundNumber < 1800) {
+            attackZombies();
+            moveTowardZombies();
+        }
+        else {
+            moveAwayFromZombies();
+        }
         moveHome();
         clearRubble();
         moveRandom();
@@ -54,6 +59,16 @@ public class Guard extends Robot {
         if (attackableZombies.length == 0
                 && nearbyZombies.length > 0) {
             tryMoveToward(nearbyZombies[0].location);
+        }
+    }
+
+    private void moveAwayFromZombies() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        if (nearbyZombies.length > 0) {
+            tryMove(DirectionUtil.getDirectionAwayFrom(nearbyZombies, currentLocation));
         }
     }
 

@@ -75,7 +75,7 @@ public class Turret extends Robot{
         int turretArchonCount = RobotUtil.getCountOfType(neighbors, RobotType.TURRET);
         turretArchonCount += RobotUtil.getCountOfType(neighbors, RobotType.ARCHON);
         if (turretArchonCount >= 7) {
-            rc.broadcastSignal(2);
+            rc.broadcastSignal(1);
         }
     }
 
