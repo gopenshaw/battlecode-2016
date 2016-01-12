@@ -48,15 +48,17 @@ public class Turret extends Robot{
         for (Signal s : roundSignals) {
             if (s.getTeam() == team) {
                 int[] message = s.getMessage();
-                if (message != null) {
-                    MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
-                    if (parser.getMessageType() == MessageType.ZOMBIE
-                            && parser.isCurrent(roundNumber)) {
-                        MapLocation zombieLocation = parser.getRobotData().location;
-                        if (rc.canAttackLocation(zombieLocation)) {
-                            rc.attackLocation(zombieLocation);
-                            return;
-                        }
+                if (message == null) {
+                    continue;
+                }
+
+                MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
+                if (parser.getMessageType() == MessageType.ZOMBIE
+                        && parser.isCurrent(roundNumber)) {
+                    MapLocation zombieLocation = parser.getRobotData().location;
+                    if (rc.canAttackLocation(zombieLocation)) {
+                        rc.attackLocation(zombieLocation);
+                        return;
                     }
                 }
             }
