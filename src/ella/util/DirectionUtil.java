@@ -6,13 +6,12 @@ import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 
 public class DirectionUtil {
-    public static Direction getDirectionAwayFrom(RobotInfo[] robots, RobotController rc) {
-        return getDirectionAwayFrom(robots, new RobotInfo[0], rc);
+    public static Direction getDirectionAwayFrom(RobotInfo[] robots, MapLocation currentLocation) {
+        return getDirectionAwayFrom(robots, new RobotInfo[0], currentLocation);
     }
 
-    public static Direction getDirectionAwayFrom(RobotInfo[] robots1, RobotInfo[] robots2, RobotController rc) {
+    public static Direction getDirectionAwayFrom(RobotInfo[] robots1, RobotInfo[] robots2, MapLocation currentLocation) {
         Direction[] directions = new Direction[robots1.length + robots2.length];
-        MapLocation currentLocation = rc.getLocation();
         for (int i = 0; i < robots1.length; i++) {
             MapLocation enemyLocation = robots1[i].location;
             directions[i] = enemyLocation.directionTo(currentLocation);

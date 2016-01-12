@@ -9,6 +9,9 @@ public class Archon extends Robot {
     private boolean builtScout;
     private int turretCount;
 
+    private RobotType[] buildQueue = {RobotType.GUARD, RobotType.TURRET, RobotType.TURRET};
+    private int buildCounter = 0;
+
     public Archon(RobotController rc) {
         super(rc);
     }
@@ -21,6 +24,7 @@ public class Archon extends Robot {
         countRobots();
         repairRobots();
         moveTowardBase();
+        requestSpace();
         buildRobot();
         clearRubble();
     }
@@ -99,6 +103,12 @@ public class Archon extends Robot {
         }
     }
 
+    private void requestSpace() throws GameActionException {
+        if (rc.senseNearbyRobots(2, team).length == 8) {
+            rc.broadcastSignal(2);
+        }
+    }
+
     private void buildRobot() throws GameActionException {
         if (!builtScout
                 && turretCount > 5 + id) {
@@ -107,7 +117,14 @@ public class Archon extends Robot {
             }
         }
 
-        tryBuild(RobotType.TURRET);
+        if (roundNumber < 500) {
+            if (tryBuild(buildQueue[buildCounter % buildQueue.length])) {
+                buildCounter++;
+            }
+        }
+        else {
+            tryBuild(RobotType.TURRET);
+        }
     }
 
     private void clearRubble() throws GameActionException {

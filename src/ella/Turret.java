@@ -2,6 +2,7 @@ package ella;
 
 import battlecode.common.*;
 import ella.message.MessageParser;
+import ella.util.RobotUtil;
 import ella.util.ZombieUtil;
 
 public class Turret extends Robot{
@@ -68,7 +69,9 @@ public class Turret extends Robot{
         }
 
         RobotInfo[] neighbors = rc.senseNearbyRobots(2, team);
-        if (neighbors.length >= 7) {
+        int turretArchonCount = RobotUtil.getCountOfType(neighbors, RobotType.TURRET);
+        turretArchonCount += RobotUtil.getCountOfType(neighbors, RobotType.ARCHON);
+        if (turretArchonCount >= 7) {
             rc.broadcastSignal(1);
         }
     }
