@@ -7,7 +7,7 @@ import team014.MessageType;
 public class Serializer {
     //--Max 8 types
     private static final MessageType[] messageEncoding = {MessageType.PARTS, MessageType.ENEMY,
-            MessageType.ID, MessageType.ZOMBIE };
+            MessageType.ID, MessageType.ZOMBIE, MessageType.COUNT };
 
     //--Max 16 types
     private static final RobotType[] robotTypeEncoding = {RobotType.ARCHON, RobotType.BIGZOMBIE, RobotType.FASTZOMBIE,

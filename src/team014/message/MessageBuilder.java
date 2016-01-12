@@ -21,7 +21,7 @@ public class MessageBuilder {
     }
 
     public void buildEnemyMessage(RobotInfo enemy, int roundNumber) {
-        first = ((roundNumber % 4 << 29) + (int) enemy.health << 15) + enemy.ID;
+        first = (roundNumber % 4 << 29) + ((int) enemy.health << 15) + enemy.ID;
         second = (Serializer.encode(enemy.location) << 7)
                 + (Serializer.encode(enemy.type) << 3)
                 + Serializer.encode(MessageType.ENEMY);
@@ -32,6 +32,11 @@ public class MessageBuilder {
         second = (Serializer.encode(location) << 7)
                 + (Serializer.encode(type) << 3)
                 + (Serializer.encode(MessageType.ID));
+    }
+
+    public void buildCountMessage(int count) {
+        first = count;
+        second =  Serializer.encode(MessageType.COUNT);
     }
 
     public int getFirst() {

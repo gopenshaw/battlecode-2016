@@ -2,8 +2,8 @@ package team014.message;
 
 import battlecode.common.MapLocation;
 import battlecode.common.RobotType;
-import team014.MessageType;
 import team014.RobotData;
+import team014.MessageType;
 
 public class MessageParser {
     //--Message format
@@ -34,5 +34,9 @@ public class MessageParser {
 
     public boolean isCurrent(int roundNumber) {
         return roundNumber % 4 == (first >>> 29) % 4;
+    }
+
+    public int getCount() {
+        return first;
     }
 }

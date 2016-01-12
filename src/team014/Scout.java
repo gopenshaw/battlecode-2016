@@ -15,18 +15,33 @@ public class Scout extends Robot {
     protected void doTurn() throws GameActionException {
         roundSignals = rc.emptySignalQueue();
         broadcastZombies();
+        broadcastEnemies();
         spreadOut();
     }
 
     private void broadcastZombies() throws GameActionException {
         RobotInfo[] nearbyZombies = senseNearbyZombies();
         for (RobotInfo zombie : nearbyZombies) {
-            MessageBuilder builder = new MessageBuilder();
-            builder.buildZombieMessage(zombie, roundNumber);
-            rc.broadcastMessageSignal(builder.getFirst(), builder.getSecond(), senseRadius * 4);
             if (rc.getMessageSignalCount() >= GameConstants.MESSAGE_SIGNALS_PER_TURN) {
                 return;
             }
+
+            MessageBuilder builder = new MessageBuilder();
+            builder.buildZombieMessage(zombie, roundNumber);
+            rc.broadcastMessageSignal(builder.getFirst(), builder.getSecond(), senseRadius * 4);
+        }
+    }
+
+    private void broadcastEnemies() throws GameActionException {
+        RobotInfo[] nearbyEnemies = senseNearbyEnemies();
+        for (RobotInfo zombie : nearbyEnemies) {
+            if (rc.getMessageSignalCount() >= GameConstants.MESSAGE_SIGNALS_PER_TURN) {
+                return;
+            }
+
+            MessageBuilder builder = new MessageBuilder();
+            builder.buildEnemyMessage(zombie, roundNumber);
+            rc.broadcastMessageSignal(builder.getFirst(), builder.getSecond(), senseRadius * 4);
         }
     }
 
