@@ -1,5 +1,5 @@
 package ella;
 
 public enum MessageType {
-    PARTS, ENEMY, ID, ZOMBIE
+    PARTS, ENEMY, ID, ZOMBIE, COUNT
 }

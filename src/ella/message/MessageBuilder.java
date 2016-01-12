@@ -34,6 +34,11 @@ public class MessageBuilder {
                 + (Serializer.encode(MessageType.ID));
     }
 
+    public void buildCountMessage(int count) {
+        first = count;
+        second =  Serializer.encode(MessageType.COUNT);
+    }
+
     public int getFirst() {
         return first;
     }

@@ -35,4 +35,8 @@ public class MessageParser {
     public boolean isCurrent(int roundNumber) {
         return roundNumber % 4 == (first >>> 29) % 4;
     }
+
+    public int getCount() {
+        return first;
+    }
 }

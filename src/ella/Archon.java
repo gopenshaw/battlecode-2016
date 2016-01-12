@@ -1,16 +1,21 @@
 package ella;
 
 import battlecode.common.*;
+import ella.message.MessageBuilder;
+import ella.message.MessageParser;
 import ella.util.AverageMapLocation;
+import ella.util.RobotUtil;
 
 public class Archon extends Robot {
     private int id;
     private MapLocation baseLocation;
     private boolean builtScout;
-    private int turretCount;
+    private int teamTurretCount;
 
     private RobotType[] buildQueue = {RobotType.GUARD, RobotType.TURRET, RobotType.TURRET};
     private int buildCounter = 0;
+    private int closeTurretCount;
+    private int minTurretCount;
 
     public Archon(RobotController rc) {
         super(rc);
@@ -22,6 +27,8 @@ public class Archon extends Robot {
         if (roundNumber < 2) return;
 
         countRobots();
+        broadcastTurretCount();
+        getMinTurretCount();
         repairRobots();
         moveTowardBase();
         requestSpace();
@@ -29,14 +36,23 @@ public class Archon extends Robot {
         clearRubble();
     }
 
-    private void countRobots() {
-        turretCount = 0;
+    private void countRobots() throws GameActionException {
+        teamTurretCount = 0;
         RobotInfo[] nearbyFriendlies = rc.senseNearbyRobots(senseRadius, team);
         for (RobotInfo r : nearbyFriendlies) {
             if (r.type == RobotType.TURRET) {
-                turretCount++;
+                teamTurretCount++;
             }
         }
+    }
+
+    private void broadcastTurretCount() throws GameActionException {
+        RobotInfo[] closeFriends = rc.senseNearbyRobots(5, team);
+        closeTurretCount = RobotUtil.getCountOfType(closeFriends, RobotType.TURRET);
+
+        MessageBuilder messageBuilder = new MessageBuilder();
+        messageBuilder.buildCountMessage(closeTurretCount);
+        rc.broadcastMessageSignal(messageBuilder.getFirst(), messageBuilder.getSecond(), senseRadius);
     }
 
     private void repairRobots() throws GameActionException {
@@ -111,19 +127,49 @@ public class Archon extends Robot {
 
     private void buildRobot() throws GameActionException {
         if (!builtScout
-                && turretCount > 5 + id) {
+                && teamTurretCount > 5 + id) {
             if (tryBuild(RobotType.SCOUT)) {
                 builtScout = true;
             }
         }
 
+        RobotType typeToBuild = null;
         if (roundNumber < 500) {
-            if (tryBuild(buildQueue[buildCounter % buildQueue.length])) {
-                buildCounter++;
-            }
+            typeToBuild = buildQueue[buildCounter % buildQueue.length];
         }
         else {
-            tryBuild(RobotType.TURRET);
+            typeToBuild = RobotType.TURRET;
+        }
+
+        setIndicatorString(0, "min: " + minTurretCount);
+        setIndicatorString(1, "close: " + closeTurretCount);
+        setIndicatorString(2, "total: " + teamTurretCount);
+
+        if (typeToBuild == RobotType.TURRET
+                && minTurretCount < closeTurretCount) {
+            return;
+        }
+
+        if (tryBuild(typeToBuild)) {
+            buildCounter++;
+        }
+    }
+
+    private void getMinTurretCount() {
+        Signal[] signals = rc.emptySignalQueue();
+        minTurretCount = 1010101;
+        for (Signal signal : signals) {
+            if (signal.getTeam() == team
+                    && signal.getMessage() != null) {
+                int[] message = signal.getMessage();
+                MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
+                if (parser.getMessageType() == MessageType.COUNT) {
+                    int currentCount = parser.getCount();
+                    if (currentCount < minTurretCount) {
+                        minTurretCount = currentCount;
+                    }
+                }
+            }
         }
     }
 
