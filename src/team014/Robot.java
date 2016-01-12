@@ -10,15 +10,14 @@ public abstract class Robot {
     protected final Team team;
     protected final Team enemy;
     protected final RobotController rc;
-    protected final int id;
 
-    protected int senseRadius;
-    protected int attackRadius;
+    protected final int senseRadius;
+    protected final int attackRadius;
 
     protected MapLocation currentLocation;
     protected int roundNumber;
 
-    private final Direction[] directions = {Direction.NORTH, Direction.NORTH_EAST, Direction.EAST,
+    protected final Direction[] directions = {Direction.NORTH, Direction.NORTH_EAST, Direction.EAST,
         Direction.SOUTH_EAST, Direction.SOUTH, Direction.SOUTH_WEST, Direction.WEST, Direction.NORTH_WEST};
 
     public Robot(RobotController rc) {
@@ -27,9 +26,10 @@ public abstract class Robot {
         team = rc.getTeam();
         enemy = team.opponent();
         currentLocation = rc.getLocation();
-        id = rc.getID();
 
-        updateTypeParams(rc);
+        RobotType type = rc.getType();
+        senseRadius = type.sensorRadiusSquared;
+        attackRadius = type.attackRadiusSquared;
     }
 
     public void run() {
@@ -44,12 +44,6 @@ public abstract class Robot {
                 e.printStackTrace();
             }
         }
-    }
-
-    protected void updateTypeParams(RobotController rc) {
-        RobotType type = rc.getType();
-        senseRadius = type.sensorRadiusSquared;
-        attackRadius = type.attackRadiusSquared;
     }
 
     protected abstract void doTurn() throws GameActionException;
@@ -170,7 +164,9 @@ public abstract class Robot {
             }
         }
 
-        tryClearRubble(direction);
+        if (rc.getType() != RobotType.TTM) {
+            tryClearRubble(direction);
+        }
     }
 
     private void tryClearRubble(Direction direction) throws GameActionException {
@@ -182,6 +178,10 @@ public abstract class Robot {
     }
 
     protected boolean tryBuild(RobotType robotType) throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return false;
+        }
+
         if (rc.getTeamParts() < robotType.partCost) {
             return false;
         }
@@ -212,10 +212,6 @@ public abstract class Robot {
     }
 
     protected void setIndicatorString(int i, String s) {
-        if (!Config.DEBUG) {
-            return;
-        }
-
         int roundNum = rc.getRoundNum();
         rc.setIndicatorString(i, String.format("%d: %s", roundNum, s));
     }

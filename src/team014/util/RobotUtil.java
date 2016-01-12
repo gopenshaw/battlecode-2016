@@ -2,6 +2,7 @@ package team014.util;
 
 import battlecode.common.MapLocation;
 import battlecode.common.RobotInfo;
+import battlecode.common.RobotType;
 
 public class RobotUtil {
     public static RobotInfo getLowestHealthRobot(RobotInfo[] robots) {
@@ -37,5 +38,16 @@ public class RobotUtil {
         }
 
         return false;
+    }
+
+    public static int getCountOfType(RobotInfo[] robots, RobotType type) {
+        int count = 0;
+        for (int i = 0; i < robots.length; i++) {
+            if (robots[i].type == type) {
+                count++;
+            }
+        }
+
+        return count;
     }
 }

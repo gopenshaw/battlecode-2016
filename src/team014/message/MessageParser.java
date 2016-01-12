@@ -3,15 +3,12 @@ package team014.message;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotType;
 import team014.MessageType;
-import team014.PartsData;
 import team014.RobotData;
 
 public class MessageParser {
     //--Message format
-    //--First integer : 3 bits open, 14 bit health, 15 bit id
+    //--First integer : 1 bit open, 2 bit round number, 14 bit health, 15 bit id
     //--Second integer: 20 bit location, 4 bit robot type, 3 bit message type
-    //--TODO should we have round number??
-    //----only really need round number parity (1 bit)
 
     private final int first;
     private final int second;
@@ -35,12 +32,7 @@ public class MessageParser {
         return new RobotData(id, location, health, type);
     }
 
-    //--Parts message format
-    //--First integer : parts amount
-    //--Second integer: 20 bit location, 3 bit message type
-    public PartsData getPartsData() {
-        MapLocation location = Serializer.decodeMapLocation(second >>> 3, validLocation);
-        int amount = first;
-        return new PartsData(location, amount);
+    public boolean isCurrent(int roundNumber) {
+        return roundNumber % 4 == (first >>> 29) % 4;
     }
 }
