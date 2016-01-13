@@ -44,6 +44,10 @@ public class Bug {
     }
 
     public static Direction getDirection(MapLocation currentLocationC) throws GameActionException {
+        if (currentLocationC.equals(destination)) {
+            return Direction.NONE;
+        }
+
         currentLocation = currentLocationC;
 
         if (previousDirection == null) {

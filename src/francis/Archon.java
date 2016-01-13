@@ -157,8 +157,10 @@ public class Archon extends Robot {
             return;
         }
 
-        if (!currentLocation.isAdjacentTo(baseLocation)) {
-            tryMove(Bug.getDirection(currentLocation));
+        if (currentLocation.distanceSquaredTo(baseLocation) > 2) {
+            Direction direction = Bug.getDirection(currentLocation);
+            rc.setIndicatorString(0, "" + direction);
+            tryMove(direction);
         }
     }
 
