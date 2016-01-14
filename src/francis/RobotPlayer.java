@@ -15,6 +15,8 @@ public class RobotPlayer {
             new Viper(rc).run();
         } else if (type == RobotType.SCOUT) {
             new Scout(rc).run();
+        } else if (type == RobotType.TURRET) {
+            new Turret(rc).run();
         }
 
         while (true);

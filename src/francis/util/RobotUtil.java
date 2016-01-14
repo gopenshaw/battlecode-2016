@@ -79,4 +79,16 @@ public class RobotUtil {
 
         return robotToAttack;
     }
+
+    public static boolean robotCanAttackZombie(RobotInfo robot, RobotInfo zombie) {
+        if (!robot.type.canAttack()) {
+            return false;
+        }
+
+        if (robot.type == RobotType.TURRET) {
+            return (robot.location.distanceSquaredTo(zombie.location) > 5);
+        }
+
+        return true;
+    }
 }

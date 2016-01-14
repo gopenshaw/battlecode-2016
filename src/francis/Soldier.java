@@ -2,26 +2,66 @@ package francis;
 
 import battlecode.common.*;
 import francis.message.MessageParser;
+import francis.util.EnemyStatus;
 import francis.util.RobotUtil;
 
 public class Soldier extends Robot {
-    private MapLocation enemyLocation;
+    private final EnemyStatus enemyStatus;
+    private RobotData enemyToAttack;
     private RobotInfo[] attackableEnemies;
+    private RobotInfo[] nearbyEnemies;
+    private RobotInfo[] nearbyZombies;
 
     public Soldier(RobotController rc) {
         super(rc);
+        enemyStatus = new EnemyStatus();
     }
 
     @Override
     public void doTurn() throws GameActionException {
         senseRobots();
         readSignals();
+        checkIfEnemyOvertakenByZombies();
         attackEnemyRobots();
         tryMoveTowardEnemies();
     }
 
     private void senseRobots() {
         attackableEnemies = senseAttackableEnemies();
+        nearbyEnemies = senseNearbyEnemies();
+        nearbyZombies = senseNearbyZombies();
+        setIndicatorString(0, "nr enemies: " + nearbyEnemies.length
+                + " nr zom: " + nearbyZombies.length
+                + " atk enemies: " + attackableEnemies.length);
+    }
+
+    private void checkIfEnemyOvertakenByZombies() throws GameActionException {
+        if (enemyOvertaken(nearbyEnemies, nearbyZombies)) {
+            setIndicatorString(1, "enemy overtaken");
+        }
+
+    }
+
+    private void ignoreEnemies(RobotInfo[] nearbyEnemies, int numberOfRounds) {
+        for (RobotInfo robot : nearbyEnemies) {
+            enemyStatus.ignoreRobot(robot, roundNumber, numberOfRounds);
+        }
+    }
+
+    private boolean enemyOvertaken(RobotInfo[] nearbyEnemies, RobotInfo[] nearbyZombies) {
+        if (nearbyZombies.length == 0) {
+            return false;
+        }
+
+        for (RobotInfo enemy : nearbyEnemies) {
+            for (RobotInfo zombie : nearbyZombies) {
+                if (RobotUtil.robotCanAttackZombie(enemy, zombie)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     private void tryMoveTowardEnemies() throws GameActionException {
@@ -30,10 +70,12 @@ public class Soldier extends Robot {
             return;
         }
 
-        if (enemyLocation != null) {
+        if (enemyToAttack != null
+                && !enemyStatus.ignoring(enemyToAttack, roundNumber)) {
+            MapLocation enemyLocation = enemyToAttack.location;
             if (rc.canSense(enemyLocation)
                     && rc.senseRobotAtLocation(enemyLocation) == null) {
-                enemyLocation = null;
+                enemyToAttack = null;
             }
             else {
                 tryMoveToward(enemyLocation);
@@ -61,12 +103,8 @@ public class Soldier extends Robot {
                 int[] message = s.getMessage();
                 if (message == null) continue;
                 MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
-                setIndicatorString(0, "message type " + parser.getMessageType());
-                if (parser.getMessageType() == MessageType.ZOMBIE
-                        || parser.getMessageType() == MessageType.ENEMY) {
-                    enemyLocation = parser.getRobotData().location;
-                    setIndicatorString(1, "id " + parser.getRobotData().id);
-                    setIndicatorString(2, "health " + parser.getRobotData().health);
+                if (parser.getMessageType() == MessageType.ENEMY) {
+                    enemyToAttack = parser.getRobotData();
                 }
             }
         }
