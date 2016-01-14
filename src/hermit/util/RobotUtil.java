@@ -60,4 +60,14 @@ public class RobotUtil {
 
         return null;
     }
+
+    public static RobotInfo getRobotCanAttack(RobotInfo[] robots) {
+        for (int i = 0; i < robots.length; i++) {
+            if (robots[i].type.canAttack()) {
+                return robots[i];
+            }
+        }
+
+        return null;
+    }
 }
