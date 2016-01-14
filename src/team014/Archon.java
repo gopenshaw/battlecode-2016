@@ -4,8 +4,8 @@ import battlecode.common.*;
 import team014.message.MessageBuilder;
 import team014.message.MessageParser;
 import team014.nav.Bug;
-import team014.util.AverageMapLocation;
 import team014.util.DirectionUtil;
+import team014.util.LocationUtil;
 import team014.util.RobotUtil;
 
 import java.util.ArrayList;
@@ -21,6 +21,7 @@ public class Archon extends Robot {
     private int closeTurretCount;
     private int minTurretCount;
     private Direction towardCenterEstimate;
+    private boolean baseValidated;
 
     public Archon(RobotController rc) {
         super(rc);
@@ -28,9 +29,14 @@ public class Archon extends Robot {
 
     @Override
     protected void doTurn() throws GameActionException {
-        checkRelativeLocation();
-        getIdAndBaseLocation();
-        if (roundNumber < 2) return;
+        if (roundNumber == 0) {
+            checkRelativeLocation();
+            getIdAndBaseLocation();
+        }
+
+        validateBaseLocation();
+
+        setIndicatorString(0, "base loc: " + baseLocation);
 
         countRobots();
         broadcastTurretCount();
@@ -154,51 +160,117 @@ public class Archon extends Robot {
 
     private void moveTowardBase() throws GameActionException {
         if (!rc.isCoreReady()) {
+            setIndicatorString(0, "abort move toward base");
             return;
         }
 
-        if (!currentLocation.isAdjacentTo(baseLocation)) {
-            tryMove(Bug.getDirection(currentLocation));
+        if (currentLocation.distanceSquaredTo(baseLocation) > 2) {
+            setIndicatorString(0, "too far from base");
+            Direction direction = Bug.getDirection(currentLocation);
+            rc.setIndicatorString(0, "" + direction);
+            tryDigMove(direction);
         }
     }
 
     private void getIdAndBaseLocation() throws GameActionException {
-        int radiusSquared = 2000;
-        if (roundNumber == 0) {
-            rc.broadcastSignal(radiusSquared);
+        MapLocation[] teamArchonLocations = rc.getInitialArchonLocations(team);
 
-            Signal[] signals = rc.emptySignalQueue();
-            for (Signal s : signals) {
-                if (s.getTeam() == team) {
-                    id++;
-                }
-            }
+        setId(teamArchonLocations);
+        baseLocation = LocationUtil.findAverageLocation(teamArchonLocations);
 
-            setIndicatorString(1, "id " + id);
+        Bug.init(rc);
+        Bug.setDestination(baseLocation);
+    }
+
+    private void validateBaseLocation() throws GameActionException {
+        if (baseValidated
+                || !canSenseSurroundings(baseLocation, Config.REQUIRED_RADIUS_AROUND_BASE)) {
+            return;
         }
 
-        if (roundNumber == 1) {
-            rc.broadcastSignal(radiusSquared);
+        if (closeToAnEdge(baseLocation, Config.REQUIRED_RADIUS_AROUND_BASE)) {
+            baseLocation = moveAwayFromEdges(baseLocation, Config.REQUIRED_RADIUS_AROUND_BASE);
+        }
 
-            AverageMapLocation averageMapLocation = new AverageMapLocation(GameConstants.NUMBER_OF_ARCHONS_MAX);
-            averageMapLocation.add(currentLocation);
-            Signal[] signals = rc.emptySignalQueue();
-            for (Signal s : signals) {
-                if (s.getTeam() == team) {
-                    averageMapLocation.add(s.getLocation());
-                }
+        setIndicatorString(2, "base validated.");
+        Bug.setDestination(baseLocation);
+        baseValidated = true;
+    }
+
+    private MapLocation moveAwayFromEdges(MapLocation location, int radius) throws GameActionException {
+        MapLocation newLocation = new MapLocation(location.x, location.y);
+        for (int i = 0; i < 8; i += 2) {
+            if (!rc.onTheMap(location.add(directions[i], radius))) {
+                newLocation = newLocation.add(directions[i].opposite(), radius);
             }
+        }
 
-            baseLocation = averageMapLocation.getAverage();
-            Bug.init(rc);
-            Bug.setDestination(baseLocation);
+        return newLocation;
+    }
+
+    private boolean canSenseSurroundings(MapLocation location, int radius) {
+        for (int i = 0; i < 8; i += 2) {
+            if (!rc.canSense(location.add(directions[i], radius))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private boolean closeToAnEdge(MapLocation location, int radius) throws GameActionException {
+        for (int i = 0; i < 8; i += 2) {
+            if (!rc.onTheMap(location.add(directions[i], radius))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void setId(MapLocation[] teamArchonLocations) {
+        //--All robots will have the same ordering of map locations
+        //  so they will each have a unique ID
+        id = 0;
+        for (int i = 0; i < teamArchonLocations.length; i++) {
+            if (currentLocation.equals(teamArchonLocations[i])) {
+                id = i;
+            }
         }
     }
 
     private void requestSpace() throws GameActionException {
-        if (rc.senseNearbyRobots(2, team).length == 8) {
+        if (needSpace()) {
             rc.broadcastSignal(2);
         }
+    }
+
+    private boolean needSpace() throws GameActionException {
+        RobotInfo[] adjacentTeammates = rc.senseNearbyRobots(2, team);
+        int adjacentOnMapSquares = getAdjacentOnMapSquares(currentLocation);
+        return adjacentTeammates.length == adjacentOnMapSquares;
+    }
+
+    private int getAdjacentOnMapSquares(MapLocation currentLocation) throws GameActionException {
+        int edges = 0;
+        for (int i = 0; i < 8; i += 2) {
+            MapLocation adjacent = currentLocation.add(directions[i]);
+            if (!rc.onTheMap(adjacent)) {
+                edges++;
+                if (edges > 1) {
+                    break;
+                }
+            }
+        }
+
+        if (edges == 2) {
+            return 3;
+        }
+        else if (edges == 1) {
+            return 5;
+        }
+
+        return 8;
     }
 
     private void buildRobot() throws GameActionException {
@@ -216,10 +288,6 @@ public class Archon extends Robot {
         else {
             typeToBuild = RobotType.TURRET;
         }
-
-        setIndicatorString(0, "min: " + minTurretCount);
-        setIndicatorString(1, "close: " + closeTurretCount);
-        setIndicatorString(2, "total: " + teamTurretCount);
 
         if (typeToBuild == RobotType.TURRET
                 && minTurretCount < closeTurretCount) {
