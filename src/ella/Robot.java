@@ -17,6 +17,8 @@ public abstract class Robot {
     protected MapLocation currentLocation;
     protected int roundNumber;
 
+    private StringBuilder[] debugString = new StringBuilder[3];
+
     private final int MAX_RUBBLE_CAN_IGNORE = 50;
 
     protected final Direction[] directions = {Direction.NORTH, Direction.NORTH_EAST, Direction.EAST,
@@ -37,6 +39,7 @@ public abstract class Robot {
     public void run() {
         while(true) {
             try {
+                resetDebugStrings();
                 currentLocation = rc.getLocation();
                 roundNumber = rc.getRoundNum();
                 doTurn();
@@ -45,6 +48,12 @@ public abstract class Robot {
                 System.out.println(e.getMessage());
                 e.printStackTrace();
             }
+        }
+    }
+
+    private void resetDebugStrings() {
+        for (int i = 0; i < debugString.length; i++) {
+            debugString[i] = new StringBuilder();
         }
     }
 
@@ -284,8 +293,12 @@ public abstract class Robot {
 
     protected void setIndicatorString(int i, String s) {
         if (Config.DEBUG) {
-            int roundNum = rc.getRoundNum();
-            rc.setIndicatorString(i, String.format("%d: %s", roundNum, s));
+            if (debugString[i].length() == 0) {
+                debugString[i].append(rc.getRoundNum() + " |");
+            }
+
+            debugString[i].append(s + " -- ");
+            rc.setIndicatorString(i, debugString[i].toString());
         }
     }
 

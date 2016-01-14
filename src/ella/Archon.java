@@ -21,6 +21,7 @@ public class Archon extends Robot {
     private int closeTurretCount;
     private int minTurretCount;
     private Direction towardCenterEstimate;
+    private boolean baseValidated;
 
     public Archon(RobotController rc) {
         super(rc);
@@ -28,9 +29,14 @@ public class Archon extends Robot {
 
     @Override
     protected void doTurn() throws GameActionException {
-        checkRelativeLocation();
-        getIdAndBaseLocation();
-        if (roundNumber < 2) return;
+        if (roundNumber == 0) {
+            checkRelativeLocation();
+            getIdAndBaseLocation();
+        }
+
+        validateBaseLocation();
+
+        setIndicatorString(0, "base loc: " + baseLocation);
 
         countRobots();
         broadcastTurretCount();
@@ -154,10 +160,12 @@ public class Archon extends Robot {
 
     private void moveTowardBase() throws GameActionException {
         if (!rc.isCoreReady()) {
+            setIndicatorString(0, "abort move toward base");
             return;
         }
 
         if (currentLocation.distanceSquaredTo(baseLocation) > 2) {
+            setIndicatorString(0, "too far from base");
             Direction direction = Bug.getDirection(currentLocation);
             rc.setIndicatorString(0, "" + direction);
             tryDigMove(direction);
@@ -166,16 +174,69 @@ public class Archon extends Robot {
 
     private void getIdAndBaseLocation() throws GameActionException {
         MapLocation[] teamArchonLocations = rc.getInitialArchonLocations(team);
+
+        setId(teamArchonLocations);
+        baseLocation = LocationUtil.findAverageLocation(teamArchonLocations);
+
+        Bug.init(rc);
+        Bug.setDestination(baseLocation);
+    }
+
+    private void validateBaseLocation() throws GameActionException {
+        if (baseValidated
+                || !canSenseSurroundings(baseLocation, Config.REQUIRED_RADIUS_AROUND_BASE)) {
+            return;
+        }
+
+        if (closeToAnEdge(baseLocation, Config.REQUIRED_RADIUS_AROUND_BASE)) {
+            baseLocation = moveAwayFromEdges(baseLocation, Config.REQUIRED_RADIUS_AROUND_BASE);
+        }
+
+        setIndicatorString(2, "base validated.");
+        Bug.setDestination(baseLocation);
+        baseValidated = true;
+    }
+
+    private MapLocation moveAwayFromEdges(MapLocation location, int radius) throws GameActionException {
+        MapLocation newLocation = new MapLocation(location.x, location.y);
+        for (int i = 0; i < 8; i += 2) {
+            if (!rc.onTheMap(location.add(directions[i], radius))) {
+                newLocation = newLocation.add(directions[i].opposite(), radius);
+            }
+        }
+
+        return newLocation;
+    }
+
+    private boolean canSenseSurroundings(MapLocation location, int radius) {
+        for (int i = 0; i < 8; i += 2) {
+            if (!rc.canSense(location.add(directions[i], radius))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private boolean closeToAnEdge(MapLocation location, int radius) throws GameActionException {
+        for (int i = 0; i < 8; i += 2) {
+            if (!rc.onTheMap(location.add(directions[i], radius))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void setId(MapLocation[] teamArchonLocations) {
+        //--All robots will have the same ordering of map locations
+        //  so they will each have a unique ID
         id = 0;
         for (int i = 0; i < teamArchonLocations.length; i++) {
             if (currentLocation.equals(teamArchonLocations[i])) {
                 id = i;
             }
         }
-
-        baseLocation = LocationUtil.findAverageLocation(teamArchonLocations);
-        Bug.init(rc);
-        Bug.setDestination(baseLocation);
     }
 
     private void requestSpace() throws GameActionException {
