@@ -30,4 +30,16 @@ public class LocationUtil {
 
         return candidate;
     }
+
+    public static MapLocation findAverageLocation(MapLocation[] mapLocations) {
+        int x = 0;
+        int y = 0;
+        int count = mapLocations.length;
+        for (MapLocation location : mapLocations) {
+            x += location.x;
+            y += location.y;
+        }
+
+        return new MapLocation(x / count, y / count);
+    }
 }

@@ -4,8 +4,8 @@ import battlecode.common.*;
 import ella.message.MessageBuilder;
 import ella.message.MessageParser;
 import ella.nav.Bug;
-import ella.util.AverageMapLocation;
 import ella.util.DirectionUtil;
+import ella.util.LocationUtil;
 import ella.util.RobotUtil;
 
 import java.util.ArrayList;
@@ -165,36 +165,17 @@ public class Archon extends Robot {
     }
 
     private void getIdAndBaseLocation() throws GameActionException {
-        int radiusSquared = 2000;
-        if (roundNumber == 0) {
-            rc.broadcastSignal(radiusSquared);
-
-            Signal[] signals = rc.emptySignalQueue();
-            for (Signal s : signals) {
-                if (s.getTeam() == team) {
-                    id++;
-                }
+        MapLocation[] teamArchonLocations = rc.getInitialArchonLocations(team);
+        id = 0;
+        for (int i = 0; i < teamArchonLocations.length; i++) {
+            if (currentLocation.equals(teamArchonLocations[i])) {
+                id = i;
             }
-
-            setIndicatorString(1, "id " + id);
         }
 
-        if (roundNumber == 1) {
-            rc.broadcastSignal(radiusSquared);
-
-            AverageMapLocation averageMapLocation = new AverageMapLocation(GameConstants.NUMBER_OF_ARCHONS_MAX);
-            averageMapLocation.add(currentLocation);
-            Signal[] signals = rc.emptySignalQueue();
-            for (Signal s : signals) {
-                if (s.getTeam() == team) {
-                    averageMapLocation.add(s.getLocation());
-                }
-            }
-
-            baseLocation = averageMapLocation.getAverage();
-            Bug.init(rc);
-            Bug.setDestination(baseLocation);
-        }
+        baseLocation = LocationUtil.findAverageLocation(teamArchonLocations);
+        Bug.init(rc);
+        Bug.setDestination(baseLocation);
     }
 
     private void requestSpace() throws GameActionException {
