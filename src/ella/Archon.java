@@ -160,7 +160,7 @@ public class Archon extends Robot {
         if (currentLocation.distanceSquaredTo(baseLocation) > 2) {
             Direction direction = Bug.getDirection(currentLocation);
             rc.setIndicatorString(0, "" + direction);
-            tryMove(direction);
+            tryDigMove(direction);
         }
     }
 
@@ -199,10 +199,6 @@ public class Archon extends Robot {
         else {
             typeToBuild = RobotType.TURRET;
         }
-
-        setIndicatorString(0, "min: " + minTurretCount);
-        setIndicatorString(1, "close: " + closeTurretCount);
-        setIndicatorString(2, "total: " + teamTurretCount);
 
         if (typeToBuild == RobotType.TURRET
                 && minTurretCount < closeTurretCount) {

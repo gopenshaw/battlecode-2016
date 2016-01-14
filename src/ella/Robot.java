@@ -17,6 +17,8 @@ public abstract class Robot {
     protected MapLocation currentLocation;
     protected int roundNumber;
 
+    private final int MAX_RUBBLE_CAN_IGNORE = 50;
+
     protected final Direction[] directions = {Direction.NORTH, Direction.NORTH_EAST, Direction.EAST,
         Direction.SOUTH_EAST, Direction.SOUTH, Direction.SOUTH_WEST, Direction.WEST, Direction.NORTH_WEST};
 
@@ -132,6 +134,45 @@ public abstract class Robot {
                 && !RobotUtil.anyCanAttack(nearbyZombies, next);
     }
 
+    public void tryDigMove(Direction direction) throws GameActionException {
+        if (rc.canMove(direction)) {
+            rc.move(direction);
+            return;
+        }
+
+        if (rc.getType() != RobotType.TTM) {
+            if (tryClearRubble(direction)) {
+                return;
+            }
+        }
+
+        Direction left = direction.rotateLeft();
+        if (rc.canMove(left)) {
+            rc.move(left);
+            return;
+        }
+
+        Direction right = direction.rotateRight();
+        if (rc.canMove(right)) {
+            rc.move(right);
+            return;
+        }
+
+        for (int i = 0; i < 2; i++) {
+            left = left.rotateLeft();
+            if (rc.canMove(left)) {
+                rc.move(left);
+                return;
+            }
+
+            right = right.rotateRight();
+            if (rc.canMove(right)) {
+                rc.move(right);
+                return;
+            }
+        }
+    }
+
     protected void tryMove(Direction direction) throws GameActionException {
         if (rc.canMove(direction)) {
             rc.move(direction);
@@ -169,12 +210,16 @@ public abstract class Robot {
         }
     }
 
-    private void tryClearRubble(Direction direction) throws GameActionException {
+    private boolean tryClearRubble(Direction direction) throws GameActionException {
         MapLocation nextLocation = rc.getLocation().add(direction);
         double rubble = rc.senseRubble(nextLocation);
-        if (rubble > 100) {
-            rc.clearRubble(direction);
+        if (rubble <= MAX_RUBBLE_CAN_IGNORE) {
+            return false;
         }
+
+        rc.clearRubble(direction);
+        setIndicatorString(2, "clearing rubblez");
+        return true;
     }
 
     protected boolean tryBuild(RobotType robotType) throws GameActionException {

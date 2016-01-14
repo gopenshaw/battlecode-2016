@@ -4,6 +4,7 @@ import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
+import ella.util.RubbleUtil;
 
 public class Bug {
     //--Set once with init()
@@ -22,6 +23,8 @@ public class Bug {
     private static boolean followingWall;
     private static int distanceStartBugging;
     private static int numberOfNinetyDegreeRotations;
+
+    private static final int DIG_TURNS = 2;
 
     public static void init(RobotController rcC) {
         rc = rcC;
@@ -130,7 +133,7 @@ public class Bug {
     }
 
     private static Direction rotateLeftUntilCanMove(Direction direction) {
-        while (!rc.canMove(direction)) {
+        while (!canMoveOrDig(direction)) {
             direction = direction.rotateLeft();
         }
 
@@ -138,10 +141,23 @@ public class Bug {
     }
 
     private static Direction rotateRightUntilCanMove(Direction direction) {
-        while (!rc.canMove(direction)) {
+        while (!canMoveOrDig(direction)) {
             direction = direction.rotateRight();
         }
 
         return direction;
+    }
+
+    private static boolean canMoveOrDig(Direction direction) {
+        if (rc.canMove(direction)) {
+            return true;
+        }
+
+        MapLocation nextLocation = currentLocation.add(direction);
+        if (RubbleUtil.getRoundsToMakeMovable((int) rc.senseRubble(nextLocation)) <= DIG_TURNS) {
+            return true;
+        }
+
+        return false;
     }
 }
