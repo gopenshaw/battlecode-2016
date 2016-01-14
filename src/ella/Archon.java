@@ -179,9 +179,37 @@ public class Archon extends Robot {
     }
 
     private void requestSpace() throws GameActionException {
-        if (rc.senseNearbyRobots(2, team).length == 8) {
+        if (needSpace()) {
             rc.broadcastSignal(2);
         }
+    }
+
+    private boolean needSpace() throws GameActionException {
+        RobotInfo[] adjacentTeammates = rc.senseNearbyRobots(2, team);
+        int adjacentOnMapSquares = getAdjacentOnMapSquares(currentLocation);
+        return adjacentTeammates.length == adjacentOnMapSquares;
+    }
+
+    private int getAdjacentOnMapSquares(MapLocation currentLocation) throws GameActionException {
+        int edges = 0;
+        for (int i = 0; i < 8; i += 2) {
+            MapLocation adjacent = currentLocation.add(directions[i]);
+            if (!rc.onTheMap(adjacent)) {
+                edges++;
+                if (edges > 1) {
+                    break;
+                }
+            }
+        }
+
+        if (edges == 2) {
+            return 3;
+        }
+        else if (edges == 1) {
+            return 5;
+        }
+
+        return 8;
     }
 
     private void buildRobot() throws GameActionException {
