@@ -26,4 +26,5 @@ bc.conf
 build.xml
 ivy.xml
 .ivy/*
+**/.DS_STORE
 
