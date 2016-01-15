@@ -27,7 +27,7 @@ public class Scout extends Robot {
             if (rc.getMessageSignalCount() >= GameConstants.MESSAGE_SIGNALS_PER_TURN) {
                 break;
             }
-            
+
             Message zombieMessage = MessageBuilder.buildZombieMessage(zombie, roundNumber);
             rc.broadcastMessageSignal(zombieMessage.getFirst(), zombieMessage.getSecond(), senseRadius * 2);
         }

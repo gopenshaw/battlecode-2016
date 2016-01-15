@@ -3,12 +3,16 @@ package jeremy;
 import battlecode.common.*;
 import jeremy.message.Message;
 import jeremy.message.MessageBuilder;
+import jeremy.util.AverageMapLocation;
+import jeremy.util.BoundedQueue;
 import jeremy.util.DirectionUtil;
 
 public class Archon extends Robot {
 
     private RobotType[] buildQueue = {RobotType.SCOUT};
     private int buildQueuePosition = 0;
+    private RobotInfo[] nearbyZombies;
+    private AverageMapLocation previousZombieLocation = new AverageMapLocation(5);
 
     public Archon(RobotController rc) {
         super(rc);
@@ -16,9 +20,33 @@ public class Archon extends Robot {
 
     @Override
     protected void doTurn() throws GameActionException {
+        senseZombies();
         moveAwayFromZombies();
         buildRobots();
-//        requestSpace();
+        moveIfSafe();
+    }
+
+    private void senseZombies() {
+        nearbyZombies = senseNearbyZombies();
+        for (RobotInfo zombie : nearbyZombies) {
+            previousZombieLocation.add(zombie.location);
+        }
+    }
+
+    private void moveIfSafe() throws GameActionException {
+        if (nearbyZombies.length > 0
+                || !rc.isCoreReady()) {
+            return;
+        }
+
+        MapLocation towardZombies = previousZombieLocation.getAverage();
+        if (towardZombies == null) {
+            tryMove(getRandomDirection());
+        }
+        else {
+            setIndicatorString(0, "move toward zombies: " + towardZombies);
+            tryMoveToward(towardZombies);
+        }
     }
 
     private void buildRobots() throws GameActionException {
@@ -36,24 +64,11 @@ public class Archon extends Robot {
         }
     }
 
-    private void requestSpace() throws GameActionException {
-        MapLocation[] adjacent = MapLocation.getAllMapLocationsWithinRadiusSq(currentLocation, 2);
-        for (MapLocation location : adjacent) {
-            if (rc.senseRobotAtLocation(location) == null) {
-                return;
-            }
-        }
-
-        Message spreadMessage = MessageBuilder.buildSpreadMessage(rc.getHealth(), rc.getID(), type, currentLocation);
-        sendMessage(spreadMessage, 2);
-    }
-
     private void moveAwayFromZombies() throws GameActionException {
         if (!rc.isCoreReady()) {
             return;
         }
 
-        RobotInfo[] nearbyZombies = senseNearbyZombies();
         if (nearbyZombies.length > 0) {
             tryMove(DirectionUtil.getDirectionAwayFrom(nearbyZombies, currentLocation));
         }

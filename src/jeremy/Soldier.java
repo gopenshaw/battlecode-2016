@@ -1,9 +1,7 @@
 package jeremy;
 
-import battlecode.common.GameActionException;
-import battlecode.common.RobotController;
-import battlecode.common.RobotInfo;
-import battlecode.common.Signal;
+import battlecode.common.*;
+import jeremy.util.RobotUtil;
 import jeremy.message.MessageParser;
 
 public class Soldier extends Robot {
@@ -18,6 +16,19 @@ public class Soldier extends Robot {
         roundSignals = rc.emptySignalQueue();
         shootZombies();
         moveTowardZombies();
+        moveAwayFromArchon();
+    }
+
+    private void moveAwayFromArchon() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        RobotInfo[] adjacentTeammates = rc.senseNearbyRobots(2, team);
+        RobotInfo archon = RobotUtil.getRobotOfType(adjacentTeammates, RobotType.ARCHON);
+        if (archon != null) {
+            tryMove(archon.location.directionTo(currentLocation));
+        }
     }
 
     private void shootZombies() throws GameActionException {
