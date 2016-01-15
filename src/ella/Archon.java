@@ -6,6 +6,7 @@ import ella.message.MessageParser;
 import ella.nav.Bug;
 import ella.util.DirectionUtil;
 import ella.util.LocationUtil;
+import ella.util.MapUtil;
 import ella.util.RobotUtil;
 
 import java.util.ArrayList;
@@ -172,11 +173,18 @@ public class Archon extends Robot {
         }
     }
 
+    private MapLocation getBaseLocation(MapLocation[] teamArchons, MapLocation[] enemyArchons) {
+        MapBounds boundaryEstimate = MapUtil.getBoundsThatEncloseLocations(teamArchons, enemyArchons);
+        setIndicatorString(2, "boundary estimate" + boundaryEstimate);
+        return MapUtil.getClosestToBoundary(teamArchons, boundaryEstimate);
+    }
+
     private void getIdAndBaseLocation() throws GameActionException {
         MapLocation[] teamArchonLocations = rc.getInitialArchonLocations(team);
+        MapLocation[] enemyArchonLocations = rc.getInitialArchonLocations(enemy);
 
         setId(teamArchonLocations);
-        baseLocation = LocationUtil.findAverageLocation(teamArchonLocations);
+        baseLocation = getBaseLocation(teamArchonLocations, enemyArchonLocations);
 
         Bug.init(rc);
         Bug.setDestination(baseLocation);
