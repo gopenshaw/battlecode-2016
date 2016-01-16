@@ -4,9 +4,12 @@ import battlecode.common.*;
 import jeremy.message.Message;
 import jeremy.message.MessageBuilder;
 import jeremy.util.DirectionUtil;
+import jeremy.util.LocationUtil;
+import jeremy.util.RobotUtil;
 
 public class Scout extends Robot {
     private static final int ROUNDS_TO_REVERSE = 4;
+    private final int ZOMBIE_BROADCAST_RADIUS = senseRadius * 4;
     private Direction exploreDirection;
     private final int LOOKAHEAD_LENGTH = 5;
     private RobotInfo[] nearbyZombies;
@@ -25,18 +28,17 @@ public class Scout extends Robot {
     }
 
     private void broadcastZombies() throws GameActionException {
-        for (RobotInfo zombie : nearbyZombies) {
-            if (rc.getMessageSignalCount() >= GameConstants.MESSAGE_SIGNALS_PER_TURN) {
-                break;
-            }
-
-            Message zombieMessage = MessageBuilder.buildZombieMessage(zombie, roundNumber);
-            rc.broadcastMessageSignal(zombieMessage.getFirst(), zombieMessage.getSecond(), senseRadius * 2);
+        if (nearbyZombies.length == 0) {
+            return;
         }
+        RobotInfo closestZombie = RobotUtil.getClosestRobotToLocation(nearbyZombies, currentLocation);
+        Message zombieMessage = MessageBuilder.buildZombieMessage(closestZombie, roundNumber);
+        rc.broadcastMessageSignal(zombieMessage.getFirst(), zombieMessage.getSecond(), ZOMBIE_BROADCAST_RADIUS);
     }
 
     private void senseZombies() {
         nearbyZombies = senseNearbyZombies();
+        setIndicatorString(0, "zombies sensed: " + nearbyZombies.length);
     }
 
     private void moveAwayFromZombies() throws GameActionException {

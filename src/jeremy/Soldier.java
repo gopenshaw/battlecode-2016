@@ -1,11 +1,16 @@
 package jeremy;
 
 import battlecode.common.*;
+import jeremy.util.BoundedQueue;
+import jeremy.util.DirectionUtil;
 import jeremy.util.RobotUtil;
 import jeremy.message.MessageParser;
 
 public class Soldier extends Robot {
     private Signal[] roundSignals;
+    private RobotInfo[] attackableZombies;
+    private RobotInfo[] nearbyZombies;
+    BoundedQueue<Integer> zombieMemory = new BoundedQueue<Integer>(3);
 
     public Soldier(RobotController rc) {
         super(rc);
@@ -14,9 +19,62 @@ public class Soldier extends Robot {
     @Override
     protected void doTurn() throws GameActionException {
         roundSignals = rc.emptySignalQueue();
+        senseZombies();
         shootZombies();
-        moveTowardZombies();
+        microAwayFromZombies();
+        moveTowardZombieNotGettingCloser();
+        moveTowardBroadcastZombie();
         moveAwayFromArchon();
+        updateZombieMemory();
+    }
+
+    private void updateZombieMemory() {
+        forgetZombiesFromLastTurn();
+        rememberZombiesFromThisTurn();
+    }
+
+    private void rememberZombiesFromThisTurn() {
+        for (RobotInfo zombie : nearbyZombies) {
+            zombieMemory.add(zombie.ID);
+        }
+    }
+
+    private void forgetZombiesFromLastTurn() {
+        zombieMemory.clear();
+    }
+
+    private void moveTowardZombieNotGettingCloser() throws GameActionException {
+        if (nearbyZombies.length == 0
+                || !rc.isCoreReady()) {
+            return;
+        }
+
+        for (RobotInfo zombie : nearbyZombies) {
+            if (zombie.type != RobotType.BIGZOMBIE
+                    && sawZombieLastTurn(zombie)) {
+                tryMoveToward(zombie.location);
+                break;
+            }
+        }
+
+    }
+
+    private boolean sawZombieLastTurn(RobotInfo zombie) {
+        return zombieMemory.contains(zombie.ID);
+    }
+
+    private void microAwayFromZombies() throws GameActionException {
+        if (attackableZombies.length == 0
+                || !rc.isCoreReady()) {
+            return;
+        }
+
+        tryMove(DirectionUtil.getDirectionAwayFrom(attackableZombies, currentLocation));
+    }
+
+    private void senseZombies() {
+        attackableZombies = senseAttackableZombies();
+        nearbyZombies = senseNearbyZombies();
     }
 
     private void moveAwayFromArchon() throws GameActionException {
@@ -36,15 +94,15 @@ public class Soldier extends Robot {
             return;
         }
 
-        RobotInfo[] attackableZombies = senseAttackableZombies();
-        if (attackableZombies.length == 0) {
+        RobotInfo lowestHealthZombie = RobotUtil.getLowestHealthRobot(attackableZombies);
+        if (lowestHealthZombie == null) {
             return;
         }
 
-        rc.attackLocation(attackableZombies[0].location);
+        rc.attackLocation(lowestHealthZombie.location);
     }
 
-    private void moveTowardZombies() throws GameActionException {
+    private void moveTowardBroadcastZombie() throws GameActionException {
         if (!rc.isCoreReady()) {
             return;
         }

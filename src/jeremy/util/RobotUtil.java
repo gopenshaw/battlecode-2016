@@ -70,4 +70,18 @@ public class RobotUtil {
 
         return null;
     }
+
+    public static RobotInfo getClosestRobotToLocation(RobotInfo[] robots, MapLocation location) {
+        int closestLocationDistance = Integer.MAX_VALUE;
+        RobotInfo closestRobot = null;
+
+        for (RobotInfo robot : robots) {
+            int currentDistance = robot.location.distanceSquaredTo(location);
+            if (currentDistance < closestLocationDistance) {
+                closestLocationDistance = currentDistance;
+                closestRobot = robot;
+            }
+        }
+        return closestRobot;
+    }
 }
