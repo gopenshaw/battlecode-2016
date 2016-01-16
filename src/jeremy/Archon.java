@@ -40,7 +40,8 @@ public class Archon extends Robot {
         }
 
         MapLocation towardZombies = previousZombieLocation.getAverage();
-        if (towardZombies == null) {
+        if (towardZombies == null
+                || towardZombies.equals(currentLocation)) {
             tryMove(getRandomDirection());
         }
         else {

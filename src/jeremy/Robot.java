@@ -83,8 +83,11 @@ public abstract class Robot {
 
     protected void tryMoveToward(MapLocation location) throws GameActionException {
         MapLocation currentLocation = rc.getLocation();
-        Direction moveDirection = currentLocation.directionTo(location);
+        if (currentLocation.equals(location)) {
+            return;
+        }
 
+        Direction moveDirection = currentLocation.directionTo(location);
         if (location.isAdjacentTo(currentLocation)) {
             double rubble = rc.senseRubble(location);
             if (rubble >= 100) {
