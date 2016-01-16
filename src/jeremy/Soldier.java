@@ -11,6 +11,8 @@ public class Soldier extends Robot {
     private RobotInfo[] attackableZombies;
     private RobotInfo[] nearbyZombies;
     BoundedQueue<Integer> zombieMemory = new BoundedQueue<Integer>(3);
+    private RobotData zombieDen;
+    private RobotData zombieToAttack;
 
     public Soldier(RobotController rc) {
         super(rc);
@@ -18,14 +20,38 @@ public class Soldier extends Robot {
 
     @Override
     protected void doTurn() throws GameActionException {
-        roundSignals = rc.emptySignalQueue();
+        readBroadcasts();
         senseZombies();
         shootZombies();
         microAwayFromZombies();
         moveTowardZombieNotGettingCloser();
-        moveTowardBroadcastZombie();
+        moveTowardZombie();
+        moveTowardDen();
         moveAwayFromArchon();
         updateZombieMemory();
+    }
+
+    private void readBroadcasts() {
+        roundSignals = rc.emptySignalQueue();
+        zombieToAttack = getZombieToAttack();
+        if (zombieDen == null) {
+            zombieDen = getZombieDen();
+        }
+    }
+
+    private void moveTowardDen() throws GameActionException {
+        if (zombieDen == null
+                || !rc.isCoreReady()) {
+            return;
+        }
+
+        if (rc.canSenseLocation(zombieDen.location)
+                && rc.senseRobotAtLocation(zombieDen.location) == null) {
+            zombieDen = null;
+            return;
+        }
+
+        tryMoveToward(zombieDen.location);
     }
 
     private void updateZombieMemory() {
@@ -51,6 +77,7 @@ public class Soldier extends Robot {
 
         for (RobotInfo zombie : nearbyZombies) {
             if (zombie.type != RobotType.BIGZOMBIE
+                    && zombie.type != RobotType.ZOMBIEDEN
                     && sawZombieLastTurn(zombie)) {
                 tryMoveToward(zombie.location);
                 break;
@@ -65,7 +92,8 @@ public class Soldier extends Robot {
 
     private void microAwayFromZombies() throws GameActionException {
         if (attackableZombies.length == 0
-                || !rc.isCoreReady()) {
+                || !rc.isCoreReady()
+                || !RobotUtil.anyCanAttack(attackableZombies)) {
             return;
         }
 
@@ -102,21 +130,20 @@ public class Soldier extends Robot {
         rc.attackLocation(lowestHealthZombie.location);
     }
 
-    private void moveTowardBroadcastZombie() throws GameActionException {
+    private void moveTowardZombie() throws GameActionException {
         if (!rc.isCoreReady()) {
             return;
         }
 
-        RobotData zombie = getBroadcastZombie();
-        if (zombie == null) {
+        if (zombieToAttack == null) {
             return;
         }
 
-        tryMoveToward(zombie.location);
-    }
+        tryMoveToward(zombieToAttack.location);
+   }
 
 
-    private RobotData getBroadcastZombie() {
+    private RobotData getZombieToAttack() {
         for (Signal s : roundSignals) {
             if (s.getTeam() != team) continue;
 
@@ -124,8 +151,32 @@ public class Soldier extends Robot {
             if (message == null) continue;
 
             MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
+            setIndicatorString(0, " " + parser.getMessageType());
             if (parser.getMessageType() == MessageType.ZOMBIE) {
-                return parser.getRobotData();
+                RobotData robotData = parser.getRobotData();
+                if (robotData.type != RobotType.ZOMBIEDEN) {
+                    return robotData;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private RobotData getZombieDen() {
+        for (Signal s : roundSignals) {
+            if (s.getTeam() != team) continue;
+
+            int[] message = s.getMessage();
+            if (message == null) continue;
+
+            MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
+            setIndicatorString(0, " " + parser.getMessageType());
+            if (parser.getMessageType() == MessageType.ZOMBIE) {
+                RobotData robotData = parser.getRobotData();
+                if (robotData.type == RobotType.ZOMBIEDEN) {
+                    return robotData;
+                }
             }
         }
 

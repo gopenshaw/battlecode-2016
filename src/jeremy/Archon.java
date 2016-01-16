@@ -9,7 +9,10 @@ import jeremy.util.DirectionUtil;
 
 public class Archon extends Robot {
 
-    private RobotType[] buildQueue = {RobotType.SCOUT};
+    private RobotType[] buildQueue = {RobotType.SCOUT, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER,
+        RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER,
+        RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER };
+
     private int buildQueuePosition = 0;
     private RobotInfo[] nearbyZombies;
     private AverageMapLocation previousZombieLocation = new AverageMapLocation(5);
@@ -24,6 +27,7 @@ public class Archon extends Robot {
         moveAwayFromZombies();
         buildRobots();
         moveIfSafe();
+        repairRobots();
     }
 
     private void senseZombies() {
@@ -55,13 +59,8 @@ public class Archon extends Robot {
             return;
         }
 
-        if (buildQueuePosition < buildQueue.length) {
-            if (tryBuild(buildQueue[buildQueuePosition])) {
-                buildQueuePosition++;
-            }
-        }
-        else {
-            tryBuild(RobotType.SOLDIER);
+        if (tryBuild(buildQueue[buildQueuePosition % buildQueue.length])) {
+            buildQueuePosition++;
         }
     }
 
@@ -73,5 +72,28 @@ public class Archon extends Robot {
         if (nearbyZombies.length > 0) {
             tryMove(DirectionUtil.getDirectionAwayFrom(nearbyZombies, currentLocation));
         }
+    }
+
+    private void repairRobots() throws GameActionException {
+        RobotInfo[] repairableRobots = rc.senseNearbyRobots(attackRadius, team);
+        RobotInfo robotToRepair = null;
+        double lowestHealth = 1000000;
+        for (RobotInfo r : repairableRobots) {
+            if (r.type == RobotType.ARCHON) {
+                continue;
+            }
+
+            if (r.health < r.type.maxHealth
+                    && r.health < lowestHealth) {
+                lowestHealth = r.health;
+                robotToRepair = r;
+            }
+        }
+
+        if (robotToRepair == null) {
+            return;
+        }
+
+        rc.repair(robotToRepair.location);
     }
 }

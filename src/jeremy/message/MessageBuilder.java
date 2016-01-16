@@ -15,11 +15,12 @@ public class MessageBuilder {
     //--First integer : 1 bit open, 2 bit round number, 14 bit health, 15 bit id
     //--Second integer: 20 bit location, 4 bit robot type, 3 bit message type
     public static Message buildZombieMessage(RobotInfo zombie, int roundNumber) {
-        int first = (roundNumber % 4 << 29) + ((int) zombie.health << 15) + zombie.ID;
-        int second = (Serializer.encode(zombie.location) << 7)
-                + (Serializer.encode(zombie.type) << 3)
-                + Serializer.encode(MessageType.ZOMBIE);
-        return new Message(first, second, MessageType.ZOMBIE);
+//        int first = (roundNumber % 4 << 29) + ((int) zombie.health << 15) + zombie.ID;
+//        int second = (Serializer.encode(zombie.location) << 7)
+//                + (Serializer.encode(zombie.type) << 3)
+//                + Serializer.encode(MessageType.ZOMBIE);
+//        return new Message(first, second, MessageType.ZOMBIE);
+        return buildRobotMessage(zombie.health, zombie.ID, zombie.type, zombie.location, MessageType.ZOMBIE);
     }
 
     public static Message buildEnemyMessage(RobotInfo enemy, int roundNumber) {
