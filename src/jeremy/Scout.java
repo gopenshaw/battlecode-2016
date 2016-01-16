@@ -6,9 +6,11 @@ import jeremy.message.MessageBuilder;
 import jeremy.util.DirectionUtil;
 
 public class Scout extends Robot {
+    private static final int ROUNDS_TO_REVERSE = 4;
     private Direction exploreDirection;
     private final int LOOKAHEAD_LENGTH = 5;
     private RobotInfo[] nearbyZombies;
+    private int ignoreEnemiesRound;
 
     public Scout(RobotController rc) {
         super(rc);
@@ -56,18 +58,26 @@ public class Scout extends Robot {
             setIndicatorString(1, "explore: " + exploreDirection);
         }
 
-        //--check ahead
-        MapLocation lookaheadLocation = currentLocation.add(exploreDirection, LOOKAHEAD_LENGTH);
-        Direction newDirection = null;
-        while (!rc.onTheMap(lookaheadLocation)) {
-            newDirection = getExploreDirection(exploreDirection);
-            setIndicatorString(1, "new: " + newDirection);
-            lookaheadLocation = currentLocation.add(newDirection, LOOKAHEAD_LENGTH);
+        if (senseNearbyEnemies().length > 0
+                && roundNumber > ignoreEnemiesRound + ROUNDS_TO_REVERSE) {
+            exploreDirection = exploreDirection.opposite();
+            ignoreEnemiesRound = roundNumber;
+        }
+        else {
+            //--check ahead
+            MapLocation lookaheadLocation = currentLocation.add(exploreDirection, LOOKAHEAD_LENGTH);
+            Direction newDirection = null;
+            while (!rc.onTheMap(lookaheadLocation)) {
+                newDirection = getExploreDirection(exploreDirection);
+                setIndicatorString(1, "new: " + newDirection);
+                lookaheadLocation = currentLocation.add(newDirection, LOOKAHEAD_LENGTH);
+            }
+
+            if (newDirection != null) {
+                exploreDirection = newDirection;
+            }
         }
 
-        if (newDirection != null) {
-            exploreDirection = newDirection;
-        }
 
         if (rc.isCoreReady()) {
             tryMove(exploreDirection);
