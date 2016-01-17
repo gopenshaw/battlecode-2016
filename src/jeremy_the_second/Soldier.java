@@ -22,16 +22,27 @@ public class Soldier extends Robot {
     @Override
     protected void doTurn() throws GameActionException {
         readBroadcasts();
-        senseZombies();
         senseEnemies();
-        shootZombies();
+        senseZombies();
         shootEnemies();
+        shootZombies();
+        microAwayFromEnemies();
         microAwayFromZombies();
         moveTowardZombieNotGettingCloser();
         moveTowardZombie();
         moveTowardDen();
         moveAwayFromArchon();
         updateZombieMemory();
+    }
+
+    private void microAwayFromEnemies() throws GameActionException {
+        if (attackableEnemies.length == 0
+                || !rc.isCoreReady()
+                || !RobotUtil.anyCanAttack(attackableEnemies)) {
+            return;
+        }
+
+        tryMove(DirectionUtil.getDirectionAwayFrom(attackableEnemies, currentLocation));
     }
 
     private void readBroadcasts() {

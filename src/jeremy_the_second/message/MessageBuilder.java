@@ -39,7 +39,7 @@ public class MessageBuilder {
         return buildRobotMessage(health, id, type, location, MessageType.SPREAD);
     }
 
-    private static Message buildRobotMessage(double health, int id, RobotType robotType, MapLocation location, MessageType messageType) {
+    public static Message buildRobotMessage(double health, int id, RobotType robotType, MapLocation location, MessageType messageType) {
         int first = ((int) health << 15) + id;
         int second = (Serializer.encode(location) << 7)
                 + (Serializer.encode(robotType) << 3)
