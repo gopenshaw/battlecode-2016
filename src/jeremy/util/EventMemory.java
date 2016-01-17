@@ -4,7 +4,7 @@ public class EventMemory {
     private final int[] memory;
     private final int firstRound;
 
-    private final int RECENT = 200;
+    private final int RECENT = 80;
 
     private final Event[] eventEncoding = {
             Event.BROADCAST_ZOMBIES_DEAD,

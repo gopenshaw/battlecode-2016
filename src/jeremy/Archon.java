@@ -19,6 +19,7 @@ public class Archon extends Robot {
     private MapLocation previousPartLocation;
     private EventMemory eventMemory;
     private boolean zombiesDead;
+    private MapLocation enemyLocation;
 
     public Archon(RobotController rc) {
         super(rc);
@@ -29,14 +30,28 @@ public class Archon extends Robot {
     protected void doTurn() throws GameActionException {
         roundSignals = rc.emptySignalQueue();
         readAnnouncements();
+        readSignals();
         senseZombies();
         moveAwayFromZombies();
         moveAwayFromEnemies();
-        goToSpecialPlace();
         buildRobots();
-        getParts();
         moveIfSafe();
+        getParts();
         repairRobots();
+    }
+
+    private void readSignals() {
+        for (Signal s : roundSignals) {
+            if (s.getTeam() == team) {
+                int[] message = s.getMessage();
+                if (message == null) continue;
+                MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
+                if (parser.getMessageType() == MessageType.ENEMY) {
+                    enemyLocation = parser.getRobotData().location;
+                    break;
+                }
+            }
+        }
     }
 
     private void moveAwayFromEnemies() throws GameActionException {
@@ -99,6 +114,15 @@ public class Archon extends Robot {
     private void moveIfSafe() throws GameActionException {
         if (nearbyZombies.length > 0
                 || !rc.isCoreReady()) {
+            return;
+        }
+
+        setIndicatorString(0, "enemy location is " + enemyLocation);
+
+        if (zombiesDead
+                && enemyLocation != null
+                && currentLocation.distanceSquaredTo(enemyLocation) > 15 * 15) {
+            tryMoveToward(enemyLocation);
             return;
         }
 

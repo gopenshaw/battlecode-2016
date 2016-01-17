@@ -8,10 +8,9 @@ import jeremy.util.RobotUtil;
 public class Viper extends Robot {
     private static final int SAFE_DISTANCE_FROM_ENEMY_BASE = 100;
     private Signal[] roundSignals;
-    private RobotInfo[] attackableZombies;
-    BoundedQueue<Integer> zombieMemory = new BoundedQueue<Integer>(3);
     private RobotInfo[] attackableEnemies;
     private MapLocation enemyLocation;
+    private int hasAdvantageRound;
 
     public Viper(RobotController rc) {
         super(rc);
@@ -22,22 +21,33 @@ public class Viper extends Robot {
         readBroadcasts();
         senseRobots();
         shootEnemies();
-        goToSpecialPlace();
         moveTowardEnemy();
         moveAwayFromArchon();
     }
 
     private void moveTowardEnemy() throws GameActionException {
+        setIndicatorString(0, "enemy location is " + enemyLocation);
         if (enemyLocation == null
                 || attackableEnemies.length > 0
                 || !rc.isCoreReady()) {
             return;
         }
 
-        if (roundNumber > Config.KILL_ROUND
+        if (shouldEngage()
                 || currentLocation.distanceSquaredTo(enemyLocation) > SAFE_DISTANCE_FROM_ENEMY_BASE) {
             tryMoveToward(enemyLocation);
         }
+    }
+
+    private boolean shouldEngage() {
+        if (hasAdvantageRound == 0
+                && enemyLocation != null
+                && rc.getTeamParts() < 60) {
+            hasAdvantageRound = roundNumber;
+            setIndicatorString(1, "advantage round " + hasAdvantageRound);
+        }
+
+        return roundNumber - 100 > hasAdvantageRound;
     }
 
     private void shootEnemies() throws GameActionException {

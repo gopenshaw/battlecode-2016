@@ -37,13 +37,13 @@ public class Scout extends Robot {
         broadcastEnemy();
         doRepeatedBroadcasts();
         moveAwayFromZombies();
-        goToSpecialPlace();
         broadcastAnnouncements();
         explore();
     }
 
     private void broadcastParts() throws GameActionException {
-        if (!zombiesDead) {
+        if (!zombiesDead
+                || roundNumber % 2 == 1) {
             return;
         }
 
