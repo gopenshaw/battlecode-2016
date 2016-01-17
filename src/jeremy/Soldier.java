@@ -14,6 +14,7 @@ public class Soldier extends Robot {
     private RobotData zombieDen;
     private RobotData zombieToAttack;
     private RobotInfo[] attackableEnemies;
+    private MapLocation enemyLocation;
 
     public Soldier(RobotController rc) {
         super(rc);
@@ -35,14 +36,13 @@ public class Soldier extends Robot {
     }
 
     private void moveTowardEnemy() throws GameActionException {
-        if (!rc.isCoreReady()
-                || attackableEnemies.length > 0) {
+        if (enemyLocation == null
+                || attackableEnemies.length > 0
+                || !rc.isCoreReady()) {
             return;
         }
 
-        if (roundNumber > 1120) {
-            tryMoveToward(new MapLocation(326, 380));
-        }
+        tryMoveToward(enemyLocation);
     }
 
     private void shootEnemies() throws GameActionException {
@@ -64,6 +64,10 @@ public class Soldier extends Robot {
         zombieToAttack = getZombieToAttack();
         if (zombieDen == null) {
             zombieDen = getZombieDen();
+        }
+
+        if (enemyLocation == null) {
+            enemyLocation = getEnemyLocation();
         }
     }
 
@@ -205,6 +209,22 @@ public class Soldier extends Robot {
                 if (robotData.type == RobotType.ZOMBIEDEN) {
                     return robotData;
                 }
+            }
+        }
+
+        return null;
+    }
+
+    private MapLocation getEnemyLocation() {
+        for (Signal s : roundSignals) {
+            if (s.getTeam() != team) continue;
+
+            int[] message = s.getMessage();
+            if (message == null) continue;
+
+            MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
+            if (parser.getMessageType() == MessageType.ENEMY) {
+                return parser.getRobotData().location;
             }
         }
 
