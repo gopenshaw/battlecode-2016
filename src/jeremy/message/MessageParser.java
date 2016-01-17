@@ -39,4 +39,12 @@ public class MessageParser {
     public int getCount() {
         return first;
     }
+
+    public AnnouncementMode getAnnouncementMode() {
+        return Serializer.decodeAnnouncementMode((second >>> 3) & 0xF);
+    }
+
+    public AnnouncementSubject getAnnouncementSubject() {
+        return Serializer.decodeAnnouncementSubject(first);
+    }
 }

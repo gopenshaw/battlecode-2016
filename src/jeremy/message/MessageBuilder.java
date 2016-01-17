@@ -52,4 +52,11 @@ public class MessageBuilder {
         int second =  Serializer.encode(MessageType.COUNT);
         return new Message(first, second, MessageType.COUNT);
     }
+
+    public static Message buildAnnouncement(AnnouncementSubject announcementSubject, AnnouncementMode announcementMode) {
+        int first = Serializer.encode(announcementSubject);
+        int second = (Serializer.encode(announcementMode) << 3)
+                + Serializer.encode(MessageType.ANNOUNCEMENT);
+        return new Message(first, second, MessageType.ANNOUNCEMENT);
+    }
 }
