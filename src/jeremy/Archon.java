@@ -4,6 +4,7 @@ import battlecode.common.*;
 import jeremy.message.AnnouncementMode;
 import jeremy.message.AnnouncementSubject;
 import jeremy.message.MessageParser;
+import jeremy.nav.Bug;
 import jeremy.util.*;
 
 public class Archon extends Robot {
@@ -23,6 +24,7 @@ public class Archon extends Robot {
 
     public Archon(RobotController rc) {
         super(rc);
+        Bug.init(rc);
         eventMemory = new EventMemory(0);
     }
 
@@ -118,6 +120,20 @@ public class Archon extends Robot {
         }
 
         setIndicatorString(0, "enemy location is " + enemyLocation);
+
+        RobotInfo[] nearbyNeutrals = senseNearbyNeutrals();
+        if (nearbyNeutrals.length > 0) {
+            RobotInfo closestNeutral = RobotUtil.getClosestRobotToLocation(nearbyNeutrals, currentLocation);
+            Bug.setDestination(closestNeutral.location);
+            if (currentLocation.isAdjacentTo(closestNeutral.location)) {
+                rc.activate(closestNeutral.location);
+            }
+            else {
+                tryMove(Bug.getDirection(currentLocation));
+            }
+
+            return;
+        }
 
         if (zombiesDead
                 && enemyLocation != null
