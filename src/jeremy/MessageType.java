@@ -1,5 +1,5 @@
 package jeremy;
 
 public enum MessageType {
-    PARTS, ENEMY, ID, ZOMBIE, SPREAD, COUNT, ANNOUNCEMENT
+    PARTS, ENEMY, ID, ZOMBIE, ANNOUNCEMENT
 }
