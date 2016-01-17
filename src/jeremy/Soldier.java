@@ -13,6 +13,7 @@ public class Soldier extends Robot {
     BoundedQueue<Integer> zombieMemory = new BoundedQueue<Integer>(3);
     private RobotData zombieDen;
     private RobotData zombieToAttack;
+    private RobotInfo[] attackableEnemies;
 
     public Soldier(RobotController rc) {
         super(rc);
@@ -21,14 +22,41 @@ public class Soldier extends Robot {
     @Override
     protected void doTurn() throws GameActionException {
         readBroadcasts();
-        senseZombies();
+        senseRobots();
         shootZombies();
+        shootEnemies();
         microAwayFromZombies();
         moveTowardZombieNotGettingCloser();
         moveTowardZombie();
         moveTowardDen();
+        moveTowardEnemy();
         moveAwayFromArchon();
         updateZombieMemory();
+    }
+
+    private void moveTowardEnemy() throws GameActionException {
+        if (!rc.isCoreReady()
+                || attackableEnemies.length > 0) {
+            return;
+        }
+
+        if (roundNumber > 1120) {
+            tryMoveToward(new MapLocation(326, 380));
+        }
+    }
+
+    private void shootEnemies() throws GameActionException {
+        if (!rc.isWeaponReady()
+                || attackableEnemies.length == 0) {
+            return;
+        }
+
+        RobotInfo lowestHealthEnemy = RobotUtil.getLowestHealthRobot(attackableEnemies);
+        if (lowestHealthEnemy == null) {
+            return;
+        }
+
+        rc.attackLocation(lowestHealthEnemy.location);
     }
 
     private void readBroadcasts() {
@@ -100,8 +128,9 @@ public class Soldier extends Robot {
         tryMove(DirectionUtil.getDirectionAwayFrom(attackableZombies, currentLocation));
     }
 
-    private void senseZombies() {
+    private void senseRobots() {
         attackableZombies = senseAttackableZombies();
+        attackableEnemies = senseAttackableEnemies();
         nearbyZombies = senseNearbyZombies();
     }
 
@@ -118,7 +147,8 @@ public class Soldier extends Robot {
     }
 
     private void shootZombies() throws GameActionException {
-        if (!rc.isWeaponReady()) {
+        if (!rc.isWeaponReady()
+                || attackableZombies.length == 0) {
             return;
         }
 
@@ -151,7 +181,6 @@ public class Soldier extends Robot {
             if (message == null) continue;
 
             MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
-            setIndicatorString(0, " " + parser.getMessageType());
             if (parser.getMessageType() == MessageType.ZOMBIE) {
                 RobotData robotData = parser.getRobotData();
                 if (robotData.type != RobotType.ZOMBIEDEN) {
@@ -171,7 +200,6 @@ public class Soldier extends Robot {
             if (message == null) continue;
 
             MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
-            setIndicatorString(0, " " + parser.getMessageType());
             if (parser.getMessageType() == MessageType.ZOMBIE) {
                 RobotData robotData = parser.getRobotData();
                 if (robotData.type == RobotType.ZOMBIEDEN) {

@@ -88,15 +88,42 @@ public abstract class Robot {
         }
 
         Direction moveDirection = currentLocation.directionTo(location);
-        if (location.isAdjacentTo(currentLocation)) {
-            double rubble = rc.senseRubble(location);
-            if (rubble >= 100) {
-                rc.clearRubble(moveDirection);
+        if (type == RobotType.ARCHON
+                || type == RobotType.TTM) {
+            tryMove(moveDirection);
+        }
+        else {
+            tryMoveDig(moveDirection);
+        }
+    }
+
+    private void tryMoveDig(Direction targetDirection) throws GameActionException {
+        int[] moveSequence1 = {0, 7, 1};
+        int[] digSequence1 = {0, 7, 1};
+        int[] moveSequence2 = {6, 2, 5, 3};
+        int initialDirection = getDirectionNumber(targetDirection);
+        Direction currentDirection;
+        for (int i = 0; i < moveSequence1.length; i++) {
+            currentDirection = directions[(initialDirection + moveSequence1[i]) % 8];
+            if (rc.canMove(currentDirection)) {
+                rc.move(currentDirection);
                 return;
             }
         }
 
-        tryMove(moveDirection);
+        for (int i = 0; i < digSequence1.length; i++) {
+            currentDirection = directions[(initialDirection + digSequence1[i]) % 8];
+        }
+
+        for (int i = 0; i < moveSequence2.length; i++) {
+            currentDirection = directions[(initialDirection + moveSequence2[i]) % 8];
+            if (rc.canMove(currentDirection)) {
+                rc.move(currentDirection);
+                return;
+            }
+        }
+
+        tryClearRubble(targetDirection);
     }
 
     protected boolean trySafeMove(Direction direction,
@@ -187,40 +214,20 @@ public abstract class Robot {
         }
     }
 
-    protected void tryMove(Direction direction) throws GameActionException {
-        if (rc.canMove(direction)) {
-            rc.move(direction);
-            return;
-        }
-
-        Direction left = direction.rotateLeft();
-        if (rc.canMove(left)) {
-            rc.move(left);
-            return;
-        }
-
-        Direction right = direction.rotateRight();
-        if (rc.canMove(right)) {
-            rc.move(right);
-            return;
-        }
-
-        for (int i = 0; i < 2; i++) {
-            left = left.rotateLeft();
-            if (rc.canMove(left)) {
-                rc.move(left);
-                return;
-            }
-
-            right = right.rotateRight();
-            if (rc.canMove(right)) {
-                rc.move(right);
+    protected void tryMove(Direction targetDirection) throws GameActionException {
+        int[] rotations = {0, 7, 1, 6, 2, 5, 3};
+        int initialDirection = getDirectionNumber(targetDirection);
+        Direction currentDirection;
+        for (int i = 0; i < rotations.length; i++) {
+            currentDirection = directions[(initialDirection + rotations[i]) % 8];
+            if (rc.canMove(currentDirection)) {
+                rc.move(currentDirection);
                 return;
             }
         }
 
         if (rc.getType() != RobotType.TTM) {
-            tryClearRubble(direction);
+            tryClearRubble(targetDirection);
         }
     }
 
