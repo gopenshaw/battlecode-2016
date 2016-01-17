@@ -39,12 +39,17 @@ public class Scout extends Robot {
         explore();
     }
 
-    private void broadcastParts() {
+    private void broadcastParts() throws GameActionException {
         if (!zombiesDead) {
             return;
         }
 
         setIndicatorString(0, "broadcasting parts");
+        MapLocation[] parts = rc.sensePartLocations(RobotType.ARCHON.sensorRadiusSquared);
+        if (parts.length > 0) {
+            Message partsMessage = MessageBuilder.buildPartsMessage(currentLocation);
+            rc.broadcastMessageSignal(partsMessage.getFirst(), partsMessage.getSecond(), 400);
+        }
     }
 
     private void broadcastAnnouncements() throws GameActionException {

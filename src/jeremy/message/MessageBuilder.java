@@ -35,8 +35,10 @@ public class MessageBuilder {
         return buildRobotMessage(health, id, type, location, MessageType.ID);
     }
 
-    public static Message buildSpreadMessage(double health, int id, RobotType type, MapLocation location) {
-        return buildRobotMessage(health, id, type, location, MessageType.SPREAD);
+    public static Message buildPartsMessage(MapLocation center) {
+        int first = Serializer.encode(center);
+        int second = Serializer.encode(MessageType.PARTS);
+        return new Message(first, second, MessageType.PARTS);
     }
 
     private static Message buildRobotMessage(double health, int id, RobotType robotType, MapLocation location, MessageType messageType) {
@@ -45,12 +47,6 @@ public class MessageBuilder {
                 + (Serializer.encode(robotType) << 3)
                 + (Serializer.encode(messageType));
         return new Message(first, second, MessageType.ID);
-    }
-
-    public static Message buildCountMessage(int count) {
-        int first = count;
-        int second =  Serializer.encode(MessageType.COUNT);
-        return new Message(first, second, MessageType.COUNT);
     }
 
     public static Message buildAnnouncement(AnnouncementSubject announcementSubject, AnnouncementMode announcementMode) {

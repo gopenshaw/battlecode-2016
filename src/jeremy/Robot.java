@@ -81,6 +81,28 @@ public abstract class Robot {
         return rc.senseNearbyRobots(senseRadius, Team.NEUTRAL);
     }
 
+    protected void tryMoveOnto(MapLocation location) throws GameActionException {
+        MapLocation currentLocation = rc.getLocation();
+        if (currentLocation.equals(location)) {
+            return;
+        }
+
+        if (currentLocation.isAdjacentTo(location)
+                && rc.senseRubble(location) >= 100) {
+            rc.clearRubble(currentLocation.directionTo(location));
+            return;
+        }
+
+        Direction moveDirection = currentLocation.directionTo(location);
+        if (type == RobotType.ARCHON
+                || type == RobotType.TTM) {
+            tryMove(moveDirection);
+        }
+        else {
+            tryMoveDig(moveDirection);
+        }
+    }
+
     protected void tryMoveToward(MapLocation location) throws GameActionException {
         MapLocation currentLocation = rc.getLocation();
         if (currentLocation.equals(location)) {

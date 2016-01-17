@@ -1,8 +1,10 @@
 package jeremy.message;
 
 import battlecode.common.MapLocation;
+import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 import jeremy.MessageType;
+import jeremy.PartsData;
 import jeremy.RobotData;
 
 public class MessageParser {
@@ -46,5 +48,9 @@ public class MessageParser {
 
     public AnnouncementSubject getAnnouncementSubject() {
         return Serializer.decodeAnnouncementSubject(first);
+    }
+
+    public PartsData getPartsData() {
+        return new PartsData(Serializer.decodeMapLocation(first, validLocation));
     }
 }
