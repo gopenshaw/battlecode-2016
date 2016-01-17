@@ -5,7 +5,7 @@ import team014.message.MessageParser;
 import team014.util.RobotUtil;
 import team014.util.ZombieUtil;
 
-public class Turret extends Robot {
+public class Turret extends Robot{
     private Signal[] roundSignals;
     private MapLocation requestLocation;
     private RobotInfo[] nearbyZombies;

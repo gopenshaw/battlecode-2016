@@ -4,9 +4,7 @@ import battlecode.common.*;
 import team014.message.MessageBuilder;
 import team014.message.MessageParser;
 import team014.nav.Bug;
-import team014.util.DirectionUtil;
-import team014.util.LocationUtil;
-import team014.util.RobotUtil;
+import team014.util.*;
 
 import java.util.ArrayList;
 
@@ -32,11 +30,10 @@ public class Archon extends Robot {
         if (roundNumber == 0) {
             checkRelativeLocation();
             getIdAndBaseLocation();
+            printZombieDetails();
         }
 
         validateBaseLocation();
-
-        setIndicatorString(0, "base loc: " + baseLocation);
 
         countRobots();
         broadcastTurretCount();
@@ -47,6 +44,14 @@ public class Archon extends Robot {
         requestSpace();
         buildRobot();
         clearRubble();
+    }
+
+    private void printZombieDetails() {
+        ZombieSpawnSchedule schedule = rc.getZombieSpawnSchedule();
+        setIndicatorString(0, "spawn rounds" + PrintUtil.toString(schedule.getRounds()));
+        setIndicatorString(1, "total zombies: " + ZombieUtil.getTotalZombiesToSpawn(schedule));
+        setIndicatorString(1, "# of rounds: " + ZombieUtil.getNumberOfRounds(schedule));
+        setIndicatorString(1, "strength estimate: " + ZombieUtil.getStrengthEstimate(schedule));
     }
 
     private void checkRelativeLocation() throws GameActionException {
@@ -88,8 +93,6 @@ public class Archon extends Robot {
 
                 if (offMap.size() == 2) {
                     towardCenterEstimate = DirectionUtil.getDirectionAwayFrom(offMap, currentLocation);
-                    setIndicatorString(2, "toward center: " + towardCenterEstimate);
-                    setIndicatorString(0, "count: " + offMap.size());
                     return;
                 }
             }
@@ -101,8 +104,6 @@ public class Archon extends Robot {
         }
 
         towardCenterEstimate = DirectionUtil.getDirectionAwayFrom(offMap, currentLocation);
-        setIndicatorString(2, "toward center: " + towardCenterEstimate);
-        setIndicatorString(0, "count: " + offMap.size());
     }
 
     private void moveAwayFromEnemiesAndZombies() throws GameActionException {
@@ -160,23 +161,26 @@ public class Archon extends Robot {
 
     private void moveTowardBase() throws GameActionException {
         if (!rc.isCoreReady()) {
-            setIndicatorString(0, "abort move toward base");
             return;
         }
 
         if (currentLocation.distanceSquaredTo(baseLocation) > 2) {
-            setIndicatorString(0, "too far from base");
             Direction direction = Bug.getDirection(currentLocation);
-            rc.setIndicatorString(0, "" + direction);
             tryDigMove(direction);
         }
     }
 
+    private MapLocation getBaseLocation(MapLocation[] teamArchons, MapLocation[] enemyArchons) {
+        MapBounds boundaryEstimate = MapUtil.getBoundsThatEncloseLocations(teamArchons, enemyArchons);
+        return MapUtil.getClosestToBoundary(teamArchons, boundaryEstimate);
+    }
+
     private void getIdAndBaseLocation() throws GameActionException {
         MapLocation[] teamArchonLocations = rc.getInitialArchonLocations(team);
+        MapLocation[] enemyArchonLocations = rc.getInitialArchonLocations(enemy);
 
         setId(teamArchonLocations);
-        baseLocation = LocationUtil.findAverageLocation(teamArchonLocations);
+        baseLocation = getBaseLocation(teamArchonLocations, enemyArchonLocations);
 
         Bug.init(rc);
         Bug.setDestination(baseLocation);
@@ -192,7 +196,6 @@ public class Archon extends Robot {
             baseLocation = moveAwayFromEdges(baseLocation, Config.REQUIRED_RADIUS_AROUND_BASE);
         }
 
-        setIndicatorString(2, "base validated.");
         Bug.setDestination(baseLocation);
         baseValidated = true;
     }
