@@ -19,6 +19,7 @@ public class Scout extends Robot {
     private RobotInfo[] nearbyEnemies;
     private Signal[] roundSignals;
     private boolean zombiesDead;
+    private RobotInfo lastEnemy;
 
     public Scout(RobotController rc) {
         super(rc);
@@ -33,6 +34,7 @@ public class Scout extends Robot {
         makeDenMessages();
         broadcastZombies();
         broadcastParts();
+        broadcastEnemy();
         doRepeatedBroadcasts();
         moveAwayFromZombies();
         broadcastAnnouncements();
@@ -50,6 +52,17 @@ public class Scout extends Robot {
             Message partsMessage = MessageBuilder.buildPartsMessage(currentLocation);
             rc.broadcastMessageSignal(partsMessage.getFirst(), partsMessage.getSecond(), 400);
         }
+    }
+
+    private void broadcastEnemy() throws GameActionException {
+        if (!zombiesDead
+                || lastEnemy == null) {
+            return;
+        }
+
+        setIndicatorString(0, "broadcasting enemy");
+        Message enemyMessage = MessageBuilder.buildEnemyMessage(lastEnemy, roundNumber);
+        messageStore.addMessage(enemyMessage, roundNumber + 200);
     }
 
     private void broadcastAnnouncements() throws GameActionException {
@@ -150,6 +163,10 @@ public class Scout extends Robot {
 
         if (nearbyZombies.length > 0) {
             eventMemory.record(Event.ZOMBIE_SPOTTED, roundNumber);
+        }
+
+        if (nearbyEnemies.length > 0) {
+            lastEnemy = nearbyEnemies[0];
         }
     }
 

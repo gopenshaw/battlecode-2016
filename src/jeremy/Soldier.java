@@ -7,6 +7,7 @@ import jeremy.util.RobotUtil;
 import jeremy.message.MessageParser;
 
 public class Soldier extends Robot {
+    private static final int SAFE_DISTANCE_FROM_ENEMY_BASE = 100;
     private Signal[] roundSignals;
     private RobotInfo[] attackableZombies;
     private RobotInfo[] nearbyZombies;
@@ -42,7 +43,9 @@ public class Soldier extends Robot {
             return;
         }
 
-        tryMoveToward(enemyLocation);
+        if (currentLocation.distanceSquaredTo(enemyLocation) > SAFE_DISTANCE_FROM_ENEMY_BASE) {
+            tryMoveToward(enemyLocation);
+        }
     }
 
     private void shootEnemies() throws GameActionException {
