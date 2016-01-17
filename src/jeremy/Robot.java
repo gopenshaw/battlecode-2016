@@ -61,6 +61,20 @@ public abstract class Robot {
 
     protected abstract void doTurn() throws GameActionException;
 
+    protected void goToSpecialPlace() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        setIndicatorString(1, "going to special place");
+
+        if (roundNumber > Config.SPECIAL_ROUND
+                && Config.SPECIAL_PLACE != null) {
+            setIndicatorString(2, "going to special place");
+            tryMoveToward(Config.SPECIAL_PLACE);
+        }
+    }
+
     protected RobotInfo[] senseNearbyEnemies() {
         return rc.senseNearbyRobots(senseRadius, enemy);
     }

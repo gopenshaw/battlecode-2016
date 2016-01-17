@@ -84,4 +84,20 @@ public class RobotUtil {
         }
         return closestRobot;
     }
+
+    public static RobotInfo getLowestHealthNonInfectedRobot(RobotInfo[] robots) {
+        double minHealth = Double.MAX_VALUE;
+        int minIndex = -1;
+
+        for (int i = 0; i < robots.length; i++) {
+            if (robots[i].viperInfectedTurns == 0
+                    && robots[i].zombieInfectedTurns == 0
+                    && robots[i].health < minHealth) {
+                minIndex = i;
+                minHealth = robots[i].health;
+            }
+        }
+
+        return minIndex < 0 ? null : robots[minIndex];
+    }
 }

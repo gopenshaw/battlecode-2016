@@ -29,6 +29,7 @@ public class Soldier extends Robot {
         shootEnemies();
         microAwayFromZombies();
         moveTowardZombieNotGettingCloser();
+        goToSpecialPlace();
         moveTowardZombie();
         moveTowardDen();
         moveTowardEnemy();
@@ -43,7 +44,8 @@ public class Soldier extends Robot {
             return;
         }
 
-        if (currentLocation.distanceSquaredTo(enemyLocation) > SAFE_DISTANCE_FROM_ENEMY_BASE) {
+        if (roundNumber > Config.KILL_ROUND
+                || currentLocation.distanceSquaredTo(enemyLocation) > SAFE_DISTANCE_FROM_ENEMY_BASE) {
             tryMoveToward(enemyLocation);
         }
     }

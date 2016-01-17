@@ -37,6 +37,7 @@ public class Scout extends Robot {
         broadcastEnemy();
         doRepeatedBroadcasts();
         moveAwayFromZombies();
+        goToSpecialPlace();
         broadcastAnnouncements();
         explore();
     }

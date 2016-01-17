@@ -1,10 +1,10 @@
 package jeremy;
 
 import battlecode.common.*;
+import jeremy.message.AnnouncementMode;
+import jeremy.message.AnnouncementSubject;
 import jeremy.message.MessageParser;
-import jeremy.util.AverageMapLocation;
-import jeremy.util.DirectionUtil;
-import jeremy.util.LocationUtil;
+import jeremy.util.*;
 
 public class Archon extends Robot {
 
@@ -17,20 +17,76 @@ public class Archon extends Robot {
     private AverageMapLocation previousZombieLocation = new AverageMapLocation(5);
     private Signal[] roundSignals;
     private MapLocation previousPartLocation;
+    private EventMemory eventMemory;
+    private boolean zombiesDead;
 
     public Archon(RobotController rc) {
         super(rc);
+        eventMemory = new EventMemory(0);
     }
 
     @Override
     protected void doTurn() throws GameActionException {
         roundSignals = rc.emptySignalQueue();
+        readAnnouncements();
         senseZombies();
         moveAwayFromZombies();
+        moveAwayFromEnemies();
+        goToSpecialPlace();
         buildRobots();
         getParts();
         moveIfSafe();
         repairRobots();
+    }
+
+    private void moveAwayFromEnemies() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        RobotInfo[] nearbyEnemies = senseNearbyEnemies();
+        if (nearbyEnemies.length > 0) {
+            tryMove(DirectionUtil.getDirectionAwayFrom(nearbyEnemies, currentLocation));
+        }
+    }
+
+    private void readAnnouncements() throws GameActionException {
+        boolean zombiesDeadProposed = false;
+        boolean zombiesDeadDenied = false;
+        for (Signal s : roundSignals) {
+            if (s.getTeam() == team) {
+                int[] message = s.getMessage();
+                if (message == null) continue;
+                MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
+                if (parser.getMessageType() == MessageType.ANNOUNCEMENT) {
+                    if (parser.getAnnouncementSubject() == AnnouncementSubject.ZOMBIES_DEAD) {
+                        if (parser.getAnnouncementMode() == AnnouncementMode.PROPOSE) {
+                            zombiesDeadProposed = true;
+                            setIndicatorString(0, "received zombie dead proposal");
+                        }
+                        else if (parser.getAnnouncementMode() == AnnouncementMode.DENY) {
+                            zombiesDeadDenied = true;
+                            setIndicatorString(0, "received zombie dead denial");
+                        }
+                    }
+                }
+            }
+        }
+
+        if (zombiesDeadProposed) {
+            eventMemory.record(Event.ZOMBIES_DEAD_PROPOSED, roundNumber);
+        }
+
+        if (zombiesDeadDenied) {
+            eventMemory.record(Event.ZOMBIES_DEAD_DENIED, roundNumber);
+        }
+
+        if (eventMemory.happedLastRound(Event.ZOMBIES_DEAD_PROPOSED, roundNumber)
+                && !zombiesDeadDenied
+                && !eventMemory.happedLastRound(Event.ZOMBIES_DEAD_DENIED, roundNumber)) {
+            setIndicatorString(2, "I conclude zombies are dead");
+            zombiesDead = true;
+        }
     }
 
     private void senseZombies() {
@@ -62,8 +118,13 @@ public class Archon extends Robot {
             return;
         }
 
-        if (tryBuild(buildQueue[buildQueuePosition % buildQueue.length])) {
-            buildQueuePosition++;
+        if (zombiesDead) {
+            tryBuild(RobotType.VIPER);
+        }
+        else {
+            if (tryBuild(buildQueue[buildQueuePosition % buildQueue.length])) {
+                buildQueuePosition++;
+            }
         }
     }
 
