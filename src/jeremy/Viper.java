@@ -2,11 +2,9 @@ package jeremy;
 
 import battlecode.common.*;
 import jeremy.message.MessageParser;
-import jeremy.util.BoundedQueue;
 import jeremy.util.RobotUtil;
 
 public class Viper extends Robot {
-    private static final int SAFE_DISTANCE_FROM_ENEMY_BASE = 100;
     private Signal[] roundSignals;
     private RobotInfo[] attackableEnemies;
     private MapLocation enemyLocation;
@@ -33,8 +31,10 @@ public class Viper extends Robot {
             return;
         }
 
+        int distanceToEnemy = currentLocation.distanceSquaredTo(enemyLocation);
+        setIndicatorString(0, "distance to enemy " + distanceToEnemy);
         if (shouldEngage()
-                || currentLocation.distanceSquaredTo(enemyLocation) > SAFE_DISTANCE_FROM_ENEMY_BASE) {
+                || distanceToEnemy > Config.SAFE_DISTANCE_FROM_ENEMY_BASE) {
             tryMoveToward(enemyLocation);
         }
     }
@@ -44,10 +44,11 @@ public class Viper extends Robot {
                 && enemyLocation != null
                 && rc.getTeamParts() < 60) {
             hasAdvantageRound = roundNumber;
-            setIndicatorString(1, "advantage round " + hasAdvantageRound);
         }
 
-        return roundNumber - 100 > hasAdvantageRound;
+        setIndicatorString(1, "advantage round " + hasAdvantageRound);
+        return hasAdvantageRound != 0
+                && roundNumber - Config.ENGAGE_DELAY > hasAdvantageRound;
     }
 
     private void shootEnemies() throws GameActionException {

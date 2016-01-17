@@ -18,5 +18,7 @@ public class RobotPlayer {
         } else if (type == RobotType.VIPER) {
             new Viper(rc).run();
         }
+
+        while (true);
     }
 }

@@ -197,6 +197,14 @@ public abstract class Robot {
                 && !RobotUtil.anyCanAttack(nearbyZombies, next);
     }
 
+    protected void clearRubble() throws GameActionException {
+        for (int i = 0; i < directions.length; i++) {
+            if (tryClearRubble(directions[i])) {
+                return;
+            }
+        }
+    }
+
     public void tryDigMove(Direction direction) throws GameActionException {
         if (rc.canMove(direction)) {
             rc.move(direction);
@@ -348,5 +356,18 @@ public abstract class Robot {
 
     protected void sendMessage(Message message, int radius) throws GameActionException {
         rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), radius);
+    }
+
+    protected int getRoundsTillNextSpawn(int currentRound) {
+        int[] schedule = rc.getZombieSpawnSchedule().getRounds();
+        for (int i = 0; i < schedule.length; i++) {
+            if (schedule[i] < currentRound) {
+                continue;
+            }
+
+            return schedule[i] - currentRound;
+        }
+
+        return Integer.MAX_VALUE;
     }
 }

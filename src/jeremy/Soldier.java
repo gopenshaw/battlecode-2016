@@ -7,7 +7,6 @@ import jeremy.util.RobotUtil;
 import jeremy.message.MessageParser;
 
 public class Soldier extends Robot {
-    private static final int SAFE_DISTANCE_FROM_ENEMY_BASE = 200;
     private Signal[] roundSignals;
     private RobotInfo[] attackableZombies;
     private RobotInfo[] nearbyZombies;
@@ -36,6 +35,24 @@ public class Soldier extends Robot {
         moveTowardEnemy();
         moveAwayFromArchon();
         updateZombieMemory();
+        clearRubble();
+    }
+
+    private void moveAwayFromDens() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        RobotInfo den = RobotUtil.getRobotOfType(nearbyZombies, RobotType.ZOMBIEDEN);
+        if (den == null
+                || !den.location.isAdjacentTo(currentLocation)) {
+            return;
+        }
+
+        if (getRoundsTillNextSpawn(roundNumber) <= 2) {
+            setIndicatorString(0, "try move away from den");
+            tryMove(den.location.directionTo(currentLocation));
+        }
     }
 
     private void moveTowardEnemy() throws GameActionException {
@@ -46,8 +63,10 @@ public class Soldier extends Robot {
             return;
         }
 
+        int distanceToEnemy = currentLocation.distanceSquaredTo(enemyLocation);
+        setIndicatorString(0, "distance to enemy " + distanceToEnemy);
         if (shouldEngage()
-                || currentLocation.distanceSquaredTo(enemyLocation) > SAFE_DISTANCE_FROM_ENEMY_BASE) {
+                || distanceToEnemy > Config.SAFE_DISTANCE_FROM_ENEMY_BASE) {
             tryMoveToward(enemyLocation);
         }
     }
@@ -57,10 +76,12 @@ public class Soldier extends Robot {
                 && enemyLocation != null
                 && rc.getTeamParts() < 60) {
             hasAdvantageRound = roundNumber;
-            setIndicatorString(1, "advantage round " + hasAdvantageRound);
         }
 
-        return roundNumber - 100 > hasAdvantageRound;
+        setIndicatorString(1, "advantage round " + hasAdvantageRound);
+
+        return hasAdvantageRound != 0
+                && roundNumber - Config.ENGAGE_DELAY > hasAdvantageRound;
     }
 
     private void shootEnemies() throws GameActionException {
@@ -84,8 +105,9 @@ public class Soldier extends Robot {
             zombieDen = getZombieDen();
         }
 
-        if (enemyLocation == null) {
-            enemyLocation = getEnemyLocation();
+        MapLocation newEnemyLocation = getEnemyLocation();
+        if (newEnemyLocation != null) {
+            enemyLocation = newEnemyLocation;
         }
     }
 
@@ -101,7 +123,9 @@ public class Soldier extends Robot {
             return;
         }
 
-        tryMoveToward(zombieDen.location);
+        if (currentLocation.distanceSquaredTo(zombieDen.location) > 8) {
+            tryMoveToward(zombieDen.location);
+        }
     }
 
     private void updateZombieMemory() {
