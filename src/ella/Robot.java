@@ -2,6 +2,7 @@ package ella;
 
 import battlecode.common.*;
 import ella.util.RobotUtil;
+import ella.util.ZombieUtil;
 
 import java.util.Random;
 
