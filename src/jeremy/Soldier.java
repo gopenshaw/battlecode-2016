@@ -63,12 +63,14 @@ public class Soldier extends Robot {
             return;
         }
 
-        int distanceToEnemy = currentLocation.distanceSquaredTo(enemyLocation);
-        setIndicatorString(0, "distance to enemy " + distanceToEnemy);
-        if (shouldEngage()
-                || distanceToEnemy > Config.SAFE_DISTANCE_FROM_ENEMY_BASE) {
-            tryMoveToward(enemyLocation);
-        }
+        tryMoveToward(rc.getInitialArchonLocations(team)[0]);
+//
+//        int distanceToEnemy = currentLocation.distanceSquaredTo(enemyLocation);
+//        setIndicatorString(0, "distance to enemy " + distanceToEnemy);
+//        if (shouldEngage()
+//                || distanceToEnemy > Config.SAFE_DISTANCE_FROM_ENEMY_BASE) {
+//            tryMoveToward(enemyLocation);
+//        }
     }
 
     private boolean shouldEngage() {

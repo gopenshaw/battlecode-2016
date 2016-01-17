@@ -138,7 +138,7 @@ public class Archon extends Robot {
         if (zombiesDead
                 && enemyLocation != null
                 && currentLocation.distanceSquaredTo(enemyLocation) > 15 * 15) {
-            tryMoveToward(enemyLocation);
+            tryMoveToward(rc.getInitialArchonLocations(team)[0]);
             return;
         }
 
@@ -158,13 +158,8 @@ public class Archon extends Robot {
             return;
         }
 
-        if (zombiesDead) {
-            tryBuild(RobotType.VIPER);
-        }
-        else {
-            if (tryBuild(buildQueue[buildQueuePosition % buildQueue.length])) {
-                buildQueuePosition++;
-            }
+        if (tryBuild(buildQueue[buildQueuePosition % buildQueue.length])) {
+            buildQueuePosition++;
         }
     }
 
