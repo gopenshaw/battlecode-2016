@@ -2,6 +2,7 @@ package jeremy;
 
 import battlecode.common.*;
 import jeremy.message.Message;
+import jeremy.message.MessageParser;
 import jeremy.util.RobotUtil;
 
 import java.util.Random;
@@ -374,5 +375,25 @@ public abstract class Robot {
         }
 
         return Integer.MAX_VALUE;
+    }
+
+    protected MessageParser getParserForFirstMessageOfType(Signal[] signals, MessageType messageType) {
+        int count = signals.length;
+        for (int i = 0; i < count; i++) {
+            Signal signal = signals[i];
+            if (signal.getTeam() == team) {
+                int[] message = signal.getMessage();
+                if (message == null) {
+                    return null;
+                }
+
+                MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
+                if (parser.getMessageType() == messageType) {
+                    return parser;
+                }
+            }
+        }
+
+        return null;
     }
 }

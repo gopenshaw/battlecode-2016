@@ -34,15 +34,33 @@ public class Scout extends Robot {
         senseRobots();
         updateConnectionWithPair();
         getPairIfUnpaired();
-        moveTowardMyPair();
-        makeDenMessages();
-        broadcastZombies();
-        broadcastParts();
-        broadcastEnemy();
-        doRepeatedBroadcasts();
-        moveAwayFromZombies();
-        broadcastAnnouncements();
-        explore();
+        if (myPair == null) {
+            makeDenMessages();
+            broadcastZombies();
+            broadcastParts();
+            broadcastEnemy();
+            doRepeatedBroadcasts();
+            moveAwayFromZombies();
+            broadcastAnnouncements();
+            explore();
+        }
+        else {
+            moveTowardMyPair();
+            broadcastTargets();
+        }
+    }
+
+    private void broadcastTargets() throws GameActionException {
+        RobotInfo[] highValueTargets = RobotUtil.getRobotsOfType(nearbyEnemies, RobotType.TURRET, RobotType.ARCHON);
+        if (highValueTargets == null
+                || highValueTargets.length == 0) {
+            return;
+        }
+
+        RobotInfo closest = RobotUtil.getClosestRobotToLocation(highValueTargets, currentLocation);
+        Message target = MessageBuilder.buildTargetMessage(closest);
+        rc.broadcastMessageSignal(target.getFirst(), target.getSecond(), 2);
+        setIndicatorString(1, "broadcasting target " + closest);
     }
 
     private void moveTowardMyPair() throws GameActionException {
@@ -146,7 +164,6 @@ public class Scout extends Robot {
 
         Message enemyMessage = MessageBuilder.buildEnemyMessage(lastEnemy, roundNumber);
         messageStore.addMessage(enemyMessage, roundNumber + 200);
-        setIndicatorString(1, "adding enemy to store " + lastEnemy.location);
     }
 
     private void broadcastAnnouncements() throws GameActionException {
@@ -161,11 +178,9 @@ public class Scout extends Robot {
                     if (parser.getAnnouncementSubject() == AnnouncementSubject.ZOMBIES_DEAD) {
                         if (parser.getAnnouncementMode() == AnnouncementMode.PROPOSE) {
                             zombiesDeadProposed = true;
-//                            setIndicatorString(0, "received zombie dead proposal");
                         }
                         else if (parser.getAnnouncementMode() == AnnouncementMode.DENY) {
                             zombiesDeadDenied = true;
-//                            setIndicatorString(0, "received zombie dead denial");
                         }
                     }
                 }
@@ -177,7 +192,6 @@ public class Scout extends Robot {
                 && eventMemory.hasMemory(roundNumber)
                 && eventMemory.happenedRecently(Event.ZOMBIE_SPOTTED, roundNumber)) {
             Message denial = MessageBuilder.buildAnnouncement(AnnouncementSubject.ZOMBIES_DEAD, AnnouncementMode.DENY);
-//            setIndicatorString(1, "I deny zombies are dead");
             rc.broadcastMessageSignal(denial.getFirst(), denial.getSecond(), 80 * 80 * 2);
             eventMemory.record(Event.ZOMBIES_DEAD_DENIED, roundNumber);
         }
@@ -190,7 +204,6 @@ public class Scout extends Robot {
             Message message = MessageBuilder.buildAnnouncement(AnnouncementSubject.ZOMBIES_DEAD,
                     AnnouncementMode.PROPOSE);
             rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), 80 * 80 * 2);
-//            setIndicatorString(1, "I propose zombies are dead");
             eventMemory.record(Event.BROADCAST_ZOMBIES_DEAD, roundNumber);
         }
 
@@ -205,7 +218,6 @@ public class Scout extends Robot {
         if (eventMemory.happedLastRound(Event.ZOMBIES_DEAD_PROPOSED, roundNumber)
                 && !zombiesDeadDenied
                 && !eventMemory.happedLastRound(Event.ZOMBIES_DEAD_DENIED, roundNumber)) {
-//            setIndicatorString(2, "I conclude zombies are dead");
             zombiesDead = true;
         }
     }
@@ -264,7 +276,6 @@ public class Scout extends Robot {
         }
 
         if (rand.nextInt(4) == 0) {
-            setIndicatorString(2, "getting random direction");
             exploreDirection = getExploreDirection(exploreDirection);
         }
 

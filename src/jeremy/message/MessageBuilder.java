@@ -61,4 +61,8 @@ public class MessageBuilder {
         int second = Serializer.encode(MessageType.PAIR);
         return new Message(first, second, MessageType.PAIR);
     }
+
+    public static Message buildTargetMessage(RobotInfo closest) {
+        return buildRobotMessage(closest.health, closest.ID, closest.type, closest.location, MessageType.TARGET);
+    }
 }

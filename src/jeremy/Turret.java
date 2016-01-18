@@ -8,6 +8,7 @@ public class Turret extends Robot {
     private Signal[] roundSignals;
     private RobotInfo[] nearbyZombies;
     private RobotInfo[] nearbyEnemies;
+    private RobotData attackTarget;
 
     public Turret(RobotController rc) {
         super(rc);
@@ -16,26 +17,84 @@ public class Turret extends Robot {
     @Override
     protected void doTurn() throws GameActionException {
         roundSignals = rc.emptySignalQueue();
+        senseRobots();
+        getTarget();
+        attackTargets();
+        attackEnemiesAndZombies();
+        moveToTarget();
+        moveRandom();
+        attackTarget = null;
+    }
+
+    private void senseRobots() {
         nearbyZombies = senseNearbyZombies();
         nearbyEnemies = senseNearbyEnemies();
         setIndicatorString(0, "nearby zombies: " + nearbyZombies.length);
         setIndicatorString(0, "nearby enemies: " + nearbyEnemies.length);
         setIndicatorString(1, "my type: " + rc.getType());
-        attackEnemiesAndZombies();
-        move();
     }
 
-    private void move() throws GameActionException {
-        if (rc.getType() == RobotType.TURRET) {
-            if (nearbyZombies.length == 0
-                    && nearbyEnemies.length == 0) {
-                rc.pack();
-                return;
+    private void moveToTarget() throws GameActionException {
+        if (attackTarget == null
+                || !rc.isCoreReady()) {
+            return;
+        }
+
+        if (currentLocation.distanceSquaredTo(attackTarget.location) > RobotType.TURRET.attackRadiusSquared) {
+            if (rc.getType() == RobotType.TTM) {
+                tryMoveToward(attackTarget.location);
             }
+            else {
+                rc.pack();
+            }
+        }
+        else if (rc.getType() == RobotType.TTM) {
+            rc.unpack();
+        }
+    }
+
+    private void getTarget() {
+        MessageParser message = getParserForFirstMessageOfType(roundSignals, MessageType.TARGET);
+        if (message == null) {
+            setIndicatorString(2, "i have no target");
+            return;
+        }
+
+        attackTarget = message.getRobotData();
+        setIndicatorString(2, "my target is " + attackTarget);
+    }
+
+    private void attackTargets() throws GameActionException {
+        if (attackTarget == null
+                || rc.getType() == RobotType.TTM
+                || !rc.isWeaponReady()) {
+            return;
+        }
+
+        if (rc.canAttackLocation(attackTarget.location)) {
+            rc.attackLocation(attackTarget.location);
+        }
+        else {
+            setIndicatorString(0, "received target " + attackTarget + " but can't attack!");
+        }
+    }
+
+    private void moveRandom() throws GameActionException {
+        if (attackTarget != null) {
+            return;
+        }
+
+        if (rc.getType() == RobotType.TURRET
+                && nearbyZombies.length == 0
+                && nearbyEnemies.length == 0) {
+            setIndicatorString(1, "packing for random move");
+            rc.pack();
+            return;
         }
 
         if (nearbyEnemies.length > 0
                 || nearbyZombies.length > 0) {
+            setIndicatorString(1, "unpacking in random move");
             rc.unpack();
             return;
         }
@@ -48,11 +107,8 @@ public class Turret extends Robot {
     }
 
     private void attackEnemiesAndZombies() throws GameActionException {
-        if (rc.getType() == RobotType.TTM) {
-            return;
-        }
-
-        if (!rc.isWeaponReady()) {
+        if (rc.getType() == RobotType.TTM
+                || !rc.isWeaponReady()) {
             return;
         }
 
