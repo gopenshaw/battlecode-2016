@@ -55,4 +55,10 @@ public class MessageBuilder {
                 + Serializer.encode(MessageType.ANNOUNCEMENT);
         return new Message(first, second, MessageType.ANNOUNCEMENT);
     }
+
+    public static Message buildPairingMessage(RobotInfo robot) {
+        int first = robot.ID;
+        int second = Serializer.encode(MessageType.PAIR);
+        return new Message(first, second, MessageType.PAIR);
+    }
 }

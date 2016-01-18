@@ -65,6 +65,11 @@ public abstract class Robot {
         return rc.senseNearbyRobots(senseRadius, enemy);
     }
 
+
+    protected RobotInfo[] senseNearbyFriendlies() {
+        return rc.senseNearbyRobots(senseRadius, team);
+    }
+
     protected RobotInfo[] senseAttackableEnemies() {
         return rc.senseNearbyRobots(attackRadius, enemy);
     }

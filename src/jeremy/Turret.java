@@ -1,15 +1,12 @@
 package jeremy;
 
 import battlecode.common.*;
-import jeremy.Robot;
 import jeremy.message.MessageParser;
 import jeremy.util.ZombieUtil;
 
 public class Turret extends Robot {
     private Signal[] roundSignals;
-    private MapLocation requestLocation;
     private RobotInfo[] nearbyZombies;
-    private int spacesMoved;
     private RobotInfo[] nearbyEnemies;
 
     public Turret(RobotController rc) {
@@ -21,13 +18,15 @@ public class Turret extends Robot {
         roundSignals = rc.emptySignalQueue();
         nearbyZombies = senseNearbyZombies();
         nearbyEnemies = senseNearbyEnemies();
+        setIndicatorString(0, "nearby zombies: " + nearbyZombies.length);
+        setIndicatorString(0, "nearby enemies: " + nearbyEnemies.length);
+        setIndicatorString(1, "my type: " + rc.getType());
         attackEnemiesAndZombies();
         move();
     }
 
     private void move() throws GameActionException {
         if (rc.getType() == RobotType.TURRET) {
-            spacesMoved = 0;
             if (nearbyZombies.length == 0
                     && nearbyEnemies.length == 0) {
                 rc.pack();
@@ -35,7 +34,8 @@ public class Turret extends Robot {
             }
         }
 
-        if (spacesMoved >= 5) {
+        if (nearbyEnemies.length > 0
+                || nearbyZombies.length > 0) {
             rc.unpack();
             return;
         }
@@ -45,7 +45,6 @@ public class Turret extends Robot {
         }
 
         tryMove(getRandomDirection());
-        spacesMoved++;
     }
 
     private void attackEnemiesAndZombies() throws GameActionException {

@@ -53,4 +53,8 @@ public class MessageParser {
     public PartsData getPartsData() {
         return new PartsData(Serializer.decodeMapLocation(first, validLocation));
     }
+
+    public boolean pairs(RobotInfo robot) {
+        return robot.ID == first;
+    }
 }

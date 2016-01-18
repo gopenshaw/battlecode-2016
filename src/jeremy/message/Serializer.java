@@ -7,7 +7,7 @@ import jeremy.MessageType;
 public class Serializer {
     //--Max 8 types
     private static final MessageType[] messageEncoding = {MessageType.PARTS, MessageType.ENEMY,
-            MessageType.ID, MessageType.ZOMBIE, MessageType.ANNOUNCEMENT };
+            MessageType.ID, MessageType.ZOMBIE, MessageType.ANNOUNCEMENT, MessageType.PAIR };
 
     //--Max 16 types
     private static final RobotType[] robotTypeEncoding = {RobotType.ARCHON, RobotType.BIGZOMBIE, RobotType.FASTZOMBIE,

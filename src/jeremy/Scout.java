@@ -19,6 +19,8 @@ public class Scout extends Robot {
     private boolean zombiesDead;
     private RobotInfo lastEnemy;
     private RobotInfo lastZombieAddedToMessageStore = null;
+    private RobotInfo[] nearbyFriendlies;
+    private RobotInfo myPair;
 
     public Scout(RobotController rc) {
         super(rc);
@@ -30,6 +32,9 @@ public class Scout extends Robot {
     protected void doTurn() throws GameActionException {
         roundSignals = rc.emptySignalQueue();
         senseRobots();
+        updateConnectionWithPair();
+        getPairIfUnpaired();
+        moveTowardMyPair();
         makeDenMessages();
         broadcastZombies();
         broadcastParts();
@@ -38,6 +43,86 @@ public class Scout extends Robot {
         moveAwayFromZombies();
         broadcastAnnouncements();
         explore();
+    }
+
+    private void moveTowardMyPair() throws GameActionException {
+        if (myPair == null
+                || !rc.isCoreReady()) {
+            return;
+        }
+
+        if (!currentLocation.isAdjacentTo(myPair.location)) {
+            tryMove(currentLocation.directionTo(myPair.location));
+        }
+    }
+
+    private void updateConnectionWithPair() throws GameActionException {
+        if (myPair == null) {
+            setIndicatorString(2, "i have no pair");
+            return;
+        }
+
+        if (!rc.canSenseRobot(myPair.ID)) {
+            myPair = null;
+            setIndicatorString(2, "my pair is gone :(");
+            return;
+        }
+
+        myPair = rc.senseRobot(myPair.ID);
+        broadcastPairMessage(myPair);
+    }
+
+    private void broadcastPairMessage(RobotInfo myPair) throws GameActionException {
+        setIndicatorString(2, "broadcasting pair message for " + myPair.ID);
+        Message pairMessage = MessageBuilder.buildPairingMessage(myPair);
+        rc.broadcastMessageSignal(pairMessage.getFirst(), pairMessage.getSecond(), senseRadius * 2);
+    }
+
+    private void getPairIfUnpaired() throws GameActionException {
+        if (myPair != null) {
+            return;
+        }
+
+        RobotInfo[] turrets = RobotUtil.getRobotsOfType(nearbyFriendlies, RobotType.TURRET, RobotType.TTM);
+        if (turrets == null
+                || turrets.length == 0) {
+            return;
+        }
+
+        RobotInfo unpairedTurret = getUnpairedTurret(turrets, roundSignals);
+        if (unpairedTurret == null) {
+            return;
+        }
+
+        myPair = unpairedTurret;
+        broadcastPairMessage(myPair);
+    }
+
+    private RobotInfo getUnpairedTurret(RobotInfo[] turrets, Signal[] roundSignals) {
+        for (RobotInfo turret : turrets) {
+            if (!signalsContainPairingMessage(turret, roundSignals)) {
+                return turret;
+            }
+        }
+
+        return null;
+    }
+
+    private boolean signalsContainPairingMessage(RobotInfo robot, Signal[] roundSignals) {
+        for (Signal s : roundSignals) {
+            if (s.getTeam() == team) {
+                int[] message = s.getMessage();
+                if (message == null) continue;
+                MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
+
+                if (parser.getMessageType() == MessageType.PAIR
+                        && parser.pairs(robot)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private void broadcastParts() throws GameActionException {
@@ -161,6 +246,7 @@ public class Scout extends Robot {
     private void senseRobots() {
         nearbyZombies = senseNearbyZombies();
         nearbyEnemies = senseNearbyEnemies();
+        nearbyFriendlies = senseNearbyFriendlies();
 
         if (nearbyZombies.length > 0) {
             eventMemory.record(Event.ZOMBIE_SPOTTED, roundNumber);

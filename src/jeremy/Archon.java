@@ -9,9 +9,21 @@ import jeremy.util.*;
 
 public class Archon extends Robot {
 
-    private RobotType[] buildQueue = {RobotType.SCOUT, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER,
-        RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER,
-        RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER };
+    private RobotType[] buildQueue = {
+            RobotType.SCOUT, RobotType.SOLDIER, RobotType.SOLDIER,
+            RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER,
+            RobotType.SCOUT, RobotType.SOLDIER, RobotType.SOLDIER,
+            RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER,
+            RobotType.SCOUT, RobotType.TURRET,
+            RobotType.SCOUT, RobotType.TURRET,
+            RobotType.SCOUT, RobotType.TURRET,
+            RobotType.SCOUT, RobotType.TURRET,
+            RobotType.SCOUT, RobotType.TURRET,
+            RobotType.SCOUT, RobotType.TURRET,
+            RobotType.SCOUT, RobotType.TURRET,
+            RobotType.SCOUT, RobotType.TURRET,
+            RobotType.SCOUT, RobotType.TURRET,
+    };
 
     private int buildQueuePosition = 0;
     private RobotInfo[] nearbyZombies;

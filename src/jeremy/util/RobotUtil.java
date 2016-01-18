@@ -61,6 +61,29 @@ public class RobotUtil {
         return null;
     }
 
+    public static RobotInfo[] getRobotsOfType(RobotInfo[] robots, RobotType type) {
+        int count = 0;
+        for (int i = 0; i < robots.length; i++) {
+            if (robots[i].type == type) {
+                count++;
+            }
+        }
+
+        if (count == 0) {
+            return null;
+        }
+
+        int index = 0;
+        RobotInfo[] robotsOfType = new RobotInfo[count];
+        for (int i = 0; i < robots.length; i++) {
+            if (robots[i].type == type) {
+                robotsOfType[index++] = robots[i];
+            }
+        }
+
+        return robotsOfType;
+    }
+
     public static RobotInfo getRobotCanAttack(RobotInfo[] robots) {
         for (int i = 0; i < robots.length; i++) {
             if (robots[i].type.canAttack()) {
@@ -99,5 +122,30 @@ public class RobotUtil {
         }
 
         return minIndex < 0 ? null : robots[minIndex];
+    }
+
+    public static RobotInfo[] getRobotsOfType(RobotInfo[] robots, RobotType type1, RobotType type2) {
+        int count = 0;
+        for (int i = 0; i < robots.length; i++) {
+            if (robots[i].type == type1
+                    || robots[i].type == type2) {
+                count++;
+            }
+        }
+
+        if (count == 0) {
+            return null;
+        }
+
+        int index = 0;
+        RobotInfo[] robotsOfType = new RobotInfo[count];
+        for (int i = 0; i < robots.length; i++) {
+            if (robots[i].type == type1
+                    || robots[i].type == type2) {
+                robotsOfType[index++] = robots[i];
+            }
+        }
+
+        return robotsOfType;
     }
 }
