@@ -17,7 +17,9 @@ public class BoundedQueue<T> {
     public void add(T object) {
         memory[tail] = object;
         tail = (tail + 1) % capacity;
-        size++;
+        if (size < capacity) {
+            size++;
+        }
     }
 
     public T remove() {

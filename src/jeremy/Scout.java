@@ -7,6 +7,7 @@ import jeremy.util.*;
 public class Scout extends Robot {
     private static final int ROUNDS_TO_REVERSE = 4;
     private final int ZOMBIE_BROADCAST_RADIUS = senseRadius * 4;
+    private int DEN_BROADCAST_REPEAT_ROUNDS = 100;
     private final EventMemory eventMemory;
     private Direction exploreDirection;
     private final int LOOKAHEAD_LENGTH = 5;
@@ -129,7 +130,7 @@ public class Scout extends Robot {
             if (zombie.type == RobotType.ZOMBIEDEN
                     && zombie != lastZombieAddedToMessageStore) {
                 messageStore.addMessage(MessageBuilder.buildZombieMessage(zombie, roundNumber),
-                        roundNumber + 100);
+                        roundNumber + DEN_BROADCAST_REPEAT_ROUNDS);
                 lastZombieAddedToMessageStore = zombie;
                 setIndicatorString(1, "adding den to store " + zombie.location);
             }

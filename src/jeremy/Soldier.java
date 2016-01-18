@@ -3,6 +3,7 @@ package jeremy;
 import battlecode.common.*;
 import jeremy.util.BoundedQueue;
 import jeremy.util.DirectionUtil;
+import jeremy.util.RobotQueueNoDuplicates;
 import jeremy.util.RobotUtil;
 import jeremy.message.MessageParser;
 
@@ -11,12 +12,13 @@ public class Soldier extends Robot {
     private RobotInfo[] attackableZombies;
     private RobotInfo[] nearbyZombies;
     BoundedQueue<Integer> zombieMemory = new BoundedQueue<Integer>(3);
-    private RobotData zombieDen;
+    private RobotQueueNoDuplicates zombieDens = new RobotQueueNoDuplicates(8);
     private RobotData zombieToAttack;
     private RobotInfo[] attackableEnemies;
     private MapLocation enemyLocation;
     private boolean engaged;
     private int hasAdvantageRound;
+    private RobotData zombieDen;
 
     public Soldier(RobotController rc) {
         super(rc);
@@ -38,25 +40,7 @@ public class Soldier extends Robot {
         clearRubble();
     }
 
-    private void moveAwayFromDens() throws GameActionException {
-        if (!rc.isCoreReady()) {
-            return;
-        }
-
-        RobotInfo den = RobotUtil.getRobotOfType(nearbyZombies, RobotType.ZOMBIEDEN);
-        if (den == null
-                || !den.location.isAdjacentTo(currentLocation)) {
-            return;
-        }
-
-        if (getRoundsTillNextSpawn(roundNumber) <= 2) {
-            setIndicatorString(0, "try move away from den");
-            tryMove(den.location.directionTo(currentLocation));
-        }
-    }
-
     private void moveTowardEnemy() throws GameActionException {
-        setIndicatorString(0, "enemy location is " + enemyLocation);
         if (enemyLocation == null
                 || attackableEnemies.length > 0
                 || !rc.isCoreReady()) {
@@ -103,8 +87,10 @@ public class Soldier extends Robot {
     private void readBroadcasts() {
         roundSignals = rc.emptySignalQueue();
         zombieToAttack = getZombieToAttack();
-        if (zombieDen == null) {
-            zombieDen = getZombieDen();
+        RobotData zombieDen = getZombieDen();
+        if (zombieDen != null) {
+            zombieDens.add(zombieDen);
+            setIndicatorString(0, "zombie den collection size: " + zombieDens.getSize());
         }
 
         MapLocation newEnemyLocation = getEnemyLocation();
@@ -114,9 +100,17 @@ public class Soldier extends Robot {
     }
 
     private void moveTowardDen() throws GameActionException {
-        if (zombieDen == null
-                || !rc.isCoreReady()) {
+        if (!rc.isCoreReady()) {
             return;
+        }
+
+        if (zombieDen == null
+                && zombieDens.isEmpty()) {
+            return;
+        }
+
+        if (zombieDen == null) {
+            zombieDen = zombieDens.remove();
         }
 
         if (rc.canSenseLocation(zombieDen.location)
