@@ -19,6 +19,7 @@ public class Soldier extends Robot {
     private boolean engaged;
     private int hasAdvantageRound;
     private RobotData zombieDen;
+    private RobotInfo[] adjacentTeammates;
 
     public Soldier(RobotController rc) {
         super(rc);
@@ -37,6 +38,17 @@ public class Soldier extends Robot {
         moveAwayFromArchon();
         updateZombieMemory();
         clearRubble();
+        spread();
+    }
+
+    private void spread() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        if (adjacentTeammates.length > 3) {
+            tryMove(DirectionUtil.getDirectionAwayFrom(adjacentTeammates, currentLocation));
+        }
     }
 
     private boolean shouldEngage() {
@@ -156,6 +168,7 @@ public class Soldier extends Robot {
         attackableZombies = senseAttackableZombies();
         attackableEnemies = senseAttackableEnemies();
         nearbyZombies = senseNearbyZombies();
+        adjacentTeammates = rc.senseNearbyRobots(2, team);
     }
 
     private void moveAwayFromArchon() throws GameActionException {
@@ -163,7 +176,6 @@ public class Soldier extends Robot {
             return;
         }
 
-        RobotInfo[] adjacentTeammates = rc.senseNearbyRobots(2, team);
         RobotInfo archon = RobotUtil.getRobotOfType(adjacentTeammates, RobotType.ARCHON);
         if (archon != null) {
             tryMove(archon.location.directionTo(currentLocation));
