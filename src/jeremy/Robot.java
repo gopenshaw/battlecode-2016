@@ -20,12 +20,14 @@ public abstract class Robot {
     protected MapLocation currentLocation;
     protected int roundNumber;
 
-    private StringBuilder[] debugString = new StringBuilder[3];
+    private StringBuilder[] debugString;
 
     private final int MAX_RUBBLE_CAN_IGNORE = 50;
 
     protected final Direction[] directions = {Direction.NORTH, Direction.NORTH_EAST, Direction.EAST,
         Direction.SOUTH_EAST, Direction.SOUTH, Direction.SOUTH_WEST, Direction.WEST, Direction.NORTH_WEST};
+    private int maxBytecode;
+    private int maxBytecodeRound;
 
     public Robot(RobotController rc) {
         this.rc = rc;
@@ -37,21 +39,43 @@ public abstract class Robot {
         type = rc.getType();
         senseRadius = type.sensorRadiusSquared;
         attackRadius = type.attackRadiusSquared;
+
+        if (Config.DEBUG) {
+            debugString = new StringBuilder[3];
+            for (int i = 0; i < 3; i++) {
+                debugString[i] = new StringBuilder();
+            }
+        }
     }
 
     public void run() {
         while(true) {
             try {
-                resetDebugStrings();
                 currentLocation = rc.getLocation();
                 roundNumber = rc.getRoundNum();
                 doTurn();
+
+                if (Config.DEBUG) {
+                    resetDebugStrings();
+                    updateMaxBytecode();
+                }
+
                 Clock.yield();
             } catch (GameActionException e) {
                 System.out.println(e.getMessage());
                 e.printStackTrace();
             }
         }
+    }
+
+    private void updateMaxBytecode() {
+        int currentBytecode = Clock.getBytecodeNum();
+        if (currentBytecode > maxBytecode) {
+            maxBytecode = currentBytecode;
+            maxBytecodeRound = roundNumber;
+        }
+
+        setIndicatorString(2, "used " + maxBytecode + " bytecode in round " + maxBytecodeRound);
     }
 
     private void resetDebugStrings() {
@@ -204,6 +228,10 @@ public abstract class Robot {
     }
 
     protected void clearRubble() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
         for (int i = 0; i < directions.length; i++) {
             if (tryClearRubble(directions[i])) {
                 return;
@@ -269,13 +297,14 @@ public abstract class Robot {
 
     private boolean tryClearRubble(Direction direction) throws GameActionException {
         MapLocation nextLocation = rc.getLocation().add(direction);
+
         double rubble = rc.senseRubble(nextLocation);
+
         if (rubble <= MAX_RUBBLE_CAN_IGNORE) {
             return false;
         }
 
         rc.clearRubble(direction);
-        setIndicatorString(2, "clearing rubblez");
         return true;
     }
 
@@ -345,7 +374,18 @@ public abstract class Robot {
                 debugString[i].append(rc.getRoundNum() + " |");
             }
 
-            debugString[i].append(s + " -- ");
+            debugString[i].append(s + " -");
+            rc.setIndicatorString(i, debugString[i].toString());
+        }
+    }
+
+    protected void setBytecodeIndicator(int i, String s) {
+        if (Config.DEBUG) {
+            if (debugString[i].length() == 0) {
+                debugString[i].append(rc.getRoundNum() + " |");
+            }
+
+            debugString[i].append(s + " " + Clock.getBytecodeNum() + " -- ");
             rc.setIndicatorString(i, debugString[i].toString());
         }
     }

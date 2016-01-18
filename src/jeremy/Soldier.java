@@ -3,7 +3,6 @@ package jeremy;
 import battlecode.common.*;
 import jeremy.util.BoundedQueue;
 import jeremy.util.DirectionUtil;
-import jeremy.util.RobotQueueNoDuplicates;
 import jeremy.util.RobotUtil;
 import jeremy.message.MessageParser;
 
@@ -12,13 +11,13 @@ public class Soldier extends Robot {
     private RobotInfo[] attackableZombies;
     private RobotInfo[] nearbyZombies;
     BoundedQueue<Integer> zombieMemory = new BoundedQueue<Integer>(3);
-    private RobotQueueNoDuplicates zombieDens = new RobotQueueNoDuplicates(8);
+    private LocationCollection zombieDens = new LocationCollection(20);
     private RobotData zombieToAttack;
     private RobotInfo[] attackableEnemies;
     private MapLocation enemyLocation;
     private boolean engaged;
     private int hasAdvantageRound;
-    private RobotData zombieDen;
+    private MapLocation zombieDen;
     private RobotInfo[] adjacentTeammates;
 
     public Soldier(RobotController rc) {
@@ -58,8 +57,6 @@ public class Soldier extends Robot {
             hasAdvantageRound = roundNumber;
         }
 
-        setIndicatorString(1, "advantage round " + hasAdvantageRound);
-
         return hasAdvantageRound != 0
                 && roundNumber - Config.ENGAGE_DELAY > hasAdvantageRound;
     }
@@ -83,8 +80,7 @@ public class Soldier extends Robot {
         zombieToAttack = getZombieToAttack();
         RobotData zombieDen = getZombieDen();
         if (zombieDen != null) {
-            zombieDens.add(zombieDen);
-            setIndicatorString(0, "zombie den collection size: " + zombieDens.getSize());
+            zombieDens.add(zombieDen.location);
         }
 
         MapLocation newEnemyLocation = getEnemyLocation();
@@ -103,18 +99,19 @@ public class Soldier extends Robot {
             return;
         }
 
-        if (zombieDen == null) {
-            zombieDen = zombieDens.remove();
+        if (zombieDen == null
+                && !zombieDens.isEmpty()) {
+            zombieDen = zombieDens.removeClosestTo(currentLocation);
         }
 
-        if (rc.canSenseLocation(zombieDen.location)
-                && rc.senseRobotAtLocation(zombieDen.location) == null) {
+        if (rc.canSenseLocation(zombieDen)
+                && rc.senseRobotAtLocation(zombieDen) == null) {
             zombieDen = null;
             return;
         }
 
-        if (currentLocation.distanceSquaredTo(zombieDen.location) > 8) {
-            tryMoveToward(zombieDen.location);
+        if (currentLocation.distanceSquaredTo(zombieDen) > 8) {
+            tryMoveToward(zombieDen);
         }
     }
 
