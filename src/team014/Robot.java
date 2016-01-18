@@ -1,7 +1,6 @@
 package team014;
 
 import battlecode.common.*;
-import team014.message.Message;
 import team014.util.RobotUtil;
 
 import java.util.Random;
@@ -14,7 +13,6 @@ public abstract class Robot {
 
     protected final int senseRadius;
     protected final int attackRadius;
-    protected RobotType type;
 
     protected MapLocation currentLocation;
     protected int roundNumber;
@@ -33,7 +31,7 @@ public abstract class Robot {
         enemy = team.opponent();
         currentLocation = rc.getLocation();
 
-        type = rc.getType();
+        RobotType type = rc.getType();
         senseRadius = type.sensorRadiusSquared;
         attackRadius = type.attackRadiusSquared;
     }
@@ -81,71 +79,19 @@ public abstract class Robot {
         return rc.senseNearbyRobots(senseRadius, Team.NEUTRAL);
     }
 
-    protected void tryMoveOnto(MapLocation location) throws GameActionException {
-        MapLocation currentLocation = rc.getLocation();
-        if (currentLocation.equals(location)) {
-            return;
-        }
-
-        if (currentLocation.isAdjacentTo(location)
-                && rc.senseRubble(location) >= 100) {
-            rc.clearRubble(currentLocation.directionTo(location));
-            return;
-        }
-
-        Direction moveDirection = currentLocation.directionTo(location);
-        if (type == RobotType.ARCHON
-                || type == RobotType.TTM) {
-            tryMove(moveDirection);
-        }
-        else {
-            tryMoveDig(moveDirection);
-        }
-    }
-
     protected void tryMoveToward(MapLocation location) throws GameActionException {
         MapLocation currentLocation = rc.getLocation();
-        if (currentLocation.equals(location)) {
-            return;
-        }
-
         Direction moveDirection = currentLocation.directionTo(location);
-        if (type == RobotType.ARCHON
-                || type == RobotType.TTM) {
-            tryMove(moveDirection);
-        }
-        else {
-            tryMoveDig(moveDirection);
-        }
-    }
 
-    private void tryMoveDig(Direction targetDirection) throws GameActionException {
-        int[] moveSequence1 = {0, 7, 1};
-        int[] digSequence1 = {0, 7, 1};
-        int[] moveSequence2 = {6, 2, 5, 3};
-        int initialDirection = getDirectionNumber(targetDirection);
-        Direction currentDirection;
-        for (int i = 0; i < moveSequence1.length; i++) {
-            currentDirection = directions[(initialDirection + moveSequence1[i]) % 8];
-            if (rc.canMove(currentDirection)) {
-                rc.move(currentDirection);
+        if (location.isAdjacentTo(currentLocation)) {
+            double rubble = rc.senseRubble(location);
+            if (rubble >= 100) {
+                rc.clearRubble(moveDirection);
                 return;
             }
         }
 
-        for (int i = 0; i < digSequence1.length; i++) {
-            currentDirection = directions[(initialDirection + digSequence1[i]) % 8];
-        }
-
-        for (int i = 0; i < moveSequence2.length; i++) {
-            currentDirection = directions[(initialDirection + moveSequence2[i]) % 8];
-            if (rc.canMove(currentDirection)) {
-                rc.move(currentDirection);
-                return;
-            }
-        }
-
-        tryClearRubble(targetDirection);
+        tryMove(moveDirection);
     }
 
     protected boolean trySafeMove(Direction direction,
@@ -197,14 +143,6 @@ public abstract class Robot {
                 && !RobotUtil.anyCanAttack(nearbyZombies, next);
     }
 
-    protected void clearRubble() throws GameActionException {
-        for (int i = 0; i < directions.length; i++) {
-            if (tryClearRubble(directions[i])) {
-                return;
-            }
-        }
-    }
-
     public void tryDigMove(Direction direction) throws GameActionException {
         if (rc.canMove(direction)) {
             rc.move(direction);
@@ -244,20 +182,40 @@ public abstract class Robot {
         }
     }
 
-    protected void tryMove(Direction targetDirection) throws GameActionException {
-        int[] rotations = {0, 7, 1, 6, 2, 5, 3};
-        int initialDirection = getDirectionNumber(targetDirection);
-        Direction currentDirection;
-        for (int i = 0; i < rotations.length; i++) {
-            currentDirection = directions[(initialDirection + rotations[i]) % 8];
-            if (rc.canMove(currentDirection)) {
-                rc.move(currentDirection);
+    protected void tryMove(Direction direction) throws GameActionException {
+        if (rc.canMove(direction)) {
+            rc.move(direction);
+            return;
+        }
+
+        Direction left = direction.rotateLeft();
+        if (rc.canMove(left)) {
+            rc.move(left);
+            return;
+        }
+
+        Direction right = direction.rotateRight();
+        if (rc.canMove(right)) {
+            rc.move(right);
+            return;
+        }
+
+        for (int i = 0; i < 2; i++) {
+            left = left.rotateLeft();
+            if (rc.canMove(left)) {
+                rc.move(left);
+                return;
+            }
+
+            right = right.rotateRight();
+            if (rc.canMove(right)) {
+                rc.move(right);
                 return;
             }
         }
 
         if (rc.getType() != RobotType.TTM) {
-            tryClearRubble(targetDirection);
+            tryClearRubble(direction);
         }
     }
 
@@ -352,22 +310,5 @@ public abstract class Robot {
         }
 
         return -1;
-    }
-
-    protected void sendMessage(Message message, int radius) throws GameActionException {
-        rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), radius);
-    }
-
-    protected int getRoundsTillNextSpawn(int currentRound) {
-        int[] schedule = rc.getZombieSpawnSchedule().getRounds();
-        for (int i = 0; i < schedule.length; i++) {
-            if (schedule[i] < currentRound) {
-                continue;
-            }
-
-            return schedule[i] - currentRound;
-        }
-
-        return Integer.MAX_VALUE;
     }
 }

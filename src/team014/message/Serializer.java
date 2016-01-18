@@ -7,16 +7,12 @@ import team014.MessageType;
 public class Serializer {
     //--Max 8 types
     private static final MessageType[] messageEncoding = {MessageType.PARTS, MessageType.ENEMY,
-            MessageType.ID, MessageType.ZOMBIE, MessageType.ANNOUNCEMENT };
+            MessageType.ID, MessageType.ZOMBIE, MessageType.COUNT };
 
     //--Max 16 types
     private static final RobotType[] robotTypeEncoding = {RobotType.ARCHON, RobotType.BIGZOMBIE, RobotType.FASTZOMBIE,
             RobotType.GUARD, RobotType.RANGEDZOMBIE, RobotType.SCOUT, RobotType.SOLDIER, RobotType.STANDARDZOMBIE,
             RobotType.TTM, RobotType.TURRET, RobotType.VIPER, RobotType.ZOMBIEDEN };
-
-    private static final AnnouncementSubject[] announcementSubjectEncoding = { AnnouncementSubject.ZOMBIES_DEAD };
-    private static final AnnouncementMode[] announcementModeEncoding = { AnnouncementMode.PROPOSE,
-        AnnouncementMode.DENY };
 
     public static int encode(MapLocation location) {
         return (location.x % 1000) * 1000 + (location.y % 1000);
@@ -70,31 +66,5 @@ public class Serializer {
 
     public static RobotType decodeRobotType(int encodedRobotType) {
         return robotTypeEncoding[encodedRobotType];
-    }
-
-    public static int encode(AnnouncementSubject announcementSubject) {
-        int encoded = 0;
-        while (announcementSubjectEncoding[encoded] != announcementSubject) {
-            encoded++;
-        }
-
-        return encoded;
-    }
-
-    public static AnnouncementSubject decodeAnnouncementSubject(int encoded) {
-        return announcementSubjectEncoding[encoded];
-    }
-
-    public static AnnouncementMode decodeAnnouncementMode(int encoded) {
-        return announcementModeEncoding[encoded];
-    }
-
-    public static int encode(AnnouncementMode announcementMode) {
-        int encoded = 0;
-        while (announcementModeEncoding[encoded] != announcementMode) {
-            encoded++;
-        }
-
-        return encoded;
     }
 }

@@ -42,19 +42,4 @@ public class LocationUtil {
 
         return new MapLocation(x / count, y / count);
     }
-
-    public static MapLocation findClosestLocation(MapLocation[] partsLocations, MapLocation currentLocation) {
-        int shortestDistance = Integer.MAX_VALUE;
-        MapLocation closestLocation = null;
-
-        for (MapLocation location : partsLocations) {
-            int distance = currentLocation.distanceSquaredTo(location);
-            if (distance < shortestDistance) {
-                shortestDistance = distance;
-                closestLocation = location;
-            }
-        }
-
-        return closestLocation;
-    }
 }
