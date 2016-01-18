@@ -37,9 +37,20 @@ public class Archon extends Robot {
         moveAwayFromZombies();
         moveAwayFromEnemies();
         buildRobots();
-        moveIfSafe();
+        convertAdjacentNeutrals();
         getParts();
         repairRobots();
+    }
+
+    private void convertAdjacentNeutrals() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        RobotInfo[] adjacentNeutrals = rc.senseNearbyRobots(2, Team.NEUTRAL);
+        if (adjacentNeutrals.length > 0) {
+            rc.activate(adjacentNeutrals[0].location);
+        }
     }
 
     private void readSignals() {
@@ -110,46 +121,6 @@ public class Archon extends Robot {
         nearbyZombies = senseNearbyZombies();
         for (RobotInfo zombie : nearbyZombies) {
             previousZombieLocation.add(zombie.location);
-        }
-    }
-
-    private void moveIfSafe() throws GameActionException {
-        if (nearbyZombies.length > 0
-                || !rc.isCoreReady()) {
-            return;
-        }
-
-        setIndicatorString(0, "enemy location is " + enemyLocation);
-
-        RobotInfo[] nearbyNeutrals = senseNearbyNeutrals();
-        if (nearbyNeutrals.length > 0) {
-            RobotInfo closestNeutral = RobotUtil.getClosestRobotToLocation(nearbyNeutrals, currentLocation);
-            Bug.setDestination(closestNeutral.location);
-            if (currentLocation.isAdjacentTo(closestNeutral.location)) {
-                rc.activate(closestNeutral.location);
-            }
-            else {
-                tryMove(Bug.getDirection(currentLocation));
-            }
-
-            return;
-        }
-
-        if (zombiesDead
-                && enemyLocation != null
-                && currentLocation.distanceSquaredTo(enemyLocation) > 15 * 15) {
-            tryMoveToward(rc.getInitialArchonLocations(team)[0]);
-            return;
-        }
-
-        MapLocation towardZombies = previousZombieLocation.getAverage();
-        if (towardZombies == null
-                || towardZombies.equals(currentLocation)) {
-            tryMove(getRandomDirection());
-        }
-        else {
-            setIndicatorString(0, "move toward zombies: " + towardZombies);
-            tryMoveToward(towardZombies);
         }
     }
 

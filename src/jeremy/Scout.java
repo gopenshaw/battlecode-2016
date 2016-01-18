@@ -132,7 +132,6 @@ public class Scout extends Robot {
                 messageStore.addMessage(MessageBuilder.buildZombieMessage(zombie, roundNumber),
                         roundNumber + DEN_BROADCAST_REPEAT_ROUNDS);
                 lastZombieAddedToMessageStore = zombie;
-                setIndicatorString(1, "adding den to store " + zombie.location);
             }
         }
     }
@@ -145,7 +144,6 @@ public class Scout extends Robot {
         Message message = messageStore.getNextMessage(roundNumber);
         if (message != null) {
             MessageParser parser = new MessageParser(message.getFirst(), message.getSecond(), currentLocation);
-            setIndicatorString(2, "broadcast from store: " + parser.getRobotData().location);
             rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), senseRadius * 4);
         }
     }
@@ -177,6 +175,11 @@ public class Scout extends Robot {
         if (nearbyZombies.length == 0
                 || !rc.isCoreReady()) {
             return;
+        }
+
+        if (rand.nextInt(4) == 0) {
+            setIndicatorString(2, "getting random direction");
+            exploreDirection = getExploreDirection(exploreDirection);
         }
 
         tryMove(DirectionUtil.getDirectionAwayFrom(nearbyZombies, currentLocation));
