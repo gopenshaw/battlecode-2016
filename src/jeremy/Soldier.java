@@ -34,27 +34,9 @@ public class Soldier extends Robot {
         moveTowardZombieNotGettingCloser();
         moveTowardZombie();
         moveTowardDen();
-        moveTowardEnemy();
         moveAwayFromArchon();
         updateZombieMemory();
         clearRubble();
-    }
-
-    private void moveTowardEnemy() throws GameActionException {
-        if (enemyLocation == null
-                || attackableEnemies.length > 0
-                || !rc.isCoreReady()) {
-            return;
-        }
-
-        tryMoveToward(rc.getInitialArchonLocations(team)[0]);
-//
-//        int distanceToEnemy = currentLocation.distanceSquaredTo(enemyLocation);
-//        setIndicatorString(0, "distance to enemy " + distanceToEnemy);
-//        if (shouldEngage()
-//                || distanceToEnemy > Config.SAFE_DISTANCE_FROM_ENEMY_BASE) {
-//            tryMoveToward(enemyLocation);
-//        }
     }
 
     private boolean shouldEngage() {

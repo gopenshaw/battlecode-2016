@@ -51,7 +51,7 @@ public class Scout extends Robot {
     }
 
     private void broadcastTargets() throws GameActionException {
-        RobotInfo[] highValueTargets = RobotUtil.getRobotsOfType(nearbyEnemies, RobotType.TURRET, RobotType.ARCHON);
+        RobotInfo[] highValueTargets = RobotUtil.getRobotsOfType(nearbyEnemies, RobotType.TURRET, RobotType.ARCHON, RobotType.SCOUT);
         if (highValueTargets == null
                 || highValueTargets.length == 0) {
             return;

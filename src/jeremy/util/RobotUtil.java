@@ -148,4 +148,49 @@ public class RobotUtil {
 
         return robotsOfType;
     }
+
+    public static boolean anyCanAttack(RobotInfo[] robots1, RobotInfo[] robots2, MapLocation currentLocation) {
+        return anyCanAttack(robots1, currentLocation)
+                || anyCanAttack(robots2, currentLocation);
+    }
+
+    public static boolean anyWithinRange(RobotInfo[] nearbyZombies, int range, MapLocation location) {
+        int count = nearbyZombies.length;
+        for (int i = 0; i < count; i++) {
+            if (location.distanceSquaredTo(nearbyZombies[i].location) <= range) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static RobotInfo[] getRobotsOfType(RobotInfo[] robots, RobotType type1, RobotType type2, RobotType type3) {
+        int count = 0;
+        for (int i = 0; i < robots.length; i++) {
+            RobotType robotType = robots[i].type;
+            if (robotType == type1
+                    || robotType == type2
+                    || robotType == type3) {
+                count++;
+            }
+        }
+
+        if (count == 0) {
+            return null;
+        }
+
+        int index = 0;
+        RobotInfo[] robotsOfType = new RobotInfo[count];
+        for (int i = 0; i < robots.length; i++) {
+            RobotType robotType = robots[i].type;
+            if (robotType == type1
+                    || robotType == type2
+                    || robotType == type3) {
+                robotsOfType[index++] = robots[i];
+            }
+        }
+
+        return robotsOfType;
+    }
 }
