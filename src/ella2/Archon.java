@@ -172,7 +172,13 @@ public class Archon extends Robot {
 
     private MapLocation getBaseLocation(MapLocation[] teamArchons, MapLocation[] enemyArchons) {
         MapBounds boundaryEstimate = MapUtil.getBoundsThatEncloseLocations(teamArchons, enemyArchons);
-        return MapUtil.getClosestToBoundary(teamArchons, boundaryEstimate);
+        BoundedQueue<MapLocation> closestToBoundary = MapUtil.getClosestToBoundary(teamArchons, boundaryEstimate);
+        if (closestToBoundary.getSize() == 1) {
+            return closestToBoundary.remove();
+        }
+        else {
+            return LocationUtil.getFarthestFromLocations(closestToBoundary, enemyArchons);
+        }
     }
 
     private void getIdAndBaseLocation() throws GameActionException {

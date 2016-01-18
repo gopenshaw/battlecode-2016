@@ -42,4 +42,23 @@ public class LocationUtil {
 
         return new MapLocation(x / count, y / count);
     }
+
+    public static MapLocation getFarthestFromLocations(BoundedQueue<MapLocation> candidates, MapLocation[] locations) {
+        int farthestDistance = -1;
+        MapLocation farthest = null;
+        for (int i = 0; i < candidates.getSize(); i++) {
+            MapLocation current = candidates.remove();
+            int distance = 0;
+            for (int j = 0; j < locations.length; j++) {
+                distance += locations[j].distanceSquaredTo(current);
+            }
+
+            if (distance > farthestDistance) {
+                farthestDistance = distance;
+                farthest = current;
+            }
+        }
+
+        return farthest;
+    }
 }

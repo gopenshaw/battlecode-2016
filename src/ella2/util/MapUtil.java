@@ -45,17 +45,21 @@ public class MapUtil {
         return new MapBounds(north, east, south, west);
     }
 
-    public static MapLocation getClosestToBoundary(MapLocation[] locations, MapBounds bounds) {
+    public static BoundedQueue<MapLocation> getClosestToBoundary(MapLocation[] locations, MapBounds bounds) {
         int shortest = 1000000;
-        MapLocation bestLocation = null;
+        BoundedQueue<MapLocation> bestLocations = new BoundedQueue<MapLocation>(4);
         for (MapLocation location : locations) {
             int distance = bounds.getDistanceToBoundary(location);
-            if (distance < shortest) {
+            if (distance == shortest) {
+                bestLocations.add(location);
+            }
+            else if (distance < shortest) {
                 shortest = distance;
-                bestLocation = location;
+                bestLocations.clear();
+                bestLocations.add(location);
             }
         }
 
-        return bestLocation;
+        return bestLocations;
     }
 }
