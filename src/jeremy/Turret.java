@@ -9,6 +9,7 @@ public class Turret extends Robot {
     private RobotInfo[] nearbyZombies;
     private RobotInfo[] nearbyEnemies;
     private RobotData attackTarget;
+    private MapLocation enemyLocation;
 
     public Turret(RobotController rc) {
         super(rc);
@@ -19,11 +20,22 @@ public class Turret extends Robot {
         roundSignals = rc.emptySignalQueue();
         senseRobots();
         getTarget();
+        getEnemyLocation();
         attackTargets();
         attackEnemiesAndZombies();
         moveToTarget();
+        moveToEnemy();
         moveRandom();
         attackTarget = null;
+    }
+
+    private void moveToEnemy() throws GameActionException {
+        if (enemyLocation == null
+                || !rc.isCoreReady()) {
+            return;
+        }
+
+        tryMoveToward(enemyLocation);
     }
 
     private void senseRobots() {
@@ -159,5 +171,12 @@ public class Turret extends Robot {
         }
 
         return zombieToAttack;
+    }
+
+    public void getEnemyLocation() {
+        MessageParser enemy = getParserForFirstMessageOfType(roundSignals, MessageType.ENEMY);
+        if (enemy != null) {
+            enemyLocation = enemy.getRobotData().location;
+        }
     }
 }
