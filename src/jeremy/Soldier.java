@@ -39,6 +39,7 @@ public class Soldier extends Robot {
         updateZombieMemory();
         clearRubble();
         spread();
+        setIndicatorString(2, "set size " + zombieDens.getSize());
     }
 
     private void moveTowardEnemy() throws GameActionException {
@@ -79,11 +80,12 @@ public class Soldier extends Robot {
     private void readBroadcasts() {
         roundSignals = rc.emptySignalQueue();
         zombieToAttack = getZombieToAttack();
-        RobotData zombieDen = getZombieDen();
-        if (zombieDen != null
-                && !denDestroyed[zombieDen.id]) {
-            setIndicatorString(2, "learned den exists " + zombieDen);
-            zombieDens.add(zombieDen);
+        RobotData broadcastDen = getZombieDen();
+        if (broadcastDen != null
+                && !denDestroyed[broadcastDen.id]
+                && broadcastDen.location != zombieDen) {
+            setIndicatorString(2, "learned den exists " + broadcastDen);
+            zombieDens.add(broadcastDen);
         }
         
         MapLocation newEnemyLocation = getEnemyLocation();
@@ -128,6 +130,7 @@ public class Soldier extends Robot {
         if (zombieDen == null
                 && !zombieDens.isEmpty()) {
             zombieDen = zombieDens.removeClosestTo(currentLocation);
+            setIndicatorString(1, "removed den " + zombieDen);
         }
 
         if (rc.canSenseLocation(zombieDen)
