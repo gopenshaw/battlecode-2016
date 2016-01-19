@@ -384,7 +384,7 @@ public abstract class Robot {
     }
 
     protected void setBytecodeIndicator(int i, String s) {
-        if (Config.DEBUG) {
+        if (Config.BYTECODE_DEBUG) {
             if (debugString[i].length() == 0) {
                 debugString[i].append(rc.getRoundNum() + " |");
             }

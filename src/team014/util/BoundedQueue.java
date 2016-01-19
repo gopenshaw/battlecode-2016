@@ -17,7 +17,9 @@ public class BoundedQueue<T> {
     public void add(T object) {
         memory[tail] = object;
         tail = (tail + 1) % capacity;
-        size++;
+        if (size < capacity) {
+            size++;
+        }
     }
 
     public T remove() {
@@ -37,6 +39,22 @@ public class BoundedQueue<T> {
 
     public int getSize() {
         return size;
+    }
+
+    public void clear() {
+        head = 0;
+        tail = 0;
+        size = 0;
+    }
+
+    public boolean contains(T element) {
+        for (int i = 0; i < size; i++) {
+            if (memory[(head + i) % capacity].equals(element)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 

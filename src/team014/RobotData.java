@@ -4,10 +4,10 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotType;
 
 public class RobotData {
-    int health;
-    int id;
-    MapLocation location;
-    RobotType type;
+    public final int health;
+    public final int id;
+    public final MapLocation location;
+    public final RobotType type;
 
     public RobotData(int id, MapLocation location, int health, RobotType type) {
         this.health = health;
@@ -18,6 +18,6 @@ public class RobotData {
 
     @Override
     public String toString() {
-        return location + " " + health + " " + type + "; ";
+        return type + ":" + location + " id:" + id + " health:" + health + ";";
     }
 }

@@ -1,8 +1,11 @@
 package team014.message;
 
 import battlecode.common.MapLocation;
+import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
+import team014.DestroyedDenData;
 import team014.MessageType;
+import team014.PartsData;
 import team014.RobotData;
 
 public class MessageParser {
@@ -38,5 +41,46 @@ public class MessageParser {
 
     public int getCount() {
         return first;
+    }
+
+    public AnnouncementMode getAnnouncementMode() {
+        return Serializer.decodeAnnouncementMode((second >>> 3) & 0xF);
+    }
+
+    public AnnouncementSubject getAnnouncementSubject() {
+        return Serializer.decodeAnnouncementSubject(first);
+    }
+
+    public PartsData getPartsData() {
+        return new PartsData(Serializer.decodeMapLocation(first, validLocation));
+    }
+
+    public boolean pairs(RobotInfo robot) {
+        return robot.ID == first;
+    }
+
+    public DestroyedDenData getDestroyedDens() {
+        int numberOfDens = first & 0x7;
+        DestroyedDenData denData = new DestroyedDenData(numberOfDens);
+        if (numberOfDens == 1) {
+            denData.denId[0] = (first >>> 18);
+        }
+        else if (numberOfDens == 2) {
+            denData.denId[0] = (first >>> 18);
+            denData.denId[1] = (first >>> 3) & 0x7FFF;
+        }
+        else if (numberOfDens == 3) {
+            denData.denId[0] = (first >>> 18);
+            denData.denId[1] = (first >>> 3) & 0x7FFF;
+            denData.denId[2] = (second >>> 18);
+        }
+        else if (numberOfDens == 4) {
+            denData.denId[0] = (first >>> 18);
+            denData.denId[1] = (first >>> 3) & 0x7FFF;
+            denData.denId[2] = (second >>> 18);
+            denData.denId[3] = (second >>> 3) & 0x7FFF;
+        }
+
+        return denData;
     }
 }

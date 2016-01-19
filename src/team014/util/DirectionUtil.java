@@ -75,4 +75,8 @@ public class DirectionUtil {
             }
         }
     }
+
+    public static Direction getDirectionToward(RobotInfo[] robots, MapLocation currentLocation) {
+        return getDirectionAwayFrom(robots, currentLocation).opposite();
+    }
 }
