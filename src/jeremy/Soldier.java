@@ -18,6 +18,7 @@ public class Soldier extends Robot {
     private MapLocation enemyLocation;
     private MapLocation zombieDen;
     private RobotInfo[] adjacentTeammates;
+    private boolean[] denDestroyed = new boolean[32001];
 
     public Soldier(RobotController rc) {
         super(rc);
@@ -79,13 +80,38 @@ public class Soldier extends Robot {
         roundSignals = rc.emptySignalQueue();
         zombieToAttack = getZombieToAttack();
         RobotData zombieDen = getZombieDen();
-        if (zombieDen != null) {
-            zombieDens.add(zombieDen.location);
+        if (zombieDen != null
+                && !denDestroyed[zombieDen.id]) {
+            setIndicatorString(2, "learned den exists " + zombieDen);
+            zombieDens.add(zombieDen);
         }
-
+        
         MapLocation newEnemyLocation = getEnemyLocation();
         if (newEnemyLocation != null) {
             enemyLocation = newEnemyLocation;
+        }
+        
+        updateDestroyedDens();
+    }
+
+    private void updateDestroyedDens() {
+        int maxDenMessages = 10;
+        MessageParser[] parsers = getParsersForMessagesOfType(roundSignals, MessageType.DESTROYED_DENS, maxDenMessages);
+        setIndicatorString(2, "learned dens destroyed");
+        for (int i = 0; i < maxDenMessages; i++) {
+            if (parsers[i] == null) {
+                break;
+            }
+
+            DestroyedDenData denData = parsers[i].getDestroyedDens();
+            for (int j = 0; j < denData.numberOfDens; j++) {
+                int currentId = denData.denId[j];
+                if (!denDestroyed[currentId]) {
+                    denDestroyed[currentId] = true;
+                    zombieDens.remove(currentId);
+                    setIndicatorString(2, " " + currentId);
+                }
+            }
         }
     }
 
@@ -246,16 +272,9 @@ public class Soldier extends Robot {
     }
 
     private MapLocation getEnemyLocation() {
-        for (Signal s : roundSignals) {
-            if (s.getTeam() != team) continue;
-
-            int[] message = s.getMessage();
-            if (message == null) continue;
-
-            MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
-            if (parser.getMessageType() == MessageType.ENEMY) {
-                return parser.getRobotData().location;
-            }
+        MessageParser parser = getParserForFirstMessageOfType(roundSignals, MessageType.ENEMY);
+        if (parser != null) {
+            return parser.getRobotData().location;
         }
 
         return null;

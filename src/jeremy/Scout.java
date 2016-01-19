@@ -6,7 +6,7 @@ import jeremy.util.*;
 
 public class Scout extends Robot {
     private static final int ROUNDS_TO_REVERSE = 4;
-    private final int ZOMBIE_BROADCAST_RADIUS = senseRadius * 4;
+    private final int ZOMBIE_BROADCAST_RADIUS = senseRadius * 3;
     private final EventMemory eventMemory;
     private Direction exploreDirection;
     private final int LOOKAHEAD_LENGTH = 5;
@@ -39,8 +39,8 @@ public class Scout extends Robot {
         senseRobots();
         updateConnectionWithPair();
         getPairIfUnpaired();
-        setIndicatorString(0, "zombies dead " + zombiesDead);
         if (myPair == null) {
+            setIndicatorString(0, "zombies dead " + zombiesDead);
             discoverDestroyedDens();
             readDenMessages();
             addNearbyDensToDenQueue();
@@ -138,6 +138,7 @@ public class Scout extends Robot {
             destroyedDens.add(id);
         }
 
+        setIndicatorString(1, "broadcasting destroyed: " + denData);
         Message message = MessageBuilder.buildDestroyedDenMessage(denData);
         rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), getDestroyedDenBroadcastRadius());
     }
@@ -157,6 +158,7 @@ public class Scout extends Robot {
         }
 
         zombieDens.add(den);
+        setIndicatorString(1, "broadcasting den: " + den);
         Message message = MessageBuilder.buildZombieMessage(den, roundNumber);
         rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), senseRadius * 2);
     }
@@ -171,7 +173,6 @@ public class Scout extends Robot {
         RobotInfo closest = RobotUtil.getClosestRobotToLocation(highValueTargets, currentLocation);
         Message target = MessageBuilder.buildTargetMessage(closest);
         rc.broadcastMessageSignal(target.getFirst(), target.getSecond(), 2);
-        setIndicatorString(1, "broadcasting target " + closest);
     }
 
     private void moveTowardMyPair() throws GameActionException {
@@ -187,13 +188,11 @@ public class Scout extends Robot {
 
     private void updateConnectionWithPair() throws GameActionException {
         if (myPair == null) {
-            setIndicatorString(2, "i have no pair");
             return;
         }
 
         if (!rc.canSenseRobot(myPair.ID)) {
             myPair = null;
-            setIndicatorString(2, "my pair is gone :(");
             return;
         }
 
@@ -202,7 +201,6 @@ public class Scout extends Robot {
     }
 
     private void broadcastPairMessage(RobotInfo myPair) throws GameActionException {
-        setIndicatorString(2, "broadcasting pair message for " + myPair.ID);
         Message pairMessage = MessageBuilder.buildPairingMessage(myPair);
         rc.broadcastMessageSignal(pairMessage.getFirst(), pairMessage.getSecond(), senseRadius * 2);
     }
@@ -276,10 +274,8 @@ public class Scout extends Robot {
                     if (parser.getAnnouncementSubject() == AnnouncementSubject.ZOMBIES_DEAD) {
                         if (parser.getAnnouncementMode() == AnnouncementMode.PROPOSE) {
                             zombiesDeadProposed = true;
-                            setIndicatorString(1, "read proposal");
                         }
                         else if (parser.getAnnouncementMode() == AnnouncementMode.DENY) {
-                            setIndicatorString(1, "read denial");
                             zombiesDeadDenied = true;
                         }
                     }
@@ -292,7 +288,6 @@ public class Scout extends Robot {
                 && eventMemory.hasMemory(roundNumber)
                 && eventMemory.happenedRecently(Event.ZOMBIE_SPOTTED, roundNumber)) {
             Message denial = MessageBuilder.buildAnnouncement(AnnouncementSubject.ZOMBIES_DEAD, AnnouncementMode.DENY);
-            setIndicatorString(1, "i deny zombies are dead");
             rc.broadcastMessageSignal(denial.getFirst(), denial.getSecond(), 80 * 80 * 2);
             eventMemory.record(Event.ZOMBIES_DEAD_DENIED, roundNumber);
         }
@@ -304,7 +299,6 @@ public class Scout extends Robot {
                 && !eventMemory.happenedRecently(Event.BROADCAST_ZOMBIES_DEAD, roundNumber)) {
             Message message = MessageBuilder.buildAnnouncement(AnnouncementSubject.ZOMBIES_DEAD,
                     AnnouncementMode.PROPOSE);
-            setIndicatorString(1, "i propose zombies are dead");
             rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), 80 * 80 * 2);
             eventMemory.record(Event.BROADCAST_ZOMBIES_DEAD, roundNumber);
         }
@@ -347,7 +341,6 @@ public class Scout extends Robot {
         nearbyZombies = senseNearbyZombies();
         nearbyEnemies = senseNearbyEnemies();
         nearbyFriendlies = senseNearbyFriendlies();
-        setIndicatorString(2, "nearby zombies: " + nearbyZombies.length);
 
         if (nearbyZombies.length > 0) {
             eventMemory.record(Event.ZOMBIE_SPOTTED, roundNumber);

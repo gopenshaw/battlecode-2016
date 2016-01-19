@@ -3,25 +3,25 @@ package jeremy;
 import battlecode.common.MapLocation;
 
 public class LocationCollection {
-    private MapLocation[] memory;
+    private RobotData[] memory;
     private int size;
-    private boolean[][] inSet;
+    private boolean[] inSet;
 
     public LocationCollection(int capacity) {
-        memory = new MapLocation[capacity];
+        memory = new RobotData[capacity];
         size = 0;
-        inSet = new boolean[100][100];
+        inSet = new boolean[32001];
     }
 
-    public void add(MapLocation location) {
-        if (inSet[location.x % 100][location.y % 100]) {
+    public void add(RobotData robot) {
+        if (inSet[robot.id]) {
             return;
         }
 
-        addToMemory(location);
         for (int i = 0; i < memory.length; i++) {
             if (memory[i] == null) {
-                memory[i] = location;
+                memory[i] = robot;
+                addToMemory(robot);
                 size++;
                 break;
             }
@@ -37,44 +37,52 @@ public class LocationCollection {
             return null;
         }
 
-        MapLocation closestLocation = null;
+        RobotData closestRobot = null;
         int shortestDistance = Integer.MAX_VALUE;
         for (int i = 0; i < memory.length; i++) {
-            MapLocation currentLocation = memory[i];
-            if (currentLocation == null
-                    || !inSet(currentLocation)) {
+            RobotData currentRobot = memory[i];
+            if (currentRobot == null
+                    || !inSet(currentRobot)) {
                 continue;
             }
 
+            MapLocation currentLocation = currentRobot.location;
             int currentDistance = currentLocation.distanceSquaredTo(destination);
             if (currentDistance < shortestDistance) {
                 shortestDistance = currentDistance;
-                closestLocation = currentLocation;
+                closestRobot = currentRobot;
             }
         }
 
-        if (closestLocation == null) {
+        if (closestRobot == null) {
             return null;
         }
 
-        removeFromMemory(closestLocation);
+        removeFromMemory(closestRobot);
         size--;
-        return closestLocation;
+        return closestRobot.location;
     }
 
-    public boolean inSet(MapLocation location) {
-        return inSet[location.x % 100][location.y % 100];
+    public boolean inSet(RobotData robot) {
+        return inSet[robot.id];
     }
 
-    private void addToMemory(MapLocation location) {
-        inSet[location.x % 100][location.y % 100] = true;
+    private void addToMemory(RobotData robot) {
+        inSet[robot.id] = true;
     }
 
-    private void removeFromMemory(MapLocation location) {
-        inSet[location.x % 100][location.y % 100] = false;
+    private void removeFromMemory(RobotData robot) {
+        inSet[robot.id] = false;
     }
 
     public int getSize() {
         return size;
+    }
+
+    public void remove(int robotId) {
+        if (inSet[robotId]) {
+            inSet[robotId] = false;
+            size--;
+        }
     }
 }
