@@ -41,9 +41,21 @@ public class Archon extends Robot {
         moveIfUnderAttack();
         buildRobots();
         convertAdjacentNeutrals();
+        moveWithArmy();
         getParts();
         repairRobots();
         lastRoundHealth = rc.getHealth();
+    }
+
+    private void moveWithArmy() throws GameActionException {
+        if (nearbyEnemies.length > 0
+                || nearbyZombies.length > 0
+                || nearbyFriendlies.length == 0
+                || !rc.isCoreReady()) {
+            return;
+        }
+
+        tryMove(DirectionUtil.getDirectionToward(nearbyFriendlies, currentLocation));
     }
 
     private void moveIfUnderAttack() throws GameActionException {
