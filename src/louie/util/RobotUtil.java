@@ -193,4 +193,46 @@ public class RobotUtil {
 
         return robotsOfType;
     }
+
+    public static BoundedQueue<RobotInfo> getEnemiesThatCanAttack(RobotInfo[] robots, MapLocation currentLocation, int maxEnemies) {
+        BoundedQueue<RobotInfo> canAttack = new BoundedQueue<RobotInfo>(maxEnemies);
+        int count = robots.length;
+        for (int i = 0; i < count; i++) {
+            RobotInfo enemy = robots[i];
+            if (enemy.type.canAttack()
+                    && enemy.location.distanceSquaredTo(currentLocation) <= enemy.type.attackRadiusSquared) {
+                canAttack.add(robots[i]);
+                if (canAttack.isFull()) {
+                    return canAttack;
+                }
+            }
+        }
+
+        return canAttack;
+    }
+
+    public static int countCanAttack(RobotInfo[] nearbyFriendlies, BoundedQueue<RobotInfo> enemiesCanAttackMe) {
+        int canAttack = 0;
+        for (int i = 0; i < nearbyFriendlies.length; i++) {
+            if (RobotUtil.canAttackAny(nearbyFriendlies[i], enemiesCanAttackMe)) {
+                canAttack++;
+            }
+        }
+
+        return canAttack;
+    }
+
+    private static boolean canAttackAny(RobotInfo attacker, BoundedQueue<RobotInfo> targets) {
+        int size = targets.getSize();
+        for (int i = 0; i < size; i++) {
+            RobotInfo target = targets.remove();
+            targets.add(target);
+            if (attacker.type.canAttack()
+                    && attacker.location.distanceSquaredTo(target.location) <= attacker.type.attackRadiusSquared) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

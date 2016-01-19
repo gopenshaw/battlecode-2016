@@ -25,6 +25,7 @@ public class Soldier extends Robot {
     private RobotData zombieDen;
     private boolean[] denDestroyed = new boolean[32001];
     private MapLocation helpLocation;
+    private RobotInfo[] nearbyFriendlies;
 
     public Soldier(RobotController rc) {
         super(rc);
@@ -54,12 +55,21 @@ public class Soldier extends Robot {
             return;
         }
 
-        if (RobotUtil.anyCanAttack(nearbyEnemies, currentLocation)) {
-            if (adjacentTeammates.length < 1) {
-                rc.broadcastSignal(senseRadius * 2);
-                setBytecodeIndicator(0, "micro away from enemies");
-                tryMove(DirectionUtil.getDirectionAwayFrom(nearbyEnemies, currentLocation));
-            }
+        int maxEnemies = 6;
+        BoundedQueue<RobotInfo> enemiesCanAttackMe = RobotUtil.getEnemiesThatCanAttack(nearbyEnemies, currentLocation, maxEnemies);
+        int canAttackMe = enemiesCanAttackMe.getSize();
+        if (canAttackMe == 0) {
+            return;
+        }
+
+        int canAttackEnemy = RobotUtil.countCanAttack(nearbyFriendlies, enemiesCanAttackMe) + 1;
+        setIndicatorString(1, "can attack me: " + canAttackMe);
+        setIndicatorString(1, "can attack attackers: " + canAttackEnemy);
+        int advantage = 2;
+        if (canAttackMe + advantage > canAttackEnemy) {
+            rc.broadcastSignal(senseRadius * 2);
+            setBytecodeIndicator(0, "micro away from enemies");
+            tryMove(DirectionUtil.getDirectionAwayFrom(nearbyEnemies, currentLocation));
         }
     }
 
@@ -197,7 +207,8 @@ public class Soldier extends Robot {
     }
 
     private void moveTowardDen() throws GameActionException {
-        if (!rc.isCoreReady()) {
+        if (nearbyEnemies.length > 0
+                || !rc.isCoreReady()) {
             return;
         }
 
@@ -277,6 +288,7 @@ public class Soldier extends Robot {
         attackableEnemies = senseAttackableEnemies();
         nearbyZombies = senseNearbyZombies();
         nearbyEnemies = senseNearbyEnemies();
+        nearbyFriendlies = senseNearbyFriendlies();
         adjacentTeammates = rc.senseNearbyRobots(2, team);
     }
 
