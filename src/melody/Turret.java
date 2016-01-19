@@ -24,11 +24,25 @@ public class Turret extends Robot {
         senseRobots();
         getTarget();
         getEnemyLocation();
+        if (!rc.isCoreReady()
+                && !rc.isWeaponReady()) {
+            attackTarget = null;
+            return;
+        }
+
         attackTargets();
         attackEnemiesAndZombies();
-        moveToTarget();
+        if (moveToTarget()) {
+            attackTarget = null;
+            return;
+        }
+
         moveToEnemy();
-        moveRandom();
+        if (moveRandom()) {
+            attackTarget = null;
+            return;
+        }
+
         attackTarget = null;
     }
 
@@ -49,10 +63,10 @@ public class Turret extends Robot {
         setIndicatorString(0, "nearby enemies: " + nearbyEnemies.length);
     }
 
-    private void moveToTarget() throws GameActionException {
+    private boolean moveToTarget() throws GameActionException {
         if (attackTarget == null
                 || !rc.isCoreReady()) {
-            return;
+            return false;
         }
 
         if (currentLocation.distanceSquaredTo(attackTarget.location) > RobotType.TURRET.attackRadiusSquared) {
@@ -62,13 +76,15 @@ public class Turret extends Robot {
             }
             else {
                 rc.pack();
-                return;
+                return true;
             }
         }
         else if (rc.getType() == RobotType.TTM) {
             rc.unpack();
-            return;
+            return true;
         }
+
+        return false;
     }
 
     private void getTarget() {
@@ -97,10 +113,10 @@ public class Turret extends Robot {
         }
     }
 
-    private void moveRandom() throws GameActionException {
+    private boolean moveRandom() throws GameActionException {
         if (attackTarget != null) {
             delayRound = roundNumber;
-            return;
+            return false;
         }
 
         if (rc.getType() == RobotType.TURRET
@@ -110,7 +126,7 @@ public class Turret extends Robot {
                 && roundNumber - RANDOM_MOVE_DELAY > delayRound) {
             setIndicatorString(1, "packing for random move");
             rc.pack();
-            return;
+            return true;
         }
 
         if (rc.getType() == RobotType.TTM
@@ -118,14 +134,15 @@ public class Turret extends Robot {
                 || nearbyZombies.length > 0) {
             setIndicatorString(1, "unpacking in random move");
             rc.unpack();
-            return;
+            return true;
         }
 
         if (!rc.isCoreReady()) {
-            return;
+            return false;
         }
 
         tryMove(getRandomDirection());
+        return false;
     }
 
     private void attackEnemiesAndZombies() throws GameActionException {
