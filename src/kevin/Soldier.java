@@ -78,7 +78,7 @@ public class Soldier extends Robot {
 
         if (enemyLocation != null
                 && currentLocation.distanceSquaredTo(enemyLocation) > 50) {
-            setIndicatorString(0, "going to enemy location " + helpLocation);
+            setIndicatorString(0, "going to enemy location " + enemyLocation);
             tryMoveToward(enemyLocation);
         }
     }
@@ -249,7 +249,7 @@ public class Soldier extends Robot {
             if (zombie.type != RobotType.BIGZOMBIE
                     && zombie.type != RobotType.ZOMBIEDEN
                     && sawZombieLastTurn(zombie)) {
-                setIndicatorString(0, "move toward zombie not getting closer " + zombie);
+                setIndicatorString(0, "move toward zombie not getting closer " + zombie.location);
                 tryMoveToward(zombie.location);
                 break;
             }
