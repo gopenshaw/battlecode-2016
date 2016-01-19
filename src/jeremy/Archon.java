@@ -86,7 +86,9 @@ public class Archon extends Robot {
 
         if (nearbyZombies.length > 0
                 || RobotUtil.anyCanAttack(nearbyEnemies, currentLocation)) {
-            tryMove(DirectionUtil.getDirectionAwayFrom(nearbyEnemies, nearbyZombies, currentLocation));
+            Direction runDirection = DirectionUtil.getDirectionAwayFrom(nearbyEnemies, nearbyZombies, currentLocation);
+            //--TODO check if we are going into a corner or some other trap
+            tryMove(runDirection);
         }
     }
 

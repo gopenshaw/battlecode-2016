@@ -18,6 +18,6 @@ public class RobotData {
 
     @Override
     public String toString() {
-        return location + " " + health + " " + type + "; ";
+        return type + ":" + location + " id:" + id + " health:" + health + ";";
     }
 }

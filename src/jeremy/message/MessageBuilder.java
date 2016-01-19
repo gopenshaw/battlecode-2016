@@ -3,7 +3,9 @@ package jeremy.message;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
+import jeremy.DestroyedDenData;
 import jeremy.MessageType;
+import jeremy.RobotData;
 
 public class MessageBuilder {
     private MessageBuilder()
@@ -15,12 +17,11 @@ public class MessageBuilder {
     //--First integer : 1 bit open, 2 bit round number, 14 bit health, 15 bit id
     //--Second integer: 20 bit location, 4 bit robot type, 3 bit message type
     public static Message buildZombieMessage(RobotInfo zombie, int roundNumber) {
-//        int first = (roundNumber % 4 << 29) + ((int) zombie.health << 15) + zombie.ID;
-//        int second = (Serializer.encode(zombie.location) << 7)
-//                + (Serializer.encode(zombie.type) << 3)
-//                + Serializer.encode(MessageType.ZOMBIE);
-//        return new Message(first, second, MessageType.ZOMBIE);
         return buildRobotMessage(zombie.health, zombie.ID, zombie.type, zombie.location, MessageType.ZOMBIE);
+    }
+
+    public static Message buildZombieMessage(RobotData zombie, int roundNumber) {
+        return buildRobotMessage(zombie.health, zombie.id, zombie.type, zombie.location, MessageType.ZOMBIE);
     }
 
     public static Message buildEnemyMessage(RobotInfo enemy, int roundNumber) {
@@ -64,5 +65,30 @@ public class MessageBuilder {
 
     public static Message buildTargetMessage(RobotInfo closest) {
         return buildRobotMessage(closest.health, closest.ID, closest.type, closest.location, MessageType.TARGET);
+    }
+
+    public static Message buildDestroyedDenMessage(DestroyedDenData denData) {
+        int first = 0;
+        int count = denData.numberOfDens;
+        if (count > 1) {
+            first = (denData.denId[0] << 18)
+                    + denData.denId[1] << 3
+                    + denData.numberOfDens;
+        }
+        else {
+            first = (denData.denId[0] << 18)
+                    + denData.numberOfDens;
+        }
+
+        int second = Serializer.encode(MessageType.DESTROYED_DENS);
+        if (count == 3) {
+            second += denData.denId[2] << 18;
+        }
+        else if (count == 4) {
+            second += (denData.denId[2] << 18)
+                    + (denData.denId[3] << 3);
+        }
+
+        return new Message(first, second, MessageType.DESTROYED_DENS);
     }
 }

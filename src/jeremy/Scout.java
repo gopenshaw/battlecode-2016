@@ -7,13 +7,11 @@ import jeremy.util.*;
 public class Scout extends Robot {
     private static final int ROUNDS_TO_REVERSE = 4;
     private final int ZOMBIE_BROADCAST_RADIUS = senseRadius * 4;
-    private int DEN_BROADCAST_REPEAT_ROUNDS = 100;
     private final EventMemory eventMemory;
     private Direction exploreDirection;
     private final int LOOKAHEAD_LENGTH = 5;
     private RobotInfo[] nearbyZombies;
     private int ignoreEnemiesRound;
-    private MessageStore messageStore;
     private RobotInfo[] nearbyEnemies;
     private Signal[] roundSignals;
     private boolean zombiesDead;
@@ -22,10 +20,17 @@ public class Scout extends Robot {
     private RobotInfo[] nearbyFriendlies;
     private RobotInfo myPair;
 
+    private RobotQueueNoDuplicates zombieDens;
+    private BoundedQueue<Integer> destroyedDens;
+
+    private boolean[] denDestroyed = new boolean[32001];
+
     public Scout(RobotController rc) {
         super(rc);
-        messageStore = new MessageStore(10);
         eventMemory = new EventMemory(rc.getRoundNum());
+
+        zombieDens = new RobotQueueNoDuplicates(Config.MAX_DENS);
+        destroyedDens = new BoundedQueue<Integer>(Config.MAX_DENS);
     }
 
     @Override
@@ -34,12 +39,14 @@ public class Scout extends Robot {
         senseRobots();
         updateConnectionWithPair();
         getPairIfUnpaired();
+        setIndicatorString(0, "zombies dead " + zombiesDead);
         if (myPair == null) {
-            makeDenMessages();
+            discoverDestroyedDens();
+            readDenMessages();
+            addNearbyDensToDenQueue();
             broadcastZombies();
-            broadcastParts();
+            broadcastDensAndDestroyedDens();
             broadcastEnemy();
-            doRepeatedBroadcasts();
             moveAwayFromZombies();
             broadcastAnnouncements();
             explore();
@@ -48,6 +55,110 @@ public class Scout extends Robot {
             moveTowardMyPair();
             broadcastTargets();
         }
+    }
+
+    private void readDenMessages() {
+        int maxDenMessages = 20;
+        MessageParser[] parsers = getParsersForMessagesOfType(roundSignals, MessageType.ZOMBIE, maxDenMessages);
+        for (int i = 0; i < maxDenMessages; i++) {
+            if (parsers[i] == null) {
+                break;
+            }
+
+            RobotData zombie = parsers[i].getRobotData();
+            if (zombie.type == RobotType.ZOMBIEDEN
+                    && !denDestroyed[zombie.id]) {
+                zombieDens.add(zombie);
+            }
+        }
+    }
+
+    private void discoverDestroyedDens() {
+        checkLocationWeCanSense();
+        checkBroadcastsForDestroyedDens();
+    }
+
+    private void checkBroadcastsForDestroyedDens() {
+        int maxParsers = 10;
+        MessageParser[] parsers = getParsersForMessagesOfType(roundSignals, MessageType.DESTROYED_DENS, maxParsers);
+        for (int i = 0; i < maxParsers; i++) {
+            if (parsers[i] == null) {
+                break;
+            }
+
+            DestroyedDenData densFromBroadcast = parsers[i].getDestroyedDens();
+            for (int j = 0; j < densFromBroadcast.numberOfDens; j++) {
+                int denId = densFromBroadcast.denId[j];
+                if (!denDestroyed[denId]) {
+                    denDestroyed[denId] = true;
+                    destroyedDens.add(denId);
+                }
+            }
+        }
+    }
+
+    private void checkLocationWeCanSense() {
+        int count = zombieDens.getSize();
+        for (int i = 0; i < count; i++) {
+            RobotData den = zombieDens.remove();
+            if (rc.canSenseLocation(den.location)
+                    && !rc.canSenseRobot(den.id)) {
+                denDestroyed[den.id] = true;
+                destroyedDens.add(den.id);
+            }
+            else {
+                zombieDens.add(den);
+            }
+        }
+    }
+
+    private void broadcastDensAndDestroyedDens() throws GameActionException {
+        int mod = roundNumber % 3;
+        if (mod == 0) {
+            broadcastNextDen();
+        }
+        else if (mod == 1) {
+            broadcastDestroyedDens();
+        }
+    }
+
+    private void broadcastDestroyedDens() throws GameActionException {
+        int size = destroyedDens.getSize();
+        if (size == 0) {
+            return;
+        }
+        else if (size > 4) {
+            size = 4;
+        }
+
+        DestroyedDenData denData = new DestroyedDenData(size);
+        for (int i = 0; i < size; i++) {
+            int id = destroyedDens.remove();
+            denData.denId[i] = id;
+            destroyedDens.add(id);
+        }
+
+        Message message = MessageBuilder.buildDestroyedDenMessage(denData);
+        rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), getDestroyedDenBroadcastRadius());
+    }
+
+    private void broadcastNextDen() throws GameActionException {
+        if (zombieDens.isEmpty()) {
+            return;
+        }
+
+        RobotData den = zombieDens.remove();
+        while (denDestroyed[den.id]) {
+            if (zombieDens.isEmpty()) {
+                return;
+            }
+
+            den = zombieDens.remove();
+        }
+
+        zombieDens.add(den);
+        Message message = MessageBuilder.buildZombieMessage(den, roundNumber);
+        rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), senseRadius * 2);
     }
 
     private void broadcastTargets() throws GameActionException {
@@ -143,19 +254,6 @@ public class Scout extends Robot {
         return false;
     }
 
-    private void broadcastParts() throws GameActionException {
-        if (!zombiesDead
-                || roundNumber % 2 == 1) {
-            return;
-        }
-
-        MapLocation[] parts = rc.sensePartLocations(RobotType.ARCHON.sensorRadiusSquared);
-        if (parts.length > 0) {
-            Message partsMessage = MessageBuilder.buildPartsMessage(currentLocation);
-            rc.broadcastMessageSignal(partsMessage.getFirst(), partsMessage.getSecond(), 400);
-        }
-    }
-
     private void broadcastEnemy() throws GameActionException {
         if (!zombiesDead
                 || lastEnemy == null) {
@@ -163,7 +261,7 @@ public class Scout extends Robot {
         }
 
         Message enemyMessage = MessageBuilder.buildEnemyMessage(lastEnemy, roundNumber);
-        messageStore.addMessage(enemyMessage, roundNumber + 200);
+        rc.broadcastMessageSignal(enemyMessage.getFirst(), enemyMessage.getSecond(), senseRadius * 4);
     }
 
     private void broadcastAnnouncements() throws GameActionException {
@@ -178,8 +276,10 @@ public class Scout extends Robot {
                     if (parser.getAnnouncementSubject() == AnnouncementSubject.ZOMBIES_DEAD) {
                         if (parser.getAnnouncementMode() == AnnouncementMode.PROPOSE) {
                             zombiesDeadProposed = true;
+                            setIndicatorString(1, "read proposal");
                         }
                         else if (parser.getAnnouncementMode() == AnnouncementMode.DENY) {
+                            setIndicatorString(1, "read denial");
                             zombiesDeadDenied = true;
                         }
                     }
@@ -192,6 +292,7 @@ public class Scout extends Robot {
                 && eventMemory.hasMemory(roundNumber)
                 && eventMemory.happenedRecently(Event.ZOMBIE_SPOTTED, roundNumber)) {
             Message denial = MessageBuilder.buildAnnouncement(AnnouncementSubject.ZOMBIES_DEAD, AnnouncementMode.DENY);
+            setIndicatorString(1, "i deny zombies are dead");
             rc.broadcastMessageSignal(denial.getFirst(), denial.getSecond(), 80 * 80 * 2);
             eventMemory.record(Event.ZOMBIES_DEAD_DENIED, roundNumber);
         }
@@ -203,6 +304,7 @@ public class Scout extends Robot {
                 && !eventMemory.happenedRecently(Event.BROADCAST_ZOMBIES_DEAD, roundNumber)) {
             Message message = MessageBuilder.buildAnnouncement(AnnouncementSubject.ZOMBIES_DEAD,
                     AnnouncementMode.PROPOSE);
+            setIndicatorString(1, "i propose zombies are dead");
             rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), 80 * 80 * 2);
             eventMemory.record(Event.BROADCAST_ZOMBIES_DEAD, roundNumber);
         }
@@ -222,26 +324,12 @@ public class Scout extends Robot {
         }
     }
 
-    private void makeDenMessages() {
+    private void addNearbyDensToDenQueue() {
         for (RobotInfo zombie : nearbyZombies) {
             if (zombie.type == RobotType.ZOMBIEDEN
                     && zombie != lastZombieAddedToMessageStore) {
-                messageStore.addMessage(MessageBuilder.buildZombieMessage(zombie, roundNumber),
-                        roundNumber + DEN_BROADCAST_REPEAT_ROUNDS);
-                lastZombieAddedToMessageStore = zombie;
+                zombieDens.add(new RobotData(zombie.ID, zombie.location, (int) zombie.health, zombie.type));
             }
-        }
-    }
-
-    private void doRepeatedBroadcasts() throws GameActionException {
-        if (rc.getMessageSignalCount() > 0) {
-            return;
-        }
-
-        Message message = messageStore.getNextMessage(roundNumber);
-        if (message != null) {
-            MessageParser parser = new MessageParser(message.getFirst(), message.getSecond(), currentLocation);
-            rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), senseRadius * 4);
         }
     }
 
@@ -259,13 +347,15 @@ public class Scout extends Robot {
         nearbyZombies = senseNearbyZombies();
         nearbyEnemies = senseNearbyEnemies();
         nearbyFriendlies = senseNearbyFriendlies();
+        setIndicatorString(2, "nearby zombies: " + nearbyZombies.length);
 
         if (nearbyZombies.length > 0) {
             eventMemory.record(Event.ZOMBIE_SPOTTED, roundNumber);
         }
 
         if (nearbyEnemies.length > 0) {
-            lastEnemy = nearbyEnemies[0];
+            RobotInfo closest = RobotUtil.getClosestRobotToLocation(nearbyEnemies, currentLocation);
+            lastEnemy = closest;
         }
     }
 
@@ -279,7 +369,7 @@ public class Scout extends Robot {
             exploreDirection = getExploreDirection(exploreDirection);
         }
 
-        tryMove(DirectionUtil.getDirectionAwayFrom(nearbyZombies, currentLocation));
+        tryMove(DirectionUtil.getDirectionAwayFrom(nearbyZombies, nearbyEnemies, currentLocation));
     }
 
     private void explore() throws GameActionException {
@@ -329,5 +419,15 @@ public class Scout extends Robot {
         }
 
         return newDirection;
+    }
+
+    public int getDestroyedDenBroadcastRadius() {
+        if (roundNumber % 10 == id % 10
+                && nearbyEnemies.length == 0) {
+            return 1000; // core delay 8.02
+        }
+        else {
+            return senseRadius * 2; // core delay 0.05
+        }
     }
 }

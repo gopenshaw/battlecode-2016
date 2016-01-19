@@ -111,6 +111,7 @@ public class Soldier extends Robot {
         }
 
         if (currentLocation.distanceSquaredTo(zombieDen) > 8) {
+            setIndicatorString(0, "going to den " + zombieDen);
             tryMoveToward(zombieDen);
         }
     }

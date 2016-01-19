@@ -16,6 +16,7 @@ public abstract class Robot {
     protected final int senseRadius;
     protected final int attackRadius;
     protected RobotType type;
+    protected int id;
 
     protected MapLocation currentLocation;
     protected int roundNumber;
@@ -36,6 +37,7 @@ public abstract class Robot {
         enemy = team.opponent();
         currentLocation = rc.getLocation();
 
+        id = rc.getID();
         type = rc.getType();
         senseRadius = type.sensorRadiusSquared;
         attackRadius = type.attackRadiusSquared;
@@ -75,7 +77,9 @@ public abstract class Robot {
             maxBytecodeRound = roundNumber;
         }
 
-        setIndicatorString(2, "used " + maxBytecode + " bytecode in round " + maxBytecodeRound);
+        if (Config.BYTECODE_DEBUG) {
+            setIndicatorString(2, "used " + maxBytecode + " bytecode in round " + maxBytecodeRound);
+        }
     }
 
     private void resetDebugStrings() {
@@ -415,6 +419,33 @@ public abstract class Robot {
         }
 
         return Integer.MAX_VALUE;
+    }
+
+    protected MessageParser[] getParsersForMessagesOfType(Signal[] signals, MessageType messageType, int max) {
+        MessageParser[] parsers = new MessageParser[max];
+        int signalCount = signals.length;
+        int signalsOfType = 0;
+        for (int i = 0; i < signalCount; i++) {
+            Signal signal = signals[i];
+            if (signal.getTeam() == team) {
+                int[] message = signal.getMessage();
+                if (message == null) {
+                    return null;
+                }
+
+                MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
+                if (parser.getMessageType() == messageType) {
+                    parsers[signalsOfType] = parser;
+                    signalsOfType++;
+                }
+
+                if (signalsOfType == max) {
+                    return parsers;
+                }
+            }
+        }
+
+        return parsers;
     }
 
     protected MessageParser getParserForFirstMessageOfType(Signal[] signals, MessageType messageType) {
