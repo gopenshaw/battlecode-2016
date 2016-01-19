@@ -235,4 +235,39 @@ public class RobotUtil {
 
         return false;
     }
+
+    public static boolean canAttackInOneMove(RobotInfo[] nearbyZombies, MapLocation currentLocation) {
+        int count = nearbyZombies.length;
+        for (int i = 0; i < count; i++) {
+            RobotType robotType = nearbyZombies[i].type;
+            if (!robotType.canAttack()) {
+                continue;
+            }
+
+            MapLocation enemyPosition = nearbyZombies[i].location;
+            MapLocation nextPosition = enemyPosition.add(enemyPosition.directionTo(currentLocation));
+            if (nextPosition.distanceSquaredTo(currentLocation) <= robotType.attackRadiusSquared) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static MapLocation findAverageLocation(RobotInfo[] nearbyFriendlies) {
+        int count = nearbyFriendlies.length;
+        if (count == 0) {
+            return null;
+        }
+
+        int x = 0;
+        int y = 0;
+        for (int i = 0; i < count; i++) {
+            MapLocation location = nearbyFriendlies[i].location;
+            x += location.x;
+            y += location.y;
+        }
+
+        return new MapLocation(x / count, y / count);
+    }
 }

@@ -79,4 +79,27 @@ public class DirectionUtil {
     public static Direction getDirectionToward(RobotInfo[] robots, MapLocation currentLocation) {
         return getDirectionAwayFrom(robots, currentLocation).opposite();
     }
+
+    public static Direction getDirectionAwayAwayToward(
+            RobotInfo[] away1, RobotInfo[] away2, RobotInfo[] toward, MapLocation currentLocation) {
+        Direction[] directions = new Direction[away1.length + away2.length + toward.length];
+        for (int i = 0; i < away1.length; i++) {
+            MapLocation enemyLocation = away1[i].location;
+            directions[i] = enemyLocation.directionTo(currentLocation);
+        }
+
+        int offset = away1.length;
+        for (int i = 0; i < away2.length; i++) {
+            MapLocation enemyLocation = away2[i].location;
+            directions[offset + i] = enemyLocation.directionTo(currentLocation);
+        }
+
+        offset += away2.length;
+        for (int i = 0; i < toward.length; i++) {
+            MapLocation towardLocation = toward[i].location;
+            directions[offset + i] = currentLocation.directionTo(towardLocation);
+        }
+
+        return getAverageDirection(directions);
+    }
 }

@@ -47,7 +47,6 @@ public class Soldier extends Robot {
         updateZombieMemory();
         clearRubble();
         spread();
-        setIndicatorString(2, "set size " + zombieDens.getSize());
     }
 
     private void microAwayFromEnemies() throws GameActionException {
@@ -288,6 +287,7 @@ public class Soldier extends Robot {
         attackableEnemies = senseAttackableEnemies();
         nearbyZombies = senseNearbyZombies();
         nearbyEnemies = senseNearbyEnemies();
+        setIndicatorString(2, "nearby enemy count: " + nearbyEnemies.length);
         nearbyFriendlies = senseNearbyFriendlies();
         adjacentTeammates = rc.senseNearbyRobots(2, team);
     }

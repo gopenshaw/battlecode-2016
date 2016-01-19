@@ -54,6 +54,12 @@ public class Scout extends Robot {
         else {
             moveTowardMyPair();
             broadcastTargets();
+            int nearbyTTMs = RobotUtil.getCountOfType(nearbyFriendlies, RobotType.TTM);
+            int nearbyTurrets = RobotUtil.getCountOfType(nearbyFriendlies, RobotType.TURRET);
+            int desiredFriendlies = (nearbyTTMs + nearbyTurrets) * 6;
+            if (nearbyFriendlies.length < desiredFriendlies) {
+                rc.broadcastSignal(senseRadius);
+            }
         }
     }
 
@@ -164,15 +170,22 @@ public class Scout extends Robot {
     }
 
     private void broadcastTargets() throws GameActionException {
-        RobotInfo[] highValueTargets = RobotUtil.getRobotsOfType(nearbyEnemies, RobotType.TURRET, RobotType.ARCHON, RobotType.SCOUT);
-        if (highValueTargets == null
-                || highValueTargets.length == 0) {
+        if (nearbyEnemies.length == 0) {
             return;
         }
 
-        RobotInfo closest = RobotUtil.getClosestRobotToLocation(highValueTargets, currentLocation);
-        Message target = MessageBuilder.buildTargetMessage(closest);
-        rc.broadcastMessageSignal(target.getFirst(), target.getSecond(), 2);
+        RobotInfo[] highValueTargets = RobotUtil.getRobotsOfType(nearbyEnemies, RobotType.TURRET, RobotType.ARCHON, RobotType.SCOUT);
+        if (highValueTargets != null
+                && highValueTargets.length != 0) {
+            RobotInfo closest = RobotUtil.getClosestRobotToLocation(highValueTargets, currentLocation);
+            Message target = MessageBuilder.buildTargetMessage(closest);
+            rc.broadcastMessageSignal(target.getFirst(), target.getSecond(), 2);
+        }
+        else {
+            RobotInfo closest = RobotUtil.getClosestRobotToLocation(nearbyEnemies, currentLocation);
+            Message target = MessageBuilder.buildTargetMessage(closest);
+            rc.broadcastMessageSignal(target.getFirst(), target.getSecond(), 2);
+        }
     }
 
     private void moveTowardMyPair() throws GameActionException {
