@@ -18,6 +18,7 @@ public class Archon extends Robot {
 
     private RobotType[] highUnitCountBuildQueue = {
             RobotType.SCOUT, RobotType.TURRET,
+            RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER
     };
 
     private int lowUnitQueuePosition = 0;
@@ -44,8 +45,8 @@ public class Archon extends Robot {
         moveIfUnderAttack();
         buildRobots();
         convertAdjacentNeutrals();
-        moveWithArmy();
         getParts();
+        moveWithArmy();
         repairRobots();
         lastRoundHealth = rc.getHealth();
     }
@@ -53,12 +54,17 @@ public class Archon extends Robot {
     private void moveWithArmy() throws GameActionException {
         if (nearbyEnemies.length > 0
                 || nearbyZombies.length > 0
-                || nearbyFriendlies.length == 0
+                || nearbyFriendlies.length < 2
                 || !rc.isCoreReady()) {
             return;
         }
 
-        tryMove(DirectionUtil.getDirectionToward(nearbyFriendlies, currentLocation));
+        MapLocation armyCenter = RobotUtil.findAverageLocation(nearbyFriendlies);
+        setIndicatorString(2, "army center is " + armyCenter);
+        if (armyCenter.distanceSquaredTo(currentLocation) > 8) {
+            setIndicatorString(2, "moving toward center");
+            tryMove(DirectionUtil.getDirectionToward(nearbyFriendlies, currentLocation));
+        }
     }
 
     private void moveIfUnderAttack() throws GameActionException {
@@ -170,7 +176,9 @@ public class Archon extends Robot {
         MapLocation[] partsLocations = rc.sensePartLocations(senseRadius);
         if (partsLocations.length > 0) {
             MapLocation closest = LocationUtil.findClosestLocation(partsLocations, currentLocation);
+            setIndicatorString(2, "moving toward closest parts");
             tryMoveOnto(closest);
+            rc.broadcastSignal(31);
             return;
         }
 
@@ -188,7 +196,9 @@ public class Archon extends Robot {
         }
 
         if (previousPartLocation != null) {
+            setIndicatorString(2, "moving toward memory parts");
             tryMoveOnto(previousPartLocation);
+            rc.broadcastSignal(31);
         }
     }
 }

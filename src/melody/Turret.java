@@ -5,11 +5,13 @@ import melody.message.MessageParser;
 import melody.util.ZombieUtil;
 
 public class Turret extends Robot {
+    private static final int RANDOM_MOVE_DELAY = 20;
     private Signal[] roundSignals;
     private RobotInfo[] nearbyZombies;
     private RobotInfo[] nearbyEnemies;
     private RobotData attackTarget;
     private MapLocation enemyLocation;
+    private int delayRound;
 
     public Turret(RobotController rc) {
         super(rc);
@@ -43,7 +45,6 @@ public class Turret extends Robot {
         nearbyEnemies = senseNearbyEnemies();
         setIndicatorString(0, "nearby zombies: " + nearbyZombies.length);
         setIndicatorString(0, "nearby enemies: " + nearbyEnemies.length);
-        setIndicatorString(1, "my type: " + rc.getType());
     }
 
     private void moveToTarget() throws GameActionException {
@@ -58,10 +59,12 @@ public class Turret extends Robot {
             }
             else {
                 rc.pack();
+                return;
             }
         }
         else if (rc.getType() == RobotType.TTM) {
             rc.unpack();
+            return;
         }
     }
 
@@ -93,18 +96,22 @@ public class Turret extends Robot {
 
     private void moveRandom() throws GameActionException {
         if (attackTarget != null) {
+            delayRound = roundNumber;
             return;
         }
 
         if (rc.getType() == RobotType.TURRET
                 && nearbyZombies.length == 0
-                && nearbyEnemies.length == 0) {
+                && nearbyEnemies.length == 0
+                && rc.isCoreReady()
+                && roundNumber - RANDOM_MOVE_DELAY > delayRound) {
             setIndicatorString(1, "packing for random move");
             rc.pack();
             return;
         }
 
-        if (nearbyEnemies.length > 0
+        if (rc.getType() == RobotType.TTM
+                && nearbyEnemies.length > 0
                 || nearbyZombies.length > 0) {
             setIndicatorString(1, "unpacking in random move");
             rc.unpack();
@@ -134,26 +141,6 @@ public class Turret extends Robot {
             if (rc.canAttackLocation(nearbyEnemies[0].location)) {
                 rc.attackLocation(nearbyEnemies[0].location);
                 return;
-            }
-        }
-
-        for (Signal s : roundSignals) {
-            if (s.getTeam() == team) {
-                int[] message = s.getMessage();
-                if (message == null) {
-                    continue;
-                }
-
-                MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
-                if (parser.isCurrent(roundNumber)
-                        && (parser.getMessageType() == MessageType.ZOMBIE
-                            || parser.getMessageType() == MessageType.ENEMY)) {
-                    MapLocation attackLocation = parser.getRobotData().location;
-                    if (rc.canAttackLocation(attackLocation)) {
-                        rc.attackLocation(attackLocation);
-                        return;
-                    }
-                }
             }
         }
     }
