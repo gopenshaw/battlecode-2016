@@ -84,8 +84,8 @@ public class Archon extends Robot {
             return;
         }
 
-        if (RobotUtil.anyWithinRange(nearbyZombies, 8, currentLocation)
-                || RobotUtil.anyCanAttack(nearbyZombies, nearbyEnemies, currentLocation)) {
+        if (nearbyZombies.length > 0
+                || RobotUtil.anyCanAttack(nearbyEnemies, currentLocation)) {
             tryMove(DirectionUtil.getDirectionAwayFrom(nearbyEnemies, nearbyZombies, currentLocation));
         }
     }
