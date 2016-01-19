@@ -81,14 +81,19 @@ public class Soldier extends Robot {
         if (helpLocation != null
                 && currentLocation.distanceSquaredTo(helpLocation) > 2) {
             setIndicatorString(0, "going to help location " + helpLocation);
-            tryMoveToward(helpLocation);
+            if (!trySafeMoveToward(helpLocation, enemyTurrets)) {
+                tryMove(DirectionUtil.getDirectionAwayFrom(enemyTurrets, currentLocation));
+            }
+
             return;
         }
 
         if (enemyLocation != null
                 && currentLocation.distanceSquaredTo(enemyLocation) > 50) {
             setIndicatorString(0, "going to enemy location " + enemyLocation);
-            tryMoveToward(enemyLocation);
+            if (!trySafeMoveToward(enemyLocation, enemyTurrets)) {
+                tryMove(DirectionUtil.getDirectionAwayFrom(enemyTurrets, currentLocation));
+            }
         }
     }
 
@@ -125,7 +130,6 @@ public class Soldier extends Robot {
                 && !denDestroyed[broadcastDen.id]
                 && (zombieDen == null
                         || broadcastDen.location != zombieDen.location)) {
-            setIndicatorString(1, "learned den exists " + broadcastDen);
             zombieDens.add(broadcastDen);
         }
 
@@ -136,6 +140,7 @@ public class Soldier extends Robot {
 
         updateDestroyedDens();
         getClosestHelpLocation();
+        getTurretBroadcasts(roundSignals);
     }
 
     private void getClosestHelpLocation() {
@@ -230,7 +235,10 @@ public class Soldier extends Robot {
 
         if (currentLocation.distanceSquaredTo(zombieDen.location) > 8) {
             setIndicatorString(0, "going to den " + zombieDen);
-            tryMoveToward(zombieDen.location);
+            Direction direction = currentLocation.directionTo(zombieDen.location);
+            if (!trySafeMove(direction, enemyTurrets)) {
+                tryMove(DirectionUtil.getDirectionAwayFrom(enemyTurrets, currentLocation));
+            }
         }
     }
 

@@ -20,6 +20,7 @@ public class Turret extends Robot {
     @Override
     protected void doTurn() throws GameActionException {
         roundSignals = rc.emptySignalQueue();
+        getTurretBroadcasts(roundSignals);
         senseRobots();
         getTarget();
         getEnemyLocation();
@@ -37,7 +38,8 @@ public class Turret extends Robot {
             return;
         }
 
-        tryMoveToward(enemyLocation);
+        Direction direction = currentLocation.directionTo(enemyLocation);
+        trySafeMove(direction, enemyTurrets);
     }
 
     private void senseRobots() {
@@ -55,7 +57,8 @@ public class Turret extends Robot {
 
         if (currentLocation.distanceSquaredTo(attackTarget.location) > RobotType.TURRET.attackRadiusSquared) {
             if (rc.getType() == RobotType.TTM) {
-                tryMoveToward(attackTarget.location);
+                Direction direction = currentLocation.directionTo(attackTarget.location);
+                trySafeMove(direction, enemyTurrets);
             }
             else {
                 rc.pack();

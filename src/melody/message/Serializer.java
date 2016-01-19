@@ -7,7 +7,7 @@ import melody.MessageType;
 public class Serializer {
     //--Max 8 types
     private static final MessageType[] messageEncoding = {
-            MessageType.PARTS, MessageType.ENEMY, MessageType.ID, MessageType.ZOMBIE,
+            MessageType.PARTS, MessageType.ENEMY, MessageType.ENEMY_TURRET, MessageType.ZOMBIE,
             MessageType.ANNOUNCEMENT, MessageType.PAIR, MessageType.TARGET, MessageType.DESTROYED_DENS
     };
 

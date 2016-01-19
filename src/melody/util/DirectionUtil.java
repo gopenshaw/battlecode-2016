@@ -3,6 +3,7 @@ package melody.util;
 import battlecode.common.Direction;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotInfo;
+import melody.RobotData;
 
 import java.util.ArrayList;
 
@@ -98,6 +99,26 @@ public class DirectionUtil {
         for (int i = 0; i < toward.length; i++) {
             MapLocation towardLocation = toward[i].location;
             directions[offset + i] = currentLocation.directionTo(towardLocation);
+        }
+
+        return getAverageDirection(directions);
+    }
+
+    public static Direction getDirectionAwayFrom(RobotData[] enemyTurrets, MapLocation currentLocation) {
+        int size = 0;
+        for (int i = 0; i < enemyTurrets.length; i++) {
+            if (enemyTurrets[i] == null) {
+                break;
+            }
+            else {
+                size++;
+            }
+        }
+
+        Direction[] directions = new Direction[size];
+        for (int i = 0; i < size; i++) {
+            MapLocation enemyLocation = enemyTurrets[i].location;
+            directions[i] = enemyLocation.directionTo(currentLocation);
         }
 
         return getAverageDirection(directions);

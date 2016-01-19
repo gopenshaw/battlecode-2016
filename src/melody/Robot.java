@@ -30,6 +30,8 @@ public abstract class Robot {
     private int maxBytecode;
     private int maxBytecodeRound;
 
+    protected RobotData[] enemyTurrets = new RobotData[Config.MAX_ENEMY_TURRETS];
+
     public Robot(RobotController rc) {
         this.rc = rc;
         rand = new Random(rc.getID());
@@ -180,6 +182,58 @@ public abstract class Robot {
         }
 
         tryClearRubble(targetDirection);
+    }
+
+    protected boolean trySafeMoveToward(MapLocation location, RobotData[] nearbyEnemies) throws GameActionException {
+        Direction direction = currentLocation.directionTo(location);
+        return trySafeMove(direction, nearbyEnemies);
+    }
+
+    protected boolean trySafeMove(Direction direction,
+                                  RobotData[] nearbyEnemies) throws GameActionException {
+        MapLocation currentLocation = rc.getLocation();
+        MapLocation next = currentLocation.add(direction);
+        if (canMoveSafely(direction, next, nearbyEnemies)) {
+            rc.move(direction);
+            return true;
+        }
+
+        Direction left = direction.rotateLeft();
+        next = currentLocation.add(left);
+        if (canMoveSafely(left, next, nearbyEnemies)) {
+            rc.move(left);
+            return true;
+        }
+
+        Direction right = direction.rotateRight();
+        next = currentLocation.add(right);
+        if (canMoveSafely(right, next, nearbyEnemies)) {
+            rc.move(right);
+            return true;
+        }
+
+        for (int i = 0; i < 2; i++) {
+            left = left.rotateLeft();
+            next = currentLocation.add(left);
+            if (canMoveSafely(left, next, nearbyEnemies)) {
+                rc.move(left);
+                return true;
+            }
+
+            right = right.rotateRight();
+            next = currentLocation.add(right);
+            if (canMoveSafely(right, next, nearbyEnemies)) {
+                rc.move(right);
+                return true;
+            }
+        }
+
+        return tryClearRubble(direction);
+    }
+
+    private boolean canMoveSafely(Direction direction, MapLocation next, RobotData[] nearbyEnemies) {
+        return rc.canMove(direction)
+                && !RobotUtil.anyCanAttack(nearbyEnemies, next);
     }
 
     protected boolean trySafeMove(Direction direction,
@@ -466,5 +520,21 @@ public abstract class Robot {
         }
 
         return null;
+    }
+
+    protected void getTurretBroadcasts(Signal[] roundSignals) {
+        int maxTurrets = Config.MAX_ENEMY_TURRETS;
+        int count = 0;
+        MessageParser[] parsers = getParsersForMessagesOfType(roundSignals, MessageType.ENEMY_TURRET, maxTurrets);
+        for (int i = 0; i < maxTurrets; i++) {
+            if (parsers[i] == null) {
+                break;
+            }
+
+            enemyTurrets[i] = parsers[i].getRobotData();
+            count++;
+        }
+
+        setIndicatorString(0, "enemy turret count: " + count);
     }
 }
