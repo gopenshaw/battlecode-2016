@@ -107,7 +107,7 @@ public class Bug {
         return !rc.onTheMap(currentLocation.add(wallDirection));
     }
 
-    private static Direction getDirectionNotFollowingWall() {
+    private static Direction getDirectionNotFollowingWall() throws GameActionException {
         numberOfNinetyDegreeRotations = 0;
         Direction direct = currentLocation.directionTo(destination);
         if (rc.canMove(direct)) {
@@ -122,7 +122,7 @@ public class Bug {
         return turnDirection;
     }
 
-    private static Direction getTurnDirection(Direction initial) {
+    private static Direction getTurnDirection(Direction initial) throws GameActionException {
         if (defaultLeft) {
             Direction turn = initial.rotateLeft();
             return rotateLeftUntilCanMove(turn);
@@ -132,7 +132,7 @@ public class Bug {
         return rotateRightUntilCanMove(turn);
     }
 
-    private static Direction rotateLeftUntilCanMove(Direction direction) {
+    private static Direction rotateLeftUntilCanMove(Direction direction) throws GameActionException {
         while (!canMoveOrDig(direction)) {
             direction = direction.rotateLeft();
         }
@@ -140,7 +140,7 @@ public class Bug {
         return direction;
     }
 
-    private static Direction rotateRightUntilCanMove(Direction direction) {
+    private static Direction rotateRightUntilCanMove(Direction direction) throws GameActionException {
         while (!canMoveOrDig(direction)) {
             direction = direction.rotateRight();
         }
@@ -148,13 +148,14 @@ public class Bug {
         return direction;
     }
 
-    private static boolean canMoveOrDig(Direction direction) {
+    private static boolean canMoveOrDig(Direction direction) throws GameActionException {
         if (rc.canMove(direction)) {
             return true;
         }
 
         MapLocation nextLocation = currentLocation.add(direction);
-        if (RubbleUtil.getRoundsToMakeMovable((int) rc.senseRubble(nextLocation)) <= DIG_TURNS) {
+        if (rc.onTheMap(nextLocation)
+                && RubbleUtil.getRoundsToMakeMovable((int) rc.senseRubble(nextLocation)) <= DIG_TURNS) {
             return true;
         }
 
