@@ -1,5 +1,5 @@
 <object-stream>
-  <game-map width="40" height="40" origin="38,73" seed="555" rounds="3000" mapName="boxy">
+  <game-map width="40" height="40" origin="38,73" seed="555" rounds="3000" mapName="boxy_armageddon" armageddon="true">
     <initialRubble>
       <double-array>0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,55.0,55.0,55.0,55.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0</double-array>
       <double-array>0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,55.0,55.0,55.0,55.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0</double-array>
@@ -174,9 +174,9 @@
         </round>
     </zombieSpawnSchedule>
     <initialRobots>
-      <initial-robot originOffsetX="0" originOffsetY="39" type="ARCHON" team="B"/>
+      <!--<initial-robot originOffsetX="0" originOffsetY="39" type="ARCHON" team="B"/>-->
       <initial-robot originOffsetX="3" originOffsetY="15" type="ZOMBIEDEN" team="ZOMBIE"/>
-      <initial-robot originOffsetX="7" originOffsetY="28" type="ARCHON" team="B"/>
+      <!--<initial-robot originOffsetX="7" originOffsetY="28" type="ARCHON" team="B"/>-->
       <initial-robot originOffsetX="8" originOffsetY="7" type="ZOMBIEDEN" team="ZOMBIE"/>
       <initial-robot originOffsetX="31" originOffsetY="32" type="ZOMBIEDEN" team="ZOMBIE"/>
       <initial-robot originOffsetX="32" originOffsetY="11" type="ARCHON" team="A"/>
