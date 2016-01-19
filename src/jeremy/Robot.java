@@ -430,7 +430,7 @@ public abstract class Robot {
             if (signal.getTeam() == team) {
                 int[] message = signal.getMessage();
                 if (message == null) {
-                    return null;
+                    continue;
                 }
 
                 MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
@@ -455,7 +455,7 @@ public abstract class Robot {
             if (signal.getTeam() == team) {
                 int[] message = signal.getMessage();
                 if (message == null) {
-                    return null;
+                    continue;
                 }
 
                 MessageParser parser = new MessageParser(message[0], message[1], currentLocation);

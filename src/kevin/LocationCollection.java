@@ -32,7 +32,7 @@ public class LocationCollection {
         return size == 0;
     }
 
-    public MapLocation removeClosestTo(MapLocation destination) {
+    public RobotData removeClosestTo(MapLocation destination) {
         if (size == 0) {
             return null;
         }
@@ -60,7 +60,7 @@ public class LocationCollection {
 
         removeFromMemory(closestRobot);
         size--;
-        return closestRobot.location;
+        return closestRobot;
     }
 
     public boolean inSet(RobotData robot) {
