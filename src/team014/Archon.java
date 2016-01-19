@@ -40,6 +40,7 @@ public class Archon extends Robot {
     @Override
     protected void doTurn() throws GameActionException {
         roundSignals = rc.emptySignalQueue();
+        getTurretBroadcasts(roundSignals);
         senseRobots();
         moveAwayFromZombiesAndEnemies();
         moveIfUnderAttack();
@@ -177,7 +178,7 @@ public class Archon extends Robot {
         if (partsLocations.length > 0) {
             MapLocation closest = LocationUtil.findClosestLocation(partsLocations, currentLocation);
             setIndicatorString(2, "moving toward closest parts");
-            tryMoveOnto(closest);
+            trySafeMoveToward(closest, enemyTurrets);
             rc.broadcastSignal(31);
             return;
         }
@@ -197,7 +198,7 @@ public class Archon extends Robot {
 
         if (previousPartLocation != null) {
             setIndicatorString(2, "moving toward memory parts");
-            tryMoveOnto(previousPartLocation);
+            trySafeMoveToward(previousPartLocation, enemyTurrets);
             rc.broadcastSignal(31);
         }
     }

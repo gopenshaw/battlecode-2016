@@ -3,6 +3,7 @@ package team014.util;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
+import team014.RobotData;
 
 public class RobotUtil {
     public static RobotInfo getLowestHealthRobot(RobotInfo[] robots) {
@@ -21,7 +22,21 @@ public class RobotUtil {
 
     public static boolean anyCanAttack(RobotInfo[] robots, MapLocation location) {
         for (RobotInfo robot : robots) {
-            if (robot.type.canAttack()
+            if (robot != null
+                    && robot.type.canAttack()
+                    && robot.location.distanceSquaredTo(location) <= robot.type.attackRadiusSquared) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static boolean anyCanAttack(RobotData[] robots, MapLocation location) {
+        int count = robots.length;
+        for (int i = 0; i < count; i++) {
+            RobotData robot = robots[i];
+            if (robot != null
                     && robot.location.distanceSquaredTo(location) <= robot.type.attackRadiusSquared) {
                 return true;
             }
@@ -269,5 +284,39 @@ public class RobotUtil {
         }
 
         return new MapLocation(x / count, y / count);
+    }
+
+    public static RobotInfo[] removeRobots(RobotInfo[] robots, RobotData[] robotsToRemove) {
+        int removeCount = 0;
+        for (int i = 0; i < robots.length; i++) {
+            if (RobotUtil.robotInCollection(robots[i], robotsToRemove)) {
+                removeCount++;
+            }
+        }
+
+        int newCount = robots.length - removeCount;
+        RobotInfo[] trimmed = new RobotInfo[newCount];
+        for (int i = 0; i < trimmed.length; i++) {
+            if (!RobotUtil.robotInCollection(robots[i], robotsToRemove)) {
+                trimmed[i] = robots[i];
+            }
+        }
+
+        return trimmed;
+    }
+
+    private static boolean robotInCollection(RobotInfo robot, RobotData[] robotCollection) {
+        for (int i = 0; i < robotCollection.length; i++) {
+            if (robotCollection[i] == null) {
+                return false;
+            }
+            else {
+                if (robot.ID == robotCollection[i].id) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

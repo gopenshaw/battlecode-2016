@@ -24,16 +24,16 @@ public class MessageBuilder {
         return buildRobotMessage(zombie.health, zombie.id, zombie.type, zombie.location, MessageType.ZOMBIE);
     }
 
+    public static Message buildTurretMessage(RobotInfo turret, int roundNumber) {
+        return buildRobotMessage(turret.health, turret.ID, turret.type, turret.location, MessageType.ENEMY_TURRET);
+    }
+
     public static Message buildEnemyMessage(RobotInfo enemy, int roundNumber) {
         int first = (roundNumber % 4 << 29) + ((int) enemy.health << 15) + enemy.ID;
         int second = (Serializer.encode(enemy.location) << 7)
                 + (Serializer.encode(enemy.type) << 3)
                 + Serializer.encode(MessageType.ENEMY);
         return new Message(first, second, MessageType.ENEMY);
-    }
-
-    public static Message buildIdMessage(double health, int id, RobotType type, MapLocation location) {
-        return buildRobotMessage(health, id, type, location, MessageType.ID);
     }
 
     public static Message buildPartsMessage(MapLocation center) {
@@ -47,7 +47,7 @@ public class MessageBuilder {
         int second = (Serializer.encode(location) << 7)
                 + (Serializer.encode(robotType) << 3)
                 + (Serializer.encode(messageType));
-        return new Message(first, second, MessageType.ID);
+        return new Message(first, second, messageType);
     }
 
     public static Message buildAnnouncement(AnnouncementSubject announcementSubject, AnnouncementMode announcementMode) {

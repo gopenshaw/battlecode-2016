@@ -36,11 +36,11 @@ public class Scout extends Robot {
     @Override
     protected void doTurn() throws GameActionException {
         roundSignals = rc.emptySignalQueue();
+        getTurretBroadcasts(roundSignals);
         senseRobots();
         updateConnectionWithPair();
         getPairIfUnpaired();
         if (myPair == null) {
-            setIndicatorString(0, "zombies dead " + zombiesDead);
             discoverDestroyedDens();
             readDenMessages();
             addNearbyDensToDenQueue();
@@ -50,16 +50,45 @@ public class Scout extends Robot {
             moveAwayFromZombies();
             broadcastAnnouncements();
             explore();
-        }
-        else {
+        } else if (myPair.team == team) {
             moveTowardMyPair();
             broadcastTargets();
             int nearbyTTMs = RobotUtil.getCountOfType(nearbyFriendlies, RobotType.TTM);
             int nearbyTurrets = RobotUtil.getCountOfType(nearbyFriendlies, RobotType.TURRET);
             int desiredFriendlies = (nearbyTTMs + nearbyTurrets) * 6;
             if (nearbyFriendlies.length < desiredFriendlies) {
-                rc.broadcastSignal(senseRadius);
+                rc.broadcastSignal(senseRadius * 2);
             }
+        } else {
+            // we are watching enemy turrets
+            setIndicatorString(0, "pair with " + myPair.ID);
+            moveToSafety();
+            broadcastAllTurrets();
+            broadcastZombies();
+        }
+    }
+
+    private void moveToSafety() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        if (RobotUtil.anyCanAttack(nearbyEnemies, currentLocation)) {
+            tryMove(DirectionUtil.getDirectionAwayFrom(nearbyEnemies, currentLocation));
+        }
+    }
+
+    private void broadcastAllTurrets() throws GameActionException {
+        RobotInfo[] enemyTurrets = RobotUtil.getRobotsOfType(nearbyEnemies, RobotType.TURRET);
+        if (enemyTurrets == null) {
+            return;
+        }
+
+        setIndicatorString(0, "broadcasting: ");
+        for (RobotInfo robot : enemyTurrets) {
+            Message message = MessageBuilder.buildTurretMessage(robot, roundNumber);
+            rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), senseRadius * 2);
+            setIndicatorString(0, " " + robot.location);
         }
     }
 
@@ -144,7 +173,6 @@ public class Scout extends Robot {
             destroyedDens.add(id);
         }
 
-        setIndicatorString(1, "broadcasting destroyed: " + denData);
         Message message = MessageBuilder.buildDestroyedDenMessage(denData);
         rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), getDestroyedDenBroadcastRadius());
     }
@@ -164,7 +192,6 @@ public class Scout extends Robot {
         }
 
         zombieDens.add(den);
-        setIndicatorString(1, "broadcasting den: " + den);
         Message message = MessageBuilder.buildZombieMessage(den, roundNumber);
         rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), senseRadius * 2);
     }
@@ -224,18 +251,45 @@ public class Scout extends Robot {
         }
 
         RobotInfo[] turrets = RobotUtil.getRobotsOfType(nearbyFriendlies, RobotType.TURRET, RobotType.TTM);
+        if (tryPairWithOneRobot(turrets)) {
+            return;
+        }
+
+        setIndicatorString(1, "turrets:");
+        RobotInfo[] sensedEnemyTurrets = RobotUtil.getRobotsOfType(nearbyEnemies, RobotType.TURRET);
+        if (sensedEnemyTurrets == null) {
+            return;
+        }
+
+        for (RobotInfo r : sensedEnemyTurrets) {
+            setIndicatorString(1, " " + r.ID);
+        }
+
+//        RobotInfo[] notBeingBroadcast = RobotUtil.removeRobots(sensedEnemyTurrets, enemyTurrets);
+//        tryPairWithOneRobot(notBeingBroadcast);
+
+        tryPairWithOneRobot(sensedEnemyTurrets);
+
+//        setIndicatorString(2, "not broadcast:");
+//        for (RobotInfo r : notBeingBroadcast) {
+//            setIndicatorString(2, " " + r.ID);
+//        }
+    }
+
+    private boolean tryPairWithOneRobot(RobotInfo[] turrets) throws GameActionException {
         if (turrets == null
                 || turrets.length == 0) {
-            return;
+            return false;
         }
 
         RobotInfo unpairedTurret = getUnpairedTurret(turrets, roundSignals);
         if (unpairedTurret == null) {
-            return;
+            return false;
         }
 
         myPair = unpairedTurret;
         broadcastPairMessage(myPair);
+        return true;
     }
 
     private RobotInfo getUnpairedTurret(RobotInfo[] turrets, Signal[] roundSignals) {
