@@ -87,12 +87,23 @@ public class Archon extends Robot {
             return;
         }
 
-        if (nearbyZombies.length > 0
+        if (zombiesAreDangerous()
                 || RobotUtil.anyCanAttack(nearbyEnemies, currentLocation)) {
+            rc.broadcastSignal(32);
             Direction runDirection = DirectionUtil.getDirectionAwayFrom(nearbyEnemies, nearbyZombies, currentLocation);
+
             //--TODO check if we are going into a corner or some other trap
             tryMove(runDirection);
         }
+    }
+
+    private boolean zombiesAreDangerous() {
+        if (nearbyZombies.length == 0) {
+            return false;
+        }
+
+        return nearbyZombies.length > nearbyFriendlies.length
+                || RobotUtil.canAttackInOneMove(nearbyZombies, currentLocation);
     }
 
     private void senseRobots() {
