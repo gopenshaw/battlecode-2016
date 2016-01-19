@@ -7,6 +7,7 @@ import jeremy.util.RobotUtil;
 import jeremy.message.MessageParser;
 
 public class Soldier extends Robot {
+    private static final int SAFE_DISTANCE = 250;
     private Signal[] roundSignals;
     private RobotInfo[] attackableZombies;
     private RobotInfo[] nearbyZombies;
@@ -15,8 +16,6 @@ public class Soldier extends Robot {
     private RobotData zombieToAttack;
     private RobotInfo[] attackableEnemies;
     private MapLocation enemyLocation;
-    private boolean engaged;
-    private int hasAdvantageRound;
     private MapLocation zombieDen;
     private RobotInfo[] adjacentTeammates;
 
@@ -34,10 +33,22 @@ public class Soldier extends Robot {
         moveTowardZombieNotGettingCloser();
         moveTowardZombie();
         moveTowardDen();
+        moveTowardEnemy();
         moveAwayFromArchon();
         updateZombieMemory();
         clearRubble();
         spread();
+    }
+
+    private void moveTowardEnemy() throws GameActionException {
+        if (enemyLocation == null
+                || !rc.isCoreReady()) {
+            return;
+        }
+
+        if (currentLocation.distanceSquaredTo(enemyLocation) > SAFE_DISTANCE) {
+            tryMoveToward(enemyLocation);
+        }
     }
 
     private void spread() throws GameActionException {
@@ -48,17 +59,6 @@ public class Soldier extends Robot {
         if (adjacentTeammates.length > 3) {
             tryMove(DirectionUtil.getDirectionAwayFrom(adjacentTeammates, currentLocation));
         }
-    }
-
-    private boolean shouldEngage() {
-        if (hasAdvantageRound == 0
-                && enemyLocation != null
-                && rc.getTeamParts() < 60) {
-            hasAdvantageRound = roundNumber;
-        }
-
-        return hasAdvantageRound != 0
-                && roundNumber - Config.ENGAGE_DELAY > hasAdvantageRound;
     }
 
     private void shootEnemies() throws GameActionException {
