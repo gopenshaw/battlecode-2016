@@ -256,22 +256,24 @@ public class Scout extends Robot {
         }
 
         setIndicatorString(1, "turrets:");
-        RobotInfo[] broadcastEnemyTurrets = RobotUtil.getRobotsOfType(nearbyEnemies, RobotType.TURRET);
-        if (broadcastEnemyTurrets == null) {
+        RobotInfo[] sensedEnemyTurrets = RobotUtil.getRobotsOfType(nearbyEnemies, RobotType.TURRET);
+        if (sensedEnemyTurrets == null) {
             return;
         }
 
-        for (RobotInfo r : broadcastEnemyTurrets) {
+        for (RobotInfo r : sensedEnemyTurrets) {
             setIndicatorString(1, " " + r.ID);
         }
 
-        RobotInfo[] notBeingBroadcast = RobotUtil.removeRobots(broadcastEnemyTurrets, enemyTurrets);
-        tryPairWithOneRobot(notBeingBroadcast);
+//        RobotInfo[] notBeingBroadcast = RobotUtil.removeRobots(sensedEnemyTurrets, enemyTurrets);
+//        tryPairWithOneRobot(notBeingBroadcast);
 
-        setIndicatorString(2, "not broadcast:");
-        for (RobotInfo r : notBeingBroadcast) {
-            setIndicatorString(2, " " + r.ID);
-        }
+        tryPairWithOneRobot(sensedEnemyTurrets);
+
+//        setIndicatorString(2, "not broadcast:");
+//        for (RobotInfo r : notBeingBroadcast) {
+//            setIndicatorString(2, " " + r.ID);
+//        }
     }
 
     private boolean tryPairWithOneRobot(RobotInfo[] turrets) throws GameActionException {
