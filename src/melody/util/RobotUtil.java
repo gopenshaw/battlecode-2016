@@ -296,9 +296,10 @@ public class RobotUtil {
 
         int newCount = robots.length - removeCount;
         RobotInfo[] trimmed = new RobotInfo[newCount];
-        for (int i = 0; i < trimmed.length; i++) {
+        int index = 0;
+        for (int i = 0; i < robots.length; i++) {
             if (!RobotUtil.robotInCollection(robots[i], robotsToRemove)) {
-                trimmed[i] = robots[i];
+                trimmed[index++] = robots[i];
             }
         }
 
