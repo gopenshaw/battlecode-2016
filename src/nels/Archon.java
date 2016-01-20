@@ -136,7 +136,8 @@ public class Archon extends Robot {
             return;
         }
 
-        if (rc.getRobotCount() > Config.HIGH_UNIT_COUNT) {
+        if (rc.getRobotCount() > Config.HIGH_UNIT_COUNT
+                || (roundNumber > 600 && rc.getTeamParts() > 350)) {
             if (tryBuild(highUnitCountBuildQueue[highUnitQueuePosition % highUnitCountBuildQueue.length])) {
                 highUnitQueuePosition++;
             }
