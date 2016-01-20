@@ -12,8 +12,9 @@ public abstract class ConsensusManager {
     private boolean consensusReached;
 
     private final ConsensusRecord[] record = new ConsensusRecord[GameConstants.GAME_DEFAULT_ROUNDS + 1];
-    private int firstRound;
+    private final int firstRound;
     private int lastProposal;
+    private final RobotType type;
 
     protected abstract Subject getSubject();
     protected abstract int getMinimumAgeToPropose();
@@ -25,6 +26,7 @@ public abstract class ConsensusManager {
         this.rc = rc;
         this.myTeam = rc.getTeam();
         this.firstRound = rc.getRoundNum();
+        this.type = rc.getType();
     }
 
     public void observe(Signal[] roundSignals, int currentRound) throws GameActionException {
@@ -111,7 +113,8 @@ public abstract class ConsensusManager {
         else if (age(currentRound) > getMinimumAgeToPropose()
                 && iCanRetry(currentRound)
                 && !proposedWithinRetryDelay(currentRound)
-                && shouldPropose(currentRound)) {
+                && shouldPropose(currentRound)
+                && type != RobotType.ARCHON) {
             propose(currentRound);
             if (Config.DEBUG) {
                 rc.addMatchObservation(String.format("id:%d round:%d %s PROPOSE",

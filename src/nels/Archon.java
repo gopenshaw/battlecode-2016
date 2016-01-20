@@ -2,6 +2,7 @@ package nels;
 
 import battlecode.common.*;
 import nels.message.MessageParser;
+import nels.message.consensus.ZombiesDeadConsensus;
 import nels.nav.Bug;
 import nels.util.AverageMapLocation;
 import nels.util.DirectionUtil;
@@ -31,10 +32,12 @@ public class Archon extends Robot {
     private RobotInfo[] nearbyEnemies;
     private double lastRoundHealth;
     private RobotInfo[] nearbyFriendlies;
+    private final ZombiesDeadConsensus zombiesDead;
 
     public Archon(RobotController rc) {
         super(rc);
         Bug.init(rc);
+        zombiesDead = new ZombiesDeadConsensus(rc);
     }
 
     @Override
@@ -42,6 +45,10 @@ public class Archon extends Robot {
         roundSignals = rc.emptySignalQueue();
         getTurretBroadcasts(roundSignals);
         senseRobots();
+        
+        zombiesDead.updateZombieCount(nearbyZombies.length, roundNumber);
+        zombiesDead.participate(roundSignals, roundNumber);
+
         moveAwayFromZombiesAndEnemies();
         moveIfUnderAttack();
         buildRobots();
