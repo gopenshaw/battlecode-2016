@@ -6,7 +6,7 @@ import nels.message.Subject;
 
 public class ZombiesDeadConsensus extends ConsensusManager {
     private int[] zombieMemory = new int[GameConstants.GAME_DEFAULT_ROUNDS + 1];
-    private final int ZOMBIE_EXISTS_ROUNDS = 80;
+    private final int ZOMBIE_EXISTS_ROUNDS = 130;
 
     public ZombiesDeadConsensus(RobotController rc) {
         super(rc);
@@ -24,7 +24,7 @@ public class ZombiesDeadConsensus extends ConsensusManager {
 
     @Override
     protected int getMinimumAgeToPropose() {
-        return 250;
+        return 300;
     }
 
     @Override
