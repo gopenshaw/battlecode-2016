@@ -3,6 +3,7 @@ package team014;
 import battlecode.common.*;
 import team014.message.Message;
 import team014.message.MessageParser;
+import team014.util.LocationUtil;
 import team014.util.RobotUtil;
 
 import java.util.Random;
@@ -18,12 +19,18 @@ public abstract class Robot {
     protected RobotType type;
     protected int id;
 
-    protected MapLocation currentLocation;
+    protected static MapLocation currentLocation;
     protected int roundNumber;
 
     private StringBuilder[] debugString;
 
-    private final int MAX_RUBBLE_CAN_IGNORE = 50;
+    private static final int MAX_RUBBLE_CAN_IGNORE = 50;
+    private static final int MAX_RUBBLE_CAN_PASS = 10000;
+
+    private static int[] rotations = {0, 7, 1, 6, 2, 5, 3};
+    private static int[] moveSequence1 = {0, 7, 1};
+    private static int[] digSequence1 = {0, 7, 1};
+    private static int[] moveSequence2 = {6, 2, 5, 3};
 
     protected final Direction[] directions = {Direction.NORTH, Direction.NORTH_EAST, Direction.EAST,
         Direction.SOUTH_EAST, Direction.SOUTH, Direction.SOUTH_WEST, Direction.WEST, Direction.NORTH_WEST};
@@ -31,6 +38,8 @@ public abstract class Robot {
     private int maxBytecodeRound;
 
     protected RobotData[] enemyTurrets = new RobotData[Config.MAX_ENEMY_TURRETS];
+    protected MapLocation[] enemyTurretLocations = new MapLocation[Config.MAX_ENEMY_TURRETS];
+    protected int enemyTurretCount = 0;
 
     public Robot(RobotController rc) {
         this.rc = rc;
@@ -117,28 +126,6 @@ public abstract class Robot {
         return rc.senseNearbyRobots(senseRadius, Team.NEUTRAL);
     }
 
-    protected void tryMoveOnto(MapLocation location) throws GameActionException {
-        MapLocation currentLocation = rc.getLocation();
-        if (currentLocation.equals(location)) {
-            return;
-        }
-
-        if (currentLocation.isAdjacentTo(location)
-                && rc.senseRubble(location) >= 100) {
-            rc.clearRubble(currentLocation.directionTo(location));
-            return;
-        }
-
-        Direction moveDirection = currentLocation.directionTo(location);
-        if (type == RobotType.ARCHON
-                || type == RobotType.TTM) {
-            tryMove(moveDirection);
-        }
-        else {
-            tryMoveDig(moveDirection);
-        }
-    }
-
     protected void tryMoveToward(MapLocation location) throws GameActionException {
         MapLocation currentLocation = rc.getLocation();
         if (currentLocation.equals(location)) {
@@ -147,7 +134,8 @@ public abstract class Robot {
 
         Direction moveDirection = currentLocation.directionTo(location);
         if (type == RobotType.ARCHON
-                || type == RobotType.TTM) {
+                || type == RobotType.TTM
+                || type == RobotType.TURRET) {
             tryMove(moveDirection);
         }
         else {
@@ -156,10 +144,11 @@ public abstract class Robot {
     }
 
     private void tryMoveDig(Direction targetDirection) throws GameActionException {
-        int[] moveSequence1 = {0, 7, 1};
-        int[] digSequence1 = {0, 7, 1};
-        int[] moveSequence2 = {6, 2, 5, 3};
         int initialDirection = getDirectionNumber(targetDirection);
+        if (initialDirection < 0) {
+            return;
+        }
+
         Direction currentDirection;
         for (int i = 0; i < moveSequence1.length; i++) {
             currentDirection = directions[(initialDirection + moveSequence1[i]) % 8];
@@ -171,6 +160,9 @@ public abstract class Robot {
 
         for (int i = 0; i < digSequence1.length; i++) {
             currentDirection = directions[(initialDirection + digSequence1[i]) % 8];
+            if (tryDig(currentLocation, currentDirection)) {
+                return;
+            }
         }
 
         for (int i = 0; i < moveSequence2.length; i++) {
@@ -184,48 +176,120 @@ public abstract class Robot {
         tryClearRubble(targetDirection);
     }
 
+    private boolean tryDig(MapLocation currentLocation, Direction direction) throws GameActionException {
+        MapLocation nextLocation = currentLocation.add(direction);
+        if (rc.onTheMap(nextLocation)
+                && rc.senseRubble(nextLocation) < MAX_RUBBLE_CAN_PASS) {
+            rc.clearRubble(direction);
+            return true;
+        }
+
+        return false;
+    }
+
+    protected void trySafeMoveTowardTurret(RobotData turret) throws GameActionException {
+        RobotData[] turretArray = {turret};
+        trySafeMoveDigToward(turret.location, turretArray, 1);
+    }
+
     protected boolean trySafeMoveToward(MapLocation location, RobotData[] nearbyEnemies) throws GameActionException {
         Direction direction = currentLocation.directionTo(location);
         return trySafeMove(direction, nearbyEnemies);
     }
 
+    protected boolean trySafeMoveToward(MapLocation location, RobotInfo[] nearbyEnemies, RobotInfo[] nearbyZombies) throws GameActionException {
+        Direction direction = currentLocation.directionTo(location);
+        return trySafeMove(direction, nearbyEnemies, nearbyZombies);
+    }
+
+    protected boolean trySafeMoveToward(MapLocation location, MapLocation[] enemyTurretLocations) throws GameActionException {
+        Direction direction = currentLocation.directionTo(location);
+        return trySafeMove(direction, enemyTurretLocations);
+    }
+
+    protected void trySafeMoveDigToward(MapLocation location, RobotData[] nearbyEnemies, int enemyCount) throws GameActionException {
+        Direction direction = currentLocation.directionTo(location);
+        trySafeMoveDig(direction, nearbyEnemies, enemyCount);
+    }
+
+    protected void trySafeMoveDig(Direction targetDirection, RobotData[] nearbyEnemies, int enemyCount) throws GameActionException {
+        MapLocation currentLocation = rc.getLocation();
+        int initialDirection = getDirectionNumber(targetDirection);
+        if (initialDirection < 0) {
+            return;
+        }
+
+        Direction currentDirection;
+        for (int i = 0; i < moveSequence1.length; i++) {
+            currentDirection = directions[(initialDirection + moveSequence1[i]) % 8];
+            if (canMoveSafely(currentDirection, currentLocation, nearbyEnemies, enemyCount)) {
+                rc.move(currentDirection);
+                return;
+            }
+        }
+
+        for (int i = 0; i < digSequence1.length; i++) {
+            currentDirection = directions[(initialDirection + digSequence1[i]) % 8];
+            if (tryDig(currentLocation, currentDirection)) {
+                return;
+            }
+        }
+
+        for (int i = 0; i < moveSequence2.length; i++) {
+            currentDirection = directions[(initialDirection + moveSequence2[i]) % 8];
+            if (canMoveSafely(currentDirection, currentLocation, nearbyEnemies, enemyCount)) {
+                rc.move(currentDirection);
+                return;
+            }
+        }
+
+        tryClearRubble(targetDirection);
+    }
+
+    protected boolean trySafeMove(Direction direction, MapLocation[] enemyTurretLocations) throws GameActionException {
+        MapLocation currentLocation = rc.getLocation();
+        int initialDirection = getDirectionNumber(direction);
+        if (initialDirection < 0) {
+            return false;
+        }
+
+        for (int i = 0; i < rotations.length; i++) {
+            Direction d = directions[(initialDirection + rotations[i]) % 8];
+            MapLocation next = currentLocation.add(d);
+            if (canMoveSafely(d, next, enemyTurretLocations)) {
+                rc.move(d);
+                return true;
+            }
+        }
+
+        if (type == RobotType.TTM
+                || type == RobotType.SCOUT) {
+            return false;
+        }
+
+        return tryClearRubble(direction);
+    }
+
     protected boolean trySafeMove(Direction direction,
                                   RobotData[] nearbyEnemies) throws GameActionException {
         MapLocation currentLocation = rc.getLocation();
-        MapLocation next = currentLocation.add(direction);
-        if (canMoveSafely(direction, next, nearbyEnemies)) {
-            rc.move(direction);
-            return true;
+        int initialDirection = getDirectionNumber(direction);
+        if (initialDirection < 0) {
+            return false;
         }
 
-        Direction left = direction.rotateLeft();
-        next = currentLocation.add(left);
-        if (canMoveSafely(left, next, nearbyEnemies)) {
-            rc.move(left);
-            return true;
-        }
-
-        Direction right = direction.rotateRight();
-        next = currentLocation.add(right);
-        if (canMoveSafely(right, next, nearbyEnemies)) {
-            rc.move(right);
-            return true;
-        }
-
-        for (int i = 0; i < 2; i++) {
-            left = left.rotateLeft();
-            next = currentLocation.add(left);
-            if (canMoveSafely(left, next, nearbyEnemies)) {
-                rc.move(left);
+        for (int i = 0; i < rotations.length; i++) {
+            Direction d = directions[(initialDirection + rotations[i]) % 8];
+            MapLocation next = currentLocation.add(d);
+            if (canMoveSafely(d, next, nearbyEnemies)) {
+                rc.move(d);
                 return true;
             }
+        }
 
-            right = right.rotateRight();
-            next = currentLocation.add(right);
-            if (canMoveSafely(right, next, nearbyEnemies)) {
-                rc.move(right);
-                return true;
-            }
+        if (type == RobotType.TTM
+                || type == RobotType.SCOUT) {
+            return false;
         }
 
         return tryClearRubble(direction);
@@ -236,53 +300,75 @@ public abstract class Robot {
                 && !RobotUtil.anyCanAttack(nearbyEnemies, next);
     }
 
-    protected boolean trySafeMove(Direction direction,
-                               RobotInfo[] nearbyEnemies,
-                               RobotInfo[] nearbyZombies) throws GameActionException {
+    private boolean canMoveSafely(Direction direction, MapLocation next, MapLocation[] nearbyTurrets) {
+        int turretAttackRange = RobotType.TURRET.attackRadiusSquared;
+        return rc.canMove(direction)
+                && !LocationUtil.anyWithinRange(nearbyTurrets, next, turretAttackRange);
+    }
+
+    private boolean canMoveSafely(
+            Direction direction, MapLocation next, RobotData[] nearbyEnemies, int enemyCount) {
+        return rc.canMove(direction)
+                && !RobotUtil.anyCanAttack(nearbyEnemies, enemyCount, next);
+    }
+
+    protected boolean trySafeMove(Direction direction, RobotInfo[] nearbyEnemies) throws GameActionException {
         MapLocation currentLocation = rc.getLocation();
-        MapLocation next = currentLocation.add(direction);
-        if (canMoveSafely(direction, next, nearbyEnemies, nearbyZombies)) {
-            rc.move(direction);
-            return true;
+        int initialDirection = getDirectionNumber(direction);
+        if (initialDirection < 0) {
+            return false;
         }
 
-        Direction left = direction.rotateLeft();
-        next = currentLocation.add(left);
-        if (canMoveSafely(left, next, nearbyEnemies, nearbyZombies)) {
-            rc.move(left);
-            return true;
-        }
-
-        Direction right = direction.rotateRight();
-        next = currentLocation.add(right);
-        if (canMoveSafely(right, next, nearbyEnemies, nearbyZombies)) {
-            rc.move(right);
-            return true;
-        }
-
-        for (int i = 0; i < 2; i++) {
-            left = left.rotateLeft();
-            next = currentLocation.add(left);
-            if (canMoveSafely(left, next, nearbyEnemies, nearbyZombies)) {
-                rc.move(left);
-                return true;
-            }
-
-            right = right.rotateRight();
-            next = currentLocation.add(right);
-            if (canMoveSafely(right, next, nearbyEnemies, nearbyZombies)) {
-                rc.move(right);
+        for (int i = 0; i < rotations.length; i++) {
+            Direction d = directions[(initialDirection + rotations[i]) % 8];
+            MapLocation next = currentLocation.add(d);
+            if (canMoveSafely(d, next, nearbyEnemies)) {
+                rc.move(d);
                 return true;
             }
         }
 
-        return false;
+        if (type == RobotType.TTM
+                || type == RobotType.SCOUT) {
+            return false;
+        }
+
+        return tryClearRubble(direction);
+    }
+
+    protected boolean trySafeMove(Direction direction, RobotInfo[] nearbyEnemies, RobotInfo[] nearbyZombies) throws GameActionException {
+        MapLocation currentLocation = rc.getLocation();
+        int initialDirection = getDirectionNumber(direction);
+        if (initialDirection < 0) {
+            return false;
+        }
+
+        for (int i = 0; i < rotations.length; i++) {
+            Direction d = directions[(initialDirection + rotations[i]) % 8];
+            MapLocation next = currentLocation.add(d);
+            if (canMoveSafely(d, next, nearbyEnemies, nearbyZombies)) {
+                rc.move(d);
+                return true;
+            }
+        }
+
+        if (type == RobotType.TTM
+                || type == RobotType.SCOUT) {
+            return false;
+        }
+
+        return tryClearRubble(direction);
     }
 
     private boolean canMoveSafely(Direction direction, MapLocation next, RobotInfo[] nearbyEnemies, RobotInfo[] nearbyZombies) {
         return rc.canMove(direction)
                 && !RobotUtil.anyCanAttack(nearbyEnemies, next)
                 && !RobotUtil.anyCanAttack(nearbyZombies, next);
+    }
+
+    private boolean canMoveSafely(Direction direction, MapLocation next, RobotInfo[] nearbyEnemies) {
+        return rc.canMove(direction)
+                && !RobotUtil.anyCanAttack(nearbyEnemies, next);
     }
 
     protected void clearRubble() throws GameActionException {
@@ -337,8 +423,11 @@ public abstract class Robot {
     }
 
     protected void tryMove(Direction targetDirection) throws GameActionException {
-        int[] rotations = {0, 7, 1, 6, 2, 5, 3};
         int initialDirection = getDirectionNumber(targetDirection);
+        if (initialDirection < 0) {
+            return;
+        }
+
         Direction currentDirection;
         for (int i = 0; i < rotations.length; i++) {
             currentDirection = directions[(initialDirection + rotations[i]) % 8];
@@ -348,9 +437,12 @@ public abstract class Robot {
             }
         }
 
-        if (rc.getType() != RobotType.TTM) {
-            tryClearRubble(targetDirection);
+        if (rc.getType() == RobotType.TTM
+                || rc.getType() == RobotType.TURRET) {
+            return;
         }
+
+        tryClearRubble(targetDirection);
     }
 
     private boolean tryClearRubble(Direction direction) throws GameActionException {
@@ -475,10 +567,9 @@ public abstract class Robot {
         return Integer.MAX_VALUE;
     }
 
-    protected MessageParser[] getParsersForMessagesOfType(Signal[] signals, MessageType messageType, int max) {
-        MessageParser[] parsers = new MessageParser[max];
+    protected int[][] getMessagesOfType(Signal[] signals, MessageType messageType) {
         int signalCount = signals.length;
-        int signalsOfType = 0;
+        int messageCount = 0;
         for (int i = 0; i < signalCount; i++) {
             Signal signal = signals[i];
             if (signal.getTeam() == team) {
@@ -487,22 +578,34 @@ public abstract class Robot {
                     continue;
                 }
 
-                MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
-                if (parser.getMessageType() == messageType) {
-                    parsers[signalsOfType] = parser;
-                    signalsOfType++;
-                }
-
-                if (signalsOfType == max) {
-                    return parsers;
+                if (MessageParser.matchesType(message, messageType)) {
+                    messageCount++;
                 }
             }
         }
 
-        return parsers;
+        int[][] messages = new int[messageCount][2];
+        int index = 0;
+        for (int i = 0; i < signalCount; i++) {
+            Signal signal = signals[i];
+            if (signal.getTeam() == team) {
+                int[] message = signal.getMessage();
+                if (message == null) {
+                    continue;
+                }
+
+                if (MessageParser.matchesType(message, messageType)) {
+                    messages[index][0] = message[0];
+                    messages[index][1] = message[1];
+                    index++;
+                }
+            }
+        }
+
+        return messages;
     }
 
-    protected MessageParser getParserForFirstMessageOfType(Signal[] signals, MessageType messageType) {
+    protected int[] getFirstMessageOfType(Signal[] signals, MessageType messageType) {
         int count = signals.length;
         for (int i = 0; i < count; i++) {
             Signal signal = signals[i];
@@ -512,9 +615,8 @@ public abstract class Robot {
                     continue;
                 }
 
-                MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
-                if (parser.getMessageType() == messageType) {
-                    return parser;
+                if (MessageParser.matchesType(message, messageType)) {
+                    return message;
                 }
             }
         }
@@ -523,18 +625,34 @@ public abstract class Robot {
     }
 
     protected void getTurretBroadcasts(Signal[] roundSignals) {
-        int maxTurrets = Config.MAX_ENEMY_TURRETS;
-        int count = 0;
-        MessageParser[] parsers = getParsersForMessagesOfType(roundSignals, MessageType.ENEMY_TURRET, maxTurrets);
-        for (int i = 0; i < maxTurrets; i++) {
-            if (parsers[i] == null) {
+        enemyTurretCount = 0;
+        int[][] messages = getMessagesOfType(roundSignals, MessageType.ENEMY_TURRET);
+        for (int i = 0; i < messages.length; i++) {
+            if (messages[i] == null) {
                 break;
             }
 
-            enemyTurrets[i] = parsers[i].getRobotData();
-            count++;
+            enemyTurrets[i] = MessageParser.getRobotData(messages[i]);
+            enemyTurretCount++;
+            if (enemyTurretCount == Config.MAX_ENEMY_TURRETS) {
+                break;
+            }
         }
+    }
 
-        setIndicatorString(0, "enemy turret count: " + count);
+    protected void getTurretBroadcastsLocationOnly(Signal[] roundSignals) {
+        enemyTurretCount = 0;
+        int[][] messages = getMessagesOfType(roundSignals, MessageType.ENEMY_TURRET);
+        for (int i = 0; i < messages.length; i++) {
+            if (messages[i] == null) {
+                break;
+            }
+
+            enemyTurretCount++;
+            enemyTurretLocations[i] = MessageParser.getLocation(messages[i]);
+            if (enemyTurretCount == Config.MAX_ENEMY_TURRETS) {
+                break;
+            }
+        }
     }
 }

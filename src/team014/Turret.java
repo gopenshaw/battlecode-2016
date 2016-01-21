@@ -46,21 +46,82 @@ public class Turret extends Robot {
         attackTarget = null;
     }
 
+    private void senseRobots() {
+        nearbyZombies = senseNearbyZombies();
+        nearbyEnemies = senseNearbyEnemies();
+        //setIndicatorString(0, "nearby zombies: " + nearbyZombies.length);
+        //setIndicatorString(0, "nearby enemies: " + nearbyEnemies.length);
+    }
+
+    private void getTarget() {
+        int[] message = getFirstMessageOfType(roundSignals, MessageType.TARGET);
+        if (message == null) {
+            return;
+        }
+
+        attackTarget = MessageParser.getRobotData(message);
+        //setIndicatorString(2, "my target is " + attackTarget);
+    }
+
+    public void getEnemyLocation() {
+        int[] message = getFirstMessageOfType(roundSignals, MessageType.ENEMY);
+        if (message != null) {
+            enemyLocation = MessageParser.getRobotData(message).location;
+        }
+    }
+
+    private void attackTargets() throws GameActionException {
+        if (attackTarget == null
+                || rc.getType() == RobotType.TTM
+                || !rc.isWeaponReady()) {
+            return;
+        }
+
+        if (rc.canAttackLocation(attackTarget.location)) {
+            rc.attackLocation(attackTarget.location);
+        }
+        else {
+            //setIndicatorString(0, "received target " + attackTarget + " but can't attack!");
+        }
+    }
+
+    private void attackEnemiesAndZombies() throws GameActionException {
+        if (rc.getType() == RobotType.TTM
+                || !rc.isWeaponReady()) {
+            return;
+        }
+
+        RobotInfo zombieToAttack = getPriorityAttackableZombie(nearbyZombies);
+        if (zombieToAttack != null) {
+            rc.attackLocation(zombieToAttack.location);
+            return;
+        }
+
+        if (nearbyEnemies.length > 0) {
+            if (rc.canAttackLocation(nearbyEnemies[0].location)) {
+                rc.attackLocation(nearbyEnemies[0].location);
+                return;
+            }
+        }
+    }
+
     private void moveToEnemy() throws GameActionException {
         if (enemyLocation == null
                 || !rc.isCoreReady()) {
             return;
         }
 
-        Direction direction = currentLocation.directionTo(enemyLocation);
-        trySafeMove(direction, enemyTurrets);
-    }
+        setIndicatorString(0, "enemy turrets: ");
+        for (int i = 0; i < enemyTurretCount; i++) {
+            setIndicatorString(0, " " + enemyTurrets[i].location);
+        }
 
-    private void senseRobots() {
-        nearbyZombies = senseNearbyZombies();
-        nearbyEnemies = senseNearbyEnemies();
-        setIndicatorString(0, "nearby zombies: " + nearbyZombies.length);
-        setIndicatorString(0, "nearby enemies: " + nearbyEnemies.length);
+        if (enemyTurretCount == 0) {
+            tryMoveToward(enemyLocation);
+        }
+        else {
+            trySafeMoveToward(enemyLocation, enemyTurrets);
+        }
     }
 
     private boolean moveToTarget() throws GameActionException {
@@ -87,32 +148,6 @@ public class Turret extends Robot {
         return false;
     }
 
-    private void getTarget() {
-        MessageParser message = getParserForFirstMessageOfType(roundSignals, MessageType.TARGET);
-        if (message == null) {
-            setIndicatorString(2, "i have no target");
-            return;
-        }
-
-        attackTarget = message.getRobotData();
-        setIndicatorString(2, "my target is " + attackTarget);
-    }
-
-    private void attackTargets() throws GameActionException {
-        if (attackTarget == null
-                || rc.getType() == RobotType.TTM
-                || !rc.isWeaponReady()) {
-            return;
-        }
-
-        if (rc.canAttackLocation(attackTarget.location)) {
-            rc.attackLocation(attackTarget.location);
-        }
-        else {
-            setIndicatorString(0, "received target " + attackTarget + " but can't attack!");
-        }
-    }
-
     private boolean moveRandom() throws GameActionException {
         if (attackTarget != null) {
             delayRound = roundNumber;
@@ -124,7 +159,7 @@ public class Turret extends Robot {
                 && nearbyEnemies.length == 0
                 && rc.isCoreReady()
                 && roundNumber - RANDOM_MOVE_DELAY > delayRound) {
-            setIndicatorString(1, "packing for random move");
+            //setIndicatorString(1, "packing for random move");
             rc.pack();
             return true;
         }
@@ -132,7 +167,7 @@ public class Turret extends Robot {
         if (rc.getType() == RobotType.TTM
                 && nearbyEnemies.length > 0
                 || nearbyZombies.length > 0) {
-            setIndicatorString(1, "unpacking in random move");
+            //setIndicatorString(1, "unpacking in random move");
             rc.unpack();
             return true;
         }
@@ -143,26 +178,6 @@ public class Turret extends Robot {
 
         tryMove(getRandomDirection());
         return false;
-    }
-
-    private void attackEnemiesAndZombies() throws GameActionException {
-        if (rc.getType() == RobotType.TTM
-                || !rc.isWeaponReady()) {
-            return;
-        }
-
-        RobotInfo zombieToAttack = getPriorityAttackableZombie(nearbyZombies);
-        if (zombieToAttack != null) {
-            rc.attackLocation(zombieToAttack.location);
-            return;
-        }
-
-        if (nearbyEnemies.length > 0) {
-            if (rc.canAttackLocation(nearbyEnemies[0].location)) {
-                rc.attackLocation(nearbyEnemies[0].location);
-                return;
-            }
-        }
     }
 
     private RobotInfo getPriorityAttackableZombie(RobotInfo[] zombies) {
@@ -178,12 +193,5 @@ public class Turret extends Robot {
         }
 
         return zombieToAttack;
-    }
-
-    public void getEnemyLocation() {
-        MessageParser enemy = getParserForFirstMessageOfType(roundSignals, MessageType.ENEMY);
-        if (enemy != null) {
-            enemyLocation = enemy.getRobotData().location;
-        }
     }
 }

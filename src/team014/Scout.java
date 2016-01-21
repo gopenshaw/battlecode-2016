@@ -1,24 +1,32 @@
 package team014;
 
 import battlecode.common.*;
-import team014.message.*;
-import team014.util.*;
+import team014.message.Message;
+import team014.message.MessageBuilder;
+import team014.message.MessageParser;
+import team014.message.consensus.ZombiesDeadConsensus;
+import team014.util.BoundedQueue;
+import team014.util.DirectionUtil;
+import team014.util.RobotQueueNoDuplicates;
+import team014.util.RobotUtil;
 
 public class Scout extends Robot {
     private static final int ROUNDS_TO_REVERSE = 4;
+    private static final int MIN_PAIRING_ROUND = 300;
     private final int ZOMBIE_BROADCAST_RADIUS = senseRadius * 3;
-    private final EventMemory eventMemory;
     private Direction exploreDirection;
     private final int LOOKAHEAD_LENGTH = 5;
     private RobotInfo[] nearbyZombies;
     private int ignoreEnemiesRound;
     private RobotInfo[] nearbyEnemies;
     private Signal[] roundSignals;
-    private boolean zombiesDead;
+
     private RobotInfo lastEnemy;
+
     private RobotInfo lastZombieAddedToMessageStore = null;
     private RobotInfo[] nearbyFriendlies;
     private RobotInfo myPair;
+    private final ZombiesDeadConsensus zombiesDead;
 
     private RobotQueueNoDuplicates zombieDens;
     private BoundedQueue<Integer> destroyedDens;
@@ -27,8 +35,7 @@ public class Scout extends Robot {
 
     public Scout(RobotController rc) {
         super(rc);
-        eventMemory = new EventMemory(rc.getRoundNum());
-
+        zombiesDead = new ZombiesDeadConsensus(rc);
         zombieDens = new RobotQueueNoDuplicates(Config.MAX_DENS);
         destroyedDens = new BoundedQueue<Integer>(Config.MAX_DENS);
     }
@@ -38,19 +45,29 @@ public class Scout extends Robot {
         roundSignals = rc.emptySignalQueue();
         getTurretBroadcasts(roundSignals);
         senseRobots();
+        zombiesDead.updateZombieCount(nearbyZombies.length, roundNumber);
+
         updateConnectionWithPair();
         getPairIfUnpaired();
         if (myPair == null) {
-            discoverDestroyedDens();
-            readDenMessages();
+            zombiesDead.participate(roundSignals, roundNumber);
+            setIndicatorString(2, "zombies dead " + zombiesDead.isConsensusReached());
+            if (!zombiesDead.isConsensusReached()) {
+                discoverDestroyedDens();
+                readDenMessages();
+            }
+
             addNearbyDensToDenQueue();
             broadcastZombies();
-            broadcastDensAndDestroyedDens();
+            if (!zombiesDead.isConsensusReached()) {
+                broadcastDensAndDestroyedDens();
+            }
+
             broadcastEnemy();
             moveAwayFromZombies();
-            broadcastAnnouncements();
             explore();
         } else if (myPair.team == team) {
+            zombiesDead.observe(roundSignals, roundNumber);
             moveTowardMyPair();
             broadcastTargets();
             int nearbyTTMs = RobotUtil.getCountOfType(nearbyFriendlies, RobotType.TTM);
@@ -61,12 +78,31 @@ public class Scout extends Robot {
             }
         } else {
             // we are watching enemy turrets
-            setIndicatorString(0, "pair with " + myPair.ID);
+            zombiesDead.observe(roundSignals, roundNumber);
+            setIndicatorString(2, "pair with " + myPair.ID);
             moveToSafety();
+            moveCloser();
             broadcastAllTurrets();
             broadcastZombies();
+            unpairIfZombiesAreClose();
         }
     }
+
+    private void unpairIfZombiesAreClose() {
+        if (nearbyZombies.length > 0) {
+            myPair = null;
+        }
+    }
+
+    private void moveCloser() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        Direction towardEnemy = DirectionUtil.getDirectionToward(nearbyEnemies, currentLocation);
+        trySafeMove(towardEnemy, nearbyEnemies);
+    }
+
 
     private void moveToSafety() throws GameActionException {
         if (!rc.isCoreReady()) {
@@ -79,28 +115,28 @@ public class Scout extends Robot {
     }
 
     private void broadcastAllTurrets() throws GameActionException {
+        setIndicatorString(0, "turrets: ");
         RobotInfo[] enemyTurrets = RobotUtil.getRobotsOfType(nearbyEnemies, RobotType.TURRET);
         if (enemyTurrets == null) {
             return;
         }
 
-        setIndicatorString(0, "broadcasting: ");
         for (RobotInfo robot : enemyTurrets) {
-            Message message = MessageBuilder.buildTurretMessage(robot, roundNumber);
-            rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), senseRadius * 2);
             setIndicatorString(0, " " + robot.location);
+            Message message = MessageBuilder.buildTurretMessage(robot);
+            rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), senseRadius * 2);
         }
     }
 
     private void readDenMessages() {
-        int maxDenMessages = 20;
-        MessageParser[] parsers = getParsersForMessagesOfType(roundSignals, MessageType.ZOMBIE, maxDenMessages);
-        for (int i = 0; i < maxDenMessages; i++) {
-            if (parsers[i] == null) {
+        int[][] messages = getMessagesOfType(roundSignals, MessageType.ZOMBIE);
+        int messageCount = messages.length;
+        for (int i = 0; i < messageCount; i++) {
+            if (messages[i] == null) {
                 break;
             }
 
-            RobotData zombie = parsers[i].getRobotData();
+            RobotData zombie = MessageParser.getRobotData(messages[i]);
             if (zombie.type == RobotType.ZOMBIEDEN
                     && !denDestroyed[zombie.id]) {
                 zombieDens.add(zombie);
@@ -114,14 +150,14 @@ public class Scout extends Robot {
     }
 
     private void checkBroadcastsForDestroyedDens() {
-        int maxParsers = 10;
-        MessageParser[] parsers = getParsersForMessagesOfType(roundSignals, MessageType.DESTROYED_DENS, maxParsers);
-        for (int i = 0; i < maxParsers; i++) {
-            if (parsers[i] == null) {
+        int[][] messages = getMessagesOfType(roundSignals, MessageType.DESTROYED_DENS);
+        int messageCount = messages.length;
+        for (int i = 0; i < messageCount; i++) {
+            if (messages[i] == null) {
                 break;
             }
 
-            DestroyedDenData densFromBroadcast = parsers[i].getDestroyedDens();
+            DestroyedDenData densFromBroadcast = MessageParser.getDestroyedDens(messages[i][0], messages[i][1]);
             for (int j = 0; j < densFromBroadcast.numberOfDens; j++) {
                 int denId = densFromBroadcast.denId[j];
                 if (!denDestroyed[denId]) {
@@ -173,6 +209,7 @@ public class Scout extends Robot {
             destroyedDens.add(id);
         }
 
+        setIndicatorString(1, "broadcast destroyed dens");
         Message message = MessageBuilder.buildDestroyedDenMessage(denData);
         rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), getDestroyedDenBroadcastRadius());
     }
@@ -192,8 +229,9 @@ public class Scout extends Robot {
         }
 
         zombieDens.add(den);
-        Message message = MessageBuilder.buildZombieMessage(den, roundNumber);
-        rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), senseRadius * 2);
+        Message message = MessageBuilder.buildZombieMessage(den);
+        setIndicatorString(1, "broadcast den " + den.location);
+        rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), senseRadius * 6);
     }
 
     private void broadcastTargets() throws GameActionException {
@@ -201,18 +239,39 @@ public class Scout extends Robot {
             return;
         }
 
-        RobotInfo[] highValueTargets = RobotUtil.getRobotsOfType(nearbyEnemies, RobotType.TURRET, RobotType.ARCHON, RobotType.SCOUT);
+        RobotInfo[] highValueTargets = RobotUtil.getRobotsOfType(nearbyEnemies, RobotType.SCOUT);
         if (highValueTargets != null
                 && highValueTargets.length != 0) {
             RobotInfo closest = RobotUtil.getClosestRobotToLocation(highValueTargets, currentLocation);
             Message target = MessageBuilder.buildTargetMessage(closest);
             rc.broadcastMessageSignal(target.getFirst(), target.getSecond(), 2);
+            return;
         }
-        else {
-            RobotInfo closest = RobotUtil.getClosestRobotToLocation(nearbyEnemies, currentLocation);
+
+        highValueTargets = RobotUtil.getRobotsOfType(nearbyEnemies, RobotType.TURRET, RobotType.ARCHON);
+        if (highValueTargets != null
+                && highValueTargets.length != 0) {
+            RobotInfo closest = RobotUtil.getClosestRobotToLocation(highValueTargets, currentLocation);
             Message target = MessageBuilder.buildTargetMessage(closest);
             rc.broadcastMessageSignal(target.getFirst(), target.getSecond(), 2);
+            return;
         }
+
+        if (enemyTurretCount > 0) {
+            RobotData closest = RobotUtil.getClosestRobotToLocation(enemyTurrets, enemyTurretCount, currentLocation);
+            Message target = MessageBuilder.buildTargetMessage(closest);
+            rc.broadcastMessageSignal(target.getFirst(), target.getSecond(), 2);
+            return;
+        }
+
+
+        RobotInfo closest = RobotUtil.getClosestRobotToLocation(nearbyEnemies, currentLocation);
+        if (closest == null) {
+            return;
+        }
+
+        Message target = MessageBuilder.buildTargetMessage(closest);
+        rc.broadcastMessageSignal(target.getFirst(), target.getSecond(), 2);
     }
 
     private void moveTowardMyPair() throws GameActionException {
@@ -246,7 +305,9 @@ public class Scout extends Robot {
     }
 
     private void getPairIfUnpaired() throws GameActionException {
-        if (myPair != null) {
+        if (myPair != null
+                || nearbyZombies.length > 0
+                || roundNumber < MIN_PAIRING_ROUND) {
             return;
         }
 
@@ -255,25 +316,25 @@ public class Scout extends Robot {
             return;
         }
 
-        setIndicatorString(1, "turrets:");
         RobotInfo[] sensedEnemyTurrets = RobotUtil.getRobotsOfType(nearbyEnemies, RobotType.TURRET);
         if (sensedEnemyTurrets == null) {
             return;
         }
 
-        for (RobotInfo r : sensedEnemyTurrets) {
-            setIndicatorString(1, " " + r.ID);
+        setIndicatorString(1, "reading turrets");
+        for (int i = 0; i < enemyTurrets.length; i++) {
+            if (enemyTurrets[i] == null) {
+                break;
+            }
+            else {
+                setIndicatorString(1, " " + enemyTurrets[i].location);
+            }
         }
 
-//        RobotInfo[] notBeingBroadcast = RobotUtil.removeRobots(sensedEnemyTurrets, enemyTurrets);
-//        tryPairWithOneRobot(notBeingBroadcast);
-
-        tryPairWithOneRobot(sensedEnemyTurrets);
-
-//        setIndicatorString(2, "not broadcast:");
-//        for (RobotInfo r : notBeingBroadcast) {
-//            setIndicatorString(2, " " + r.ID);
-//        }
+        RobotInfo[] turretsNotBeingBroadcast = RobotUtil.removeRobots(sensedEnemyTurrets, enemyTurrets);
+        if (turretsNotBeingBroadcast.length > 0) {
+            tryPairWithOneRobot(turretsNotBeingBroadcast);
+        }
     }
 
     private boolean tryPairWithOneRobot(RobotInfo[] turrets) throws GameActionException {
@@ -307,10 +368,8 @@ public class Scout extends Robot {
             if (s.getTeam() == team) {
                 int[] message = s.getMessage();
                 if (message == null) continue;
-                MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
-
-                if (parser.getMessageType() == MessageType.PAIR
-                        && parser.pairs(robot)) {
+                if (MessageParser.getMessageType(message[0], message[1]) == MessageType.PAIR
+                        && MessageParser.pairs(message[0], message[1], robot)) {
                     return true;
                 }
             }
@@ -320,70 +379,15 @@ public class Scout extends Robot {
     }
 
     private void broadcastEnemy() throws GameActionException {
-        if (!zombiesDead
+        if (!zombiesDead.isConsensusReached()
                 || lastEnemy == null) {
             return;
         }
 
-        Message enemyMessage = MessageBuilder.buildEnemyMessage(lastEnemy, roundNumber);
+        Message enemyMessage = MessageBuilder.buildEnemyMessage(lastEnemy);
         rc.broadcastMessageSignal(enemyMessage.getFirst(), enemyMessage.getSecond(), senseRadius * 4);
     }
 
-    private void broadcastAnnouncements() throws GameActionException {
-        boolean zombiesDeadProposed = false;
-        boolean zombiesDeadDenied = false;
-        for (Signal s : roundSignals) {
-            if (s.getTeam() == team) {
-                int[] message = s.getMessage();
-                if (message == null) continue;
-                MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
-                if (parser.getMessageType() == MessageType.ANNOUNCEMENT) {
-                    if (parser.getAnnouncementSubject() == AnnouncementSubject.ZOMBIES_DEAD) {
-                        if (parser.getAnnouncementMode() == AnnouncementMode.PROPOSE) {
-                            zombiesDeadProposed = true;
-                        }
-                        else if (parser.getAnnouncementMode() == AnnouncementMode.DENY) {
-                            zombiesDeadDenied = true;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (zombiesDeadProposed
-                && !zombiesDeadDenied
-                && eventMemory.hasMemory(roundNumber)
-                && eventMemory.happenedRecently(Event.ZOMBIE_SPOTTED, roundNumber)) {
-            Message denial = MessageBuilder.buildAnnouncement(AnnouncementSubject.ZOMBIES_DEAD, AnnouncementMode.DENY);
-            rc.broadcastMessageSignal(denial.getFirst(), denial.getSecond(), 80 * 80 * 2);
-            eventMemory.record(Event.ZOMBIES_DEAD_DENIED, roundNumber);
-        }
-
-        if (!zombiesDead
-                && !zombiesDeadProposed
-                && eventMemory.hasMemory(roundNumber)
-                && !eventMemory.happenedRecently(Event.ZOMBIE_SPOTTED, roundNumber)
-                && !eventMemory.happenedRecently(Event.BROADCAST_ZOMBIES_DEAD, roundNumber)) {
-            Message message = MessageBuilder.buildAnnouncement(AnnouncementSubject.ZOMBIES_DEAD,
-                    AnnouncementMode.PROPOSE);
-            rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), 80 * 80 * 2);
-            eventMemory.record(Event.BROADCAST_ZOMBIES_DEAD, roundNumber);
-        }
-
-        if (zombiesDeadProposed) {
-            eventMemory.record(Event.ZOMBIES_DEAD_PROPOSED, roundNumber);
-        }
-
-        if (zombiesDeadDenied) {
-            eventMemory.record(Event.ZOMBIES_DEAD_DENIED, roundNumber);
-        }
-
-        if (eventMemory.happedLastRound(Event.ZOMBIES_DEAD_PROPOSED, roundNumber)
-                && !zombiesDeadDenied
-                && !eventMemory.happedLastRound(Event.ZOMBIES_DEAD_DENIED, roundNumber)) {
-            zombiesDead = true;
-        }
-    }
 
     private void addNearbyDensToDenQueue() {
         for (RobotInfo zombie : nearbyZombies) {
@@ -400,7 +404,7 @@ public class Scout extends Robot {
         }
 
         RobotInfo closestZombie = RobotUtil.getClosestRobotToLocation(nearbyZombies, currentLocation);
-        Message zombieMessage = MessageBuilder.buildZombieMessage(closestZombie, roundNumber);
+        Message zombieMessage = MessageBuilder.buildZombieMessage(closestZombie);
         rc.broadcastMessageSignal(zombieMessage.getFirst(), zombieMessage.getSecond(), ZOMBIE_BROADCAST_RADIUS);
     }
 
@@ -409,13 +413,12 @@ public class Scout extends Robot {
         nearbyEnemies = senseNearbyEnemies();
         nearbyFriendlies = senseNearbyFriendlies();
 
-        if (nearbyZombies.length > 0) {
-            eventMemory.record(Event.ZOMBIE_SPOTTED, roundNumber);
-        }
-
         if (nearbyEnemies.length > 0) {
-            RobotInfo closest = RobotUtil.getClosestRobotToLocation(nearbyEnemies, currentLocation);
-            lastEnemy = closest;
+            RobotInfo highPriority = RobotUtil.getHighestPriorityEnemyUnit(nearbyEnemies);
+            if (lastEnemy == null
+                    || RobotUtil.getPriority(highPriority.type) >= RobotUtil.getPriority(lastEnemy.type)) {
+                lastEnemy = highPriority;
+            }
         }
     }
 
@@ -441,7 +444,7 @@ public class Scout extends Robot {
             exploreDirection = getExploreDirection(null);
         }
 
-        if (nearbyEnemies.length > 0
+        if (RobotUtil.anyCanAttack(nearbyEnemies, currentLocation)
                 && roundNumber > ignoreEnemiesRound + ROUNDS_TO_REVERSE) {
             exploreDirection = exploreDirection.opposite();
             ignoreEnemiesRound = roundNumber;

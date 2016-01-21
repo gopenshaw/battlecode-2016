@@ -1,5 +1,5 @@
 package team014.message;
 
-public enum AnnouncementSubject {
+public enum Subject {
     ZOMBIES_DEAD
 }

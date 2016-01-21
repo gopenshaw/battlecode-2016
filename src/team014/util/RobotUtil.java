@@ -6,6 +6,13 @@ import battlecode.common.RobotType;
 import team014.RobotData;
 
 public class RobotUtil {
+    private static final RobotType[] ENEMY_PRIORITY = {
+            RobotType.SCOUT, RobotType.VIPER,
+            RobotType.SOLDIER, RobotType.GUARD,
+            RobotType.TTM,
+            RobotType.TURRET, RobotType.ARCHON
+    };
+
     public static RobotInfo getLowestHealthRobot(RobotInfo[] robots) {
         double minHealth = Double.MAX_VALUE;
         int minIndex = -1;
@@ -34,6 +41,18 @@ public class RobotUtil {
 
     public static boolean anyCanAttack(RobotData[] robots, MapLocation location) {
         int count = robots.length;
+        for (int i = 0; i < count; i++) {
+            RobotData robot = robots[i];
+            if (robot != null
+                    && robot.location.distanceSquaredTo(location) <= robot.type.attackRadiusSquared) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static boolean anyCanAttack(RobotData[] robots, int count, MapLocation location) {
         for (int i = 0; i < count; i++) {
             RobotData robot = robots[i];
             if (robot != null
@@ -288,17 +307,19 @@ public class RobotUtil {
 
     public static RobotInfo[] removeRobots(RobotInfo[] robots, RobotData[] robotsToRemove) {
         int removeCount = 0;
-        for (int i = 0; i < robots.length; i++) {
+        int robotCount = robots.length;
+        for (int i = 0; i < robotCount; i++) {
             if (RobotUtil.robotInCollection(robots[i], robotsToRemove)) {
                 removeCount++;
             }
         }
 
-        int newCount = robots.length - removeCount;
+        int newCount = robotCount - removeCount;
         RobotInfo[] trimmed = new RobotInfo[newCount];
-        for (int i = 0; i < trimmed.length; i++) {
+        int index = 0;
+        for (int i = 0; i < robotCount; i++) {
             if (!RobotUtil.robotInCollection(robots[i], robotsToRemove)) {
-                trimmed[i] = robots[i];
+                trimmed[index++] = robots[i];
             }
         }
 
@@ -318,5 +339,82 @@ public class RobotUtil {
         }
 
         return false;
+    }
+
+    public static RobotInfo[] removeRobotsOfType(RobotInfo[] robots, RobotType typeToRemove) {
+        int countToRemove = 0;
+        int robotCount = robots.length;
+        for (int i = 0; i < robotCount; i++) {
+            if (robots[i].type == typeToRemove) countToRemove++;
+        }
+
+        RobotInfo[] trimmed = new RobotInfo[robotCount - countToRemove];
+        int index = 0;
+        for (int i = 0; i < robotCount; i++) {
+            if (robots[i].type != typeToRemove) {
+                trimmed[index++] = robots[i];
+            }
+        }
+
+        return trimmed;
+    }
+
+    public static RobotInfo[] removeRobotsOfType(RobotInfo[] robots, RobotType typeToRemove1, RobotType typeToRemove2) {
+        int countToRemove = 0;
+        int robotCount = robots.length;
+        for (int i = 0; i < robotCount; i++) {
+            if (robots[i].type == typeToRemove1
+                    || robots[i].type == typeToRemove2) countToRemove++;
+        }
+
+        RobotInfo[] trimmed = new RobotInfo[robotCount - countToRemove];
+        int index = 0;
+        for (int i = 0; i < robotCount; i++) {
+            if (robots[i].type != typeToRemove1
+                    && robots[i].type != typeToRemove2) {
+                trimmed[index++] = robots[i];
+            }
+        }
+
+        return trimmed;
+    }
+
+    public static RobotInfo getHighestPriorityEnemyUnit(RobotInfo[] enemies) {
+        int highestPriority = -1;
+        int enemyCount = enemies.length;
+        RobotInfo highestRobot = null;
+        for (int i = 0; i < enemyCount; i++) {
+            int currentPriority = RobotUtil.getPriority(enemies[i].type);
+            if (currentPriority > highestPriority) {
+                highestPriority = currentPriority;
+                highestRobot = enemies[i];
+            }
+        }
+
+        return highestRobot;
+    }
+
+    public static int getPriority(RobotType type) {
+        for (int i = 0; i < ENEMY_PRIORITY.length; i++) {
+            if (type == ENEMY_PRIORITY[i]) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    public static RobotData getClosestRobotToLocation(RobotData[] robots, int robotCount, MapLocation currentLocation) {
+        RobotData closest = null;
+        int closestDistance = 1000000;
+        for (int i = 0; i < robotCount; i++) {
+            int currentDistance = currentLocation.distanceSquaredTo(robots[i].location);
+            if (currentDistance < closestDistance) {
+                closestDistance = currentDistance;
+                closest = robots[i];
+            }
+        }
+
+        return closest;
     }
 }

@@ -96,9 +96,8 @@ public class Viper extends Robot {
             int[] message = s.getMessage();
             if (message == null) continue;
 
-            MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
-            if (parser.getMessageType() == MessageType.ENEMY) {
-                return parser.getRobotData().location;
+            if (MessageParser.matchesType(message, MessageType.ENEMY)) {
+                return MessageParser.getRobotData(message).location;
             }
         }
 

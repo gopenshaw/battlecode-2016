@@ -1,15 +1,16 @@
 package team014;
 
 import battlecode.common.*;
+import team014.message.MessageBuilder;
+import team014.message.Message;
 import team014.message.MessageParser;
+import team014.message.consensus.ZombiesDeadConsensus;
 import team014.nav.Bug;
-import team014.util.AverageMapLocation;
-import team014.util.DirectionUtil;
-import team014.util.LocationUtil;
-import team014.util.RobotUtil;
+import team014.util.*;
 
 public class Archon extends Robot {
 
+    private static final int SCOUT_ALIVE_ROUNDS = 200;
     private RobotType[] lowUnitCountBuildQueue = {
             RobotType.SCOUT, RobotType.SOLDIER, RobotType.SOLDIER,
             RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER,
@@ -18,7 +19,7 @@ public class Archon extends Robot {
 
     private RobotType[] highUnitCountBuildQueue = {
             RobotType.SCOUT, RobotType.TURRET,
-            RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER
+            RobotType.SOLDIER, RobotType.SOLDIER,
     };
 
     private int lowUnitQueuePosition = 0;
@@ -31,25 +32,141 @@ public class Archon extends Robot {
     private RobotInfo[] nearbyEnemies;
     private double lastRoundHealth;
     private RobotInfo[] nearbyFriendlies;
+    private final ZombiesDeadConsensus zombiesDead;
+    private int[] scoutAliveRound = new int[32001];
+    private RobotQueueNoDuplicates aliveScouts = new RobotQueueNoDuplicates(30);
+    private int scoutCountEstimate;
+    private RobotData enemyToApproach;
 
     public Archon(RobotController rc) {
         super(rc);
         Bug.init(rc);
+        zombiesDead = new ZombiesDeadConsensus(rc);
     }
 
     @Override
     protected void doTurn() throws GameActionException {
-        roundSignals = rc.emptySignalQueue();
-        getTurretBroadcasts(roundSignals);
+        processAllBroadcasts();
+        broadcastEnemyToApproach();
         senseRobots();
+        estimateScoutCount();
+
+        zombiesDead.updateZombieCount(nearbyZombies.length, roundNumber);
+        zombiesDead.participate(roundSignals, roundNumber);
+
         moveAwayFromZombiesAndEnemies();
         moveIfUnderAttack();
+        moveIfNearEnemyTurrets();
         buildRobots();
         convertAdjacentNeutrals();
         getParts();
         moveWithArmy();
         repairRobots();
+        requestHelpIfUnderAttack();
+        goTowardNeutral();
+
         lastRoundHealth = rc.getHealth();
+    }
+
+    private void goTowardNeutral() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        RobotInfo[] neutrals = senseNearbyNeutrals();
+        if (neutrals.length > 0) {
+            RobotInfo closest = RobotUtil.getClosestRobotToLocation(neutrals, currentLocation);
+            trySafeMoveToward(closest.location, nearbyEnemies, nearbyZombies);
+        }
+    }
+
+    private void broadcastEnemyToApproach() throws GameActionException {
+        if (enemyToApproach == null
+                || roundNumber % 10 != 7) {
+            return;
+        }
+
+        //--broadcast so the information goes to robots we are spawning
+        setIndicatorString(1, "broadcast enemy to approach " + enemyToApproach.location);
+        Message message = MessageBuilder.buildEnemyMessage(enemyToApproach);
+        rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), 2);
+    }
+
+    private void processAllBroadcasts() {
+        enemyTurretCount = 0;
+
+        roundSignals = rc.emptySignalQueue();
+        int signalCount = roundSignals.length;
+        for (int i = 0; i < signalCount; i++) {
+            if (roundSignals[i].getTeam() != team) {
+                continue;
+            }
+
+            int[] message = roundSignals[i].getMessage();
+            if (message != null) {
+                processBroadcastWithMessage(message);
+            }
+        }
+    }
+
+    private void processBroadcastWithMessage(int[] message) {
+        MessageType messageType = MessageParser.getMessageType(message[0], message[1]);
+        if (messageType == MessageType.ENEMY) {
+            enemyToApproach = MessageParser.getRobotData(message[0], message[1]);
+        } else if (enemyTurretCount < Config.MAX_ENEMY_TURRETS
+                        && messageType == MessageType.ENEMY_TURRET) {
+            enemyTurrets[enemyTurretCount++] = MessageParser.getRobotData(message[0], message[1]);
+        }
+    }
+
+    private void moveIfNearEnemyTurrets() throws GameActionException {
+        //--so that our spawn area is safe
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        if (enemyTurretCount == 0) {
+            return;
+        }
+
+        Direction towardTurrets = DirectionUtil.getDirectionToward(enemyTurrets, enemyTurretCount, currentLocation);
+        MapLocation towardTurret = currentLocation.add(towardTurrets);
+        if (RobotUtil.anyCanAttack(enemyTurrets, enemyTurretCount, towardTurret)) {
+            setIndicatorString(1, "MOVE AWAY FOR SPAWN");
+            trySafeMove(towardTurrets.opposite(), enemyTurrets);
+        }
+    }
+
+    private void requestHelpIfUnderAttack() throws GameActionException {
+        if (RobotUtil.anyCanAttack(nearbyZombies, currentLocation)) {
+            rc.broadcastSignal(senseRadius * 2);
+        }
+    }
+
+    private void estimateScoutCount() {
+        RobotInfo[] nearbyScouts = RobotUtil.getRobotsOfType(nearbyFriendlies, RobotType.SCOUT);
+        if (nearbyScouts == null) {
+            return;
+        }
+
+        for (int i = 0; i < nearbyScouts.length; i++) {
+            RobotInfo scout = nearbyScouts[i];
+            scoutAliveRound[scout.ID] = roundNumber;
+            aliveScouts.add(new RobotData(scout.ID, null, (int)scout.health, scout.type));
+        }
+
+        if (!aliveScouts.isEmpty()) {
+            RobotData oldScout = aliveScouts.peek();
+            if (scoutAliveRound[oldScout.id] + SCOUT_ALIVE_ROUNDS > roundNumber) {
+                aliveScouts.add(oldScout);
+            }
+            else {
+                aliveScouts.remove();
+            }
+        }
+
+        scoutCountEstimate = aliveScouts.getSize();
+        setIndicatorString(2, "scout alive estimate: " + scoutCountEstimate);
     }
 
     private void moveWithArmy() throws GameActionException {
@@ -60,7 +177,12 @@ public class Archon extends Robot {
             return;
         }
 
-        MapLocation armyCenter = RobotUtil.findAverageLocation(nearbyFriendlies);
+        RobotInfo[] armyUnits = RobotUtil.removeRobotsOfType(nearbyFriendlies, RobotType.ARCHON, RobotType.SCOUT);
+        if (armyUnits.length < 2) {
+            return;
+        }
+
+        MapLocation armyCenter = RobotUtil.findAverageLocation(armyUnits);
         setIndicatorString(2, "army center is " + armyCenter);
         if (armyCenter.distanceSquaredTo(currentLocation) > 8) {
             setIndicatorString(2, "moving toward center");
@@ -96,11 +218,11 @@ public class Archon extends Robot {
 
         if (zombiesAreDangerous()
                 || RobotUtil.anyCanAttack(nearbyEnemies, currentLocation)) {
-            rc.broadcastSignal(32);
             Direction runDirection = DirectionUtil.getDirectionAwayFrom(nearbyEnemies, nearbyZombies, currentLocation);
 
             //--TODO check if we are going into a corner or some other trap
             tryMove(runDirection);
+            rc.broadcastSignal(senseRadius - 3);
         }
     }
 
@@ -125,20 +247,43 @@ public class Archon extends Robot {
     }
 
     private void buildRobots() throws GameActionException {
-        if (!rc.isCoreReady()) {
+        if (!rc.isCoreReady()
+                || id % 3 == roundNumber % 3) {
             return;
         }
 
-        if (rc.getRobotCount() > Config.HIGH_UNIT_COUNT) {
-            if (tryBuild(highUnitCountBuildQueue[highUnitQueuePosition % highUnitCountBuildQueue.length])) {
+        if (rc.getRobotCount() > Config.HIGH_UNIT_COUNT
+                || (roundNumber > 600 && rc.getTeamParts() > 350)) {
+            RobotType robotType = highUnitCountBuildQueue[highUnitQueuePosition % highUnitCountBuildQueue.length];
+            if (robotType == RobotType.SCOUT
+                    && tooManyScouts()) {
+                highUnitQueuePosition++;
+                robotType = highUnitCountBuildQueue[highUnitQueuePosition % highUnitCountBuildQueue.length];
+            }
+
+            if (tryBuild(robotType)) {
                 highUnitQueuePosition++;
             }
         }
         else {
-            if (tryBuild(lowUnitCountBuildQueue[lowUnitQueuePosition % lowUnitCountBuildQueue.length])) {
+            RobotType robotType = lowUnitCountBuildQueue[lowUnitQueuePosition % lowUnitCountBuildQueue.length];
+            if (robotType == RobotType.SCOUT
+                    && tooManyScouts()) {
+                lowUnitQueuePosition++;
+                robotType = lowUnitCountBuildQueue[lowUnitQueuePosition % lowUnitCountBuildQueue.length];
+            }
+            if (tryBuild(robotType)) {
                 lowUnitQueuePosition++;
             }
         }
+    }
+
+    private boolean tooManyScouts() {
+        if (scoutCountEstimate == 0) {
+            return false;
+        }
+
+        return rc.getRobotCount() / scoutCountEstimate < 3;
     }
 
     private void repairRobots() throws GameActionException {
@@ -178,8 +323,7 @@ public class Archon extends Robot {
         if (partsLocations.length > 0) {
             MapLocation closest = LocationUtil.findClosestLocation(partsLocations, currentLocation);
             setIndicatorString(2, "moving toward closest parts");
-            trySafeMoveToward(closest, enemyTurrets);
-            rc.broadcastSignal(31);
+            trySafeMoveDigToward(closest, enemyTurrets, enemyTurretCount);
             return;
         }
 
@@ -188,9 +332,8 @@ public class Archon extends Robot {
                 if (s.getTeam() == team) {
                     int[] message = s.getMessage();
                     if (message == null) continue;
-                    MessageParser parser = new MessageParser(message[0], message[1], currentLocation);
-                    if (parser.getMessageType() == MessageType.PARTS) {
-                        previousPartLocation = parser.getPartsData().location;
+                    if (MessageParser.matchesType(message, MessageType.PARTS)) {
+                        previousPartLocation = MessageParser.getPartsData(message[0], message[1]).location;
                     }
                 }
             }
@@ -198,7 +341,7 @@ public class Archon extends Robot {
 
         if (previousPartLocation != null) {
             setIndicatorString(2, "moving toward memory parts");
-            trySafeMoveToward(previousPartLocation, enemyTurrets);
+            trySafeMoveDigToward(previousPartLocation, enemyTurrets, enemyTurretCount);
             rc.broadcastSignal(31);
         }
     }
