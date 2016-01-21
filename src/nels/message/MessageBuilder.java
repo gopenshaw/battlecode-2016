@@ -16,24 +16,24 @@ public class MessageBuilder {
     //--Message format
     //--First integer : 1 bit open, 2 bit round number, 14 bit health, 15 bit id
     //--Second integer: 20 bit location, 4 bit robot type, 3 bit message type
-    public static Message buildZombieMessage(RobotInfo zombie, int roundNumber) {
+    public static Message buildZombieMessage(RobotInfo zombie) {
         return buildRobotMessage(zombie.health, zombie.ID, zombie.type, zombie.location, MessageType.ZOMBIE);
     }
 
-    public static Message buildZombieMessage(RobotData zombie, int roundNumber) {
+    public static Message buildZombieMessage(RobotData zombie) {
         return buildRobotMessage(zombie.health, zombie.id, zombie.type, zombie.location, MessageType.ZOMBIE);
     }
 
-    public static Message buildTurretMessage(RobotInfo turret, int roundNumber) {
+    public static Message buildTurretMessage(RobotInfo turret) {
         return buildRobotMessage(turret.health, turret.ID, turret.type, turret.location, MessageType.ENEMY_TURRET);
     }
 
-    public static Message buildEnemyMessage(RobotInfo enemy, int roundNumber) {
-        int first = (roundNumber % 4 << 29) + ((int) enemy.health << 15) + enemy.ID;
-        int second = (Serializer.encode(enemy.location) << 7)
-                + (Serializer.encode(enemy.type) << 3)
-                + Serializer.encode(MessageType.ENEMY);
-        return new Message(first, second, MessageType.ENEMY);
+    public static Message buildEnemyMessage(RobotInfo enemy) {
+        return buildRobotMessage(enemy.health, enemy.ID, enemy.type, enemy.location, MessageType.ENEMY);
+    }
+
+    public static Message buildEnemyMessage(RobotData enemy) {
+        return buildRobotMessage(enemy.health, enemy.id, enemy.type, enemy.location, MessageType.ENEMY);
     }
 
     public static Message buildPartsMessage(MapLocation center) {

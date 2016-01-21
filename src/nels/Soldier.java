@@ -2,6 +2,7 @@ package nels;
 
 import battlecode.common.*;
 import nels.message.MessageParser;
+import nels.nav.Bug;
 import nels.util.BoundedQueue;
 import nels.util.DirectionUtil;
 import nels.util.LocationUtil;
@@ -9,42 +10,40 @@ import nels.util.RobotUtil;
 
 public class Soldier extends Robot {
     private static final int MIN_SAFE_MOVE_ROUND = 300;
+    private static final double TOO_MUCH_RUBBLE = 30000;
 
     private Signal[] roundSignals;
 
-    private RobotInfo[] attackableZombies;
-    private RobotInfo[] nearbyZombies;
-    private RobotInfo[] attackableEnemies;
-    private RobotInfo[] adjacentTeammates;
-    private RobotInfo[] nearbyEnemies;
+    private static RobotInfo[] attackableZombies;
+    private static RobotInfo[] nearbyZombies;
+    private static RobotInfo[] attackableEnemies;
+    private static RobotInfo[] adjacentTeammates;
+    private static RobotInfo[] nearbyEnemies;
+    private static RobotInfo[] nearbyFriendlies;
 
     BoundedQueue<Integer> zombieMemory = new BoundedQueue<Integer>(3);
-    private LocationCollection zombieDens = new LocationCollection(20);
-    private RobotData zombieToAttack;
-    private RobotData enemyToApproach;
-    private RobotData zombieDen;
-    private boolean[] denDestroyed = new boolean[32001];
+    private static LocationCollection zombieDens = new LocationCollection(20);
+    private static RobotData zombieToAttack;
+    private static RobotData enemyToApproach;
+    private static RobotData zombieDen;
+    private static boolean[] denDestroyed = new boolean[32001];
 
-    private MapLocation helpLocation;
+    private static MapLocation helpLocation;
     private static final int MAX_HELP_LOCATIONS = 4;
-    private MapLocation[] helpLocations = new MapLocation[MAX_HELP_LOCATIONS];
-    private int helpLocationTurn = 0;
+    private static MapLocation[] helpLocations = new MapLocation[MAX_HELP_LOCATIONS];
+    private static int helpLocationTurn = 0;
     private static final int IGNORE_HELP_TURNS = 3;
 
-    private RobotInfo[] nearbyFriendlies;
+    private static boolean[] buggingTo = new boolean[32001];
 
     public Soldier(RobotController rc) {
         super(rc);
+        Bug.init(rc);
     }
 
     @Override
     protected void doTurn() throws GameActionException {
-        setBytecodeIndicator(0, "before readbroadcasts");
         processAllBroadcasts();
-        setBytecodeIndicator(1, "after readbroadcasts");
-        if (zombieDen == null) {
-            setIndicatorString(0, "zombie den is null");
-        }
         senseRobots();
         shootZombies();
         shootEnemies();
@@ -236,7 +235,8 @@ public class Soldier extends Robot {
     }
 
     private void moveTowardDen() throws GameActionException {
-        if (!rc.isCoreReady()) {
+        if (nearbyZombies.length > 0
+                || !rc.isCoreReady()) {
             return;
         }
 
@@ -264,13 +264,47 @@ public class Soldier extends Robot {
 
         if (currentLocation.distanceSquaredTo(zombieDen.location) > 8) {
             setIndicatorString(2, "move toward den " + zombieDen.location);
-            if (roundNumber < MIN_SAFE_MOVE_ROUND) {
-                tryMoveToward(zombieDen.location);
+            Direction direction = currentLocation.directionTo(zombieDen.location);
+            if (buggingTo[zombieDen.id]
+                    || tooMuchRubble(direction)) {
+                Bug.setDestination(zombieDen.location);
+                buggingTo[zombieDen.id] = true;
+                if (roundNumber < MIN_SAFE_MOVE_ROUND) {
+                    tryMove(Bug.getDirection(currentLocation));
+                }
+                else {
+                    trySafeMove(Bug.getDirection(currentLocation), enemyTurretLocations);
+                }
             }
             else {
-                trySafeMoveToward(zombieDen.location, enemyTurretLocations);
+                if (roundNumber < MIN_SAFE_MOVE_ROUND) {
+                    tryMoveToward(zombieDen.location);
+                }
+                else {
+                    trySafeMoveToward(zombieDen.location, enemyTurretLocations);
+                }
             }
         }
+    }
+
+    private boolean tooMuchRubble(Direction direction) {
+        MapLocation forward = currentLocation.add(direction);
+        if (rc.senseRubble(forward) < TOO_MUCH_RUBBLE) {
+            return false;
+        }
+
+        forward = currentLocation.add(direction.rotateLeft());
+        if (rc.senseRubble(forward) < TOO_MUCH_RUBBLE) {
+            return false;
+        }
+
+        forward = currentLocation.add(direction.rotateRight());
+        if (rc.senseRubble(forward) < TOO_MUCH_RUBBLE) {
+            return false;
+        }
+
+        setIndicatorString(0, "TOO MUCH RUBBLE");
+        return true;
     }
 
     private void updateZombieMemory() {
@@ -298,7 +332,7 @@ public class Soldier extends Robot {
             if (zombie.type != RobotType.BIGZOMBIE
                     && zombie.type != RobotType.ZOMBIEDEN
                     && sawZombieLastTurn(zombie)) {
-                setIndicatorString(0, "move toward zombie not gettign closer");
+                setIndicatorString(2, "move toward zombie not gettign closer");
                 tryMoveToward(zombie.location);
                 break;
             }
@@ -317,7 +351,7 @@ public class Soldier extends Robot {
             return;
         }
 
-        setIndicatorString(0, "micro away from zombies");
+        setIndicatorString(2, "micro away from zombies");
         tryMove(DirectionUtil.getDirectionAwayFrom(attackableZombies, currentLocation));
     }
 
@@ -337,7 +371,7 @@ public class Soldier extends Robot {
 
         RobotInfo archon = RobotUtil.getRobotOfType(adjacentTeammates, RobotType.ARCHON);
         if (archon != null) {
-            setIndicatorString(0, "move away from archon");
+            setIndicatorString(2, "move away from archon");
             tryMove(archon.location.directionTo(currentLocation));
         }
     }
@@ -365,7 +399,7 @@ public class Soldier extends Robot {
             return;
         }
 
-        setIndicatorString(0, "move toward zombie");
+        setIndicatorString(2, "move toward zombie");
         tryMoveToward(zombieToAttack.location);
    }
 }

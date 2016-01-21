@@ -76,9 +76,26 @@ public class Scout extends Robot {
             zombiesDead.observe(roundSignals, roundNumber);
             setIndicatorString(2, "pair with " + myPair.ID);
             moveToSafety();
+            moveCloser();
             broadcastAllTurrets();
             broadcastZombies();
+            unpairIfZombiesAreClose();
         }
+    }
+
+    private void unpairIfZombiesAreClose() {
+        if (nearbyZombies.length > 0) {
+            myPair = null;
+        }
+    }
+
+    private void moveCloser() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        Direction towardEnemy = DirectionUtil.getDirectionToward(nearbyEnemies, currentLocation);
+        trySafeMove(towardEnemy, nearbyEnemies);
     }
 
 
@@ -101,7 +118,7 @@ public class Scout extends Robot {
 
         for (RobotInfo robot : enemyTurrets) {
             setIndicatorString(0, " " + robot.location);
-            Message message = MessageBuilder.buildTurretMessage(robot, roundNumber);
+            Message message = MessageBuilder.buildTurretMessage(robot);
             rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), senseRadius * 2);
         }
     }
@@ -207,7 +224,7 @@ public class Scout extends Robot {
         }
 
         zombieDens.add(den);
-        Message message = MessageBuilder.buildZombieMessage(den, roundNumber);
+        Message message = MessageBuilder.buildZombieMessage(den);
         setIndicatorString(1, "broadcast den " + den.location);
         rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), senseRadius * 6);
     }
@@ -217,7 +234,16 @@ public class Scout extends Robot {
             return;
         }
 
-        RobotInfo[] highValueTargets = RobotUtil.getRobotsOfType(nearbyEnemies, RobotType.TURRET, RobotType.ARCHON, RobotType.SCOUT);
+        RobotInfo[] highValueTargets = RobotUtil.getRobotsOfType(nearbyEnemies, RobotType.SCOUT);
+        if (highValueTargets != null
+                && highValueTargets.length != 0) {
+            RobotInfo closest = RobotUtil.getClosestRobotToLocation(highValueTargets, currentLocation);
+            Message target = MessageBuilder.buildTargetMessage(closest);
+            rc.broadcastMessageSignal(target.getFirst(), target.getSecond(), 2);
+            return;
+        }
+
+        highValueTargets = RobotUtil.getRobotsOfType(nearbyEnemies, RobotType.TURRET, RobotType.ARCHON);
         if (highValueTargets != null
                 && highValueTargets.length != 0) {
             RobotInfo closest = RobotUtil.getClosestRobotToLocation(highValueTargets, currentLocation);
@@ -353,7 +379,7 @@ public class Scout extends Robot {
             return;
         }
 
-        Message enemyMessage = MessageBuilder.buildEnemyMessage(lastEnemy, roundNumber);
+        Message enemyMessage = MessageBuilder.buildEnemyMessage(lastEnemy);
         rc.broadcastMessageSignal(enemyMessage.getFirst(), enemyMessage.getSecond(), senseRadius * 4);
     }
 
@@ -373,7 +399,7 @@ public class Scout extends Robot {
         }
 
         RobotInfo closestZombie = RobotUtil.getClosestRobotToLocation(nearbyZombies, currentLocation);
-        Message zombieMessage = MessageBuilder.buildZombieMessage(closestZombie, roundNumber);
+        Message zombieMessage = MessageBuilder.buildZombieMessage(closestZombie);
         rc.broadcastMessageSignal(zombieMessage.getFirst(), zombieMessage.getSecond(), ZOMBIE_BROADCAST_RADIUS);
     }
 

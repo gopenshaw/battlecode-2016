@@ -359,6 +359,26 @@ public class RobotUtil {
         return trimmed;
     }
 
+    public static RobotInfo[] removeRobotsOfType(RobotInfo[] robots, RobotType typeToRemove1, RobotType typeToRemove2) {
+        int countToRemove = 0;
+        int robotCount = robots.length;
+        for (int i = 0; i < robotCount; i++) {
+            if (robots[i].type == typeToRemove1
+                    || robots[i].type == typeToRemove2) countToRemove++;
+        }
+
+        RobotInfo[] trimmed = new RobotInfo[robotCount - countToRemove];
+        int index = 0;
+        for (int i = 0; i < robotCount; i++) {
+            if (robots[i].type != typeToRemove1
+                    && robots[i].type != typeToRemove2) {
+                trimmed[index++] = robots[i];
+            }
+        }
+
+        return trimmed;
+    }
+
     public static RobotInfo getHighestPriorityEnemyUnit(RobotInfo[] enemies) {
         int highestPriority = -1;
         int enemyCount = enemies.length;

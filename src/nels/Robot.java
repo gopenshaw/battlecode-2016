@@ -145,6 +145,10 @@ public abstract class Robot {
 
     private void tryMoveDig(Direction targetDirection) throws GameActionException {
         int initialDirection = getDirectionNumber(targetDirection);
+        if (initialDirection < 0) {
+            return;
+        }
+
         Direction currentDirection;
         for (int i = 0; i < moveSequence1.length; i++) {
             currentDirection = directions[(initialDirection + moveSequence1[i]) % 8];
@@ -193,6 +197,11 @@ public abstract class Robot {
         return trySafeMove(direction, nearbyEnemies);
     }
 
+    protected boolean trySafeMoveToward(MapLocation location, RobotInfo[] nearbyEnemies, RobotInfo[] nearbyZombies) throws GameActionException {
+        Direction direction = currentLocation.directionTo(location);
+        return trySafeMove(direction, nearbyEnemies, nearbyZombies);
+    }
+
     protected boolean trySafeMoveToward(MapLocation location, MapLocation[] enemyTurretLocations) throws GameActionException {
         Direction direction = currentLocation.directionTo(location);
         return trySafeMove(direction, enemyTurretLocations);
@@ -206,6 +215,10 @@ public abstract class Robot {
     protected void trySafeMoveDig(Direction targetDirection, RobotData[] nearbyEnemies, int enemyCount) throws GameActionException {
         MapLocation currentLocation = rc.getLocation();
         int initialDirection = getDirectionNumber(targetDirection);
+        if (initialDirection < 0) {
+            return;
+        }
+
         Direction currentDirection;
         for (int i = 0; i < moveSequence1.length; i++) {
             currentDirection = directions[(initialDirection + moveSequence1[i]) % 8];
@@ -233,43 +246,25 @@ public abstract class Robot {
         tryClearRubble(targetDirection);
     }
 
-    protected boolean trySafeMove(Direction direction,
-                                  MapLocation[] enemyTurretLocations) throws GameActionException {
+    protected boolean trySafeMove(Direction direction, MapLocation[] enemyTurretLocations) throws GameActionException {
         MapLocation currentLocation = rc.getLocation();
-        MapLocation next = currentLocation.add(direction);
-        if (canMoveSafely(direction, next, enemyTurretLocations)) {
-            rc.move(direction);
-            return true;
+        int initialDirection = getDirectionNumber(direction);
+        if (initialDirection < 0) {
+            return false;
         }
 
-        Direction left = direction.rotateLeft();
-        next = currentLocation.add(left);
-        if (canMoveSafely(left, next, enemyTurretLocations)) {
-            rc.move(left);
-            return true;
-        }
-
-        Direction right = direction.rotateRight();
-        next = currentLocation.add(right);
-        if (canMoveSafely(right, next, enemyTurretLocations)) {
-            rc.move(right);
-            return true;
-        }
-
-        for (int i = 0; i < 2; i++) {
-            left = left.rotateLeft();
-            next = currentLocation.add(left);
-            if (canMoveSafely(left, next, enemyTurretLocations)) {
-                rc.move(left);
+        for (int i = 0; i < rotations.length; i++) {
+            Direction d = directions[(initialDirection + rotations[i]) % 8];
+            MapLocation next = currentLocation.add(d);
+            if (canMoveSafely(d, next, enemyTurretLocations)) {
+                rc.move(d);
                 return true;
             }
+        }
 
-            right = right.rotateRight();
-            next = currentLocation.add(right);
-            if (canMoveSafely(right, next, enemyTurretLocations)) {
-                rc.move(right);
-                return true;
-            }
+        if (type == RobotType.TTM
+                || type == RobotType.SCOUT) {
+            return false;
         }
 
         return tryClearRubble(direction);
@@ -278,40 +273,23 @@ public abstract class Robot {
     protected boolean trySafeMove(Direction direction,
                                   RobotData[] nearbyEnemies) throws GameActionException {
         MapLocation currentLocation = rc.getLocation();
-        MapLocation next = currentLocation.add(direction);
-        if (canMoveSafely(direction, next, nearbyEnemies)) {
-            rc.move(direction);
-            return true;
+        int initialDirection = getDirectionNumber(direction);
+        if (initialDirection < 0) {
+            return false;
         }
 
-        Direction left = direction.rotateLeft();
-        next = currentLocation.add(left);
-        if (canMoveSafely(left, next, nearbyEnemies)) {
-            rc.move(left);
-            return true;
-        }
-
-        Direction right = direction.rotateRight();
-        next = currentLocation.add(right);
-        if (canMoveSafely(right, next, nearbyEnemies)) {
-            rc.move(right);
-            return true;
-        }
-
-        for (int i = 0; i < 2; i++) {
-            left = left.rotateLeft();
-            next = currentLocation.add(left);
-            if (canMoveSafely(left, next, nearbyEnemies)) {
-                rc.move(left);
+        for (int i = 0; i < rotations.length; i++) {
+            Direction d = directions[(initialDirection + rotations[i]) % 8];
+            MapLocation next = currentLocation.add(d);
+            if (canMoveSafely(d, next, nearbyEnemies)) {
+                rc.move(d);
                 return true;
             }
+        }
 
-            right = right.rotateRight();
-            next = currentLocation.add(right);
-            if (canMoveSafely(right, next, nearbyEnemies)) {
-                rc.move(right);
-                return true;
-            }
+        if (type == RobotType.TTM
+                || type == RobotType.SCOUT) {
+            return false;
         }
 
         return tryClearRubble(direction);
@@ -334,53 +312,63 @@ public abstract class Robot {
                 && !RobotUtil.anyCanAttack(nearbyEnemies, enemyCount, next);
     }
 
-    protected boolean trySafeMove(Direction direction,
-                               RobotInfo[] nearbyEnemies,
-                               RobotInfo[] nearbyZombies) throws GameActionException {
+    protected boolean trySafeMove(Direction direction, RobotInfo[] nearbyEnemies) throws GameActionException {
         MapLocation currentLocation = rc.getLocation();
-        MapLocation next = currentLocation.add(direction);
-        if (canMoveSafely(direction, next, nearbyEnemies, nearbyZombies)) {
-            rc.move(direction);
-            return true;
+        int initialDirection = getDirectionNumber(direction);
+        if (initialDirection < 0) {
+            return false;
         }
 
-        Direction left = direction.rotateLeft();
-        next = currentLocation.add(left);
-        if (canMoveSafely(left, next, nearbyEnemies, nearbyZombies)) {
-            rc.move(left);
-            return true;
-        }
-
-        Direction right = direction.rotateRight();
-        next = currentLocation.add(right);
-        if (canMoveSafely(right, next, nearbyEnemies, nearbyZombies)) {
-            rc.move(right);
-            return true;
-        }
-
-        for (int i = 0; i < 2; i++) {
-            left = left.rotateLeft();
-            next = currentLocation.add(left);
-            if (canMoveSafely(left, next, nearbyEnemies, nearbyZombies)) {
-                rc.move(left);
-                return true;
-            }
-
-            right = right.rotateRight();
-            next = currentLocation.add(right);
-            if (canMoveSafely(right, next, nearbyEnemies, nearbyZombies)) {
-                rc.move(right);
+        for (int i = 0; i < rotations.length; i++) {
+            Direction d = directions[(initialDirection + rotations[i]) % 8];
+            MapLocation next = currentLocation.add(d);
+            if (canMoveSafely(d, next, nearbyEnemies)) {
+                rc.move(d);
                 return true;
             }
         }
 
-        return false;
+        if (type == RobotType.TTM
+                || type == RobotType.SCOUT) {
+            return false;
+        }
+
+        return tryClearRubble(direction);
+    }
+
+    protected boolean trySafeMove(Direction direction, RobotInfo[] nearbyEnemies, RobotInfo[] nearbyZombies) throws GameActionException {
+        MapLocation currentLocation = rc.getLocation();
+        int initialDirection = getDirectionNumber(direction);
+        if (initialDirection < 0) {
+            return false;
+        }
+
+        for (int i = 0; i < rotations.length; i++) {
+            Direction d = directions[(initialDirection + rotations[i]) % 8];
+            MapLocation next = currentLocation.add(d);
+            if (canMoveSafely(d, next, nearbyEnemies, nearbyZombies)) {
+                rc.move(d);
+                return true;
+            }
+        }
+
+        if (type == RobotType.TTM
+                || type == RobotType.SCOUT) {
+            return false;
+        }
+
+        return tryClearRubble(direction);
     }
 
     private boolean canMoveSafely(Direction direction, MapLocation next, RobotInfo[] nearbyEnemies, RobotInfo[] nearbyZombies) {
         return rc.canMove(direction)
                 && !RobotUtil.anyCanAttack(nearbyEnemies, next)
                 && !RobotUtil.anyCanAttack(nearbyZombies, next);
+    }
+
+    private boolean canMoveSafely(Direction direction, MapLocation next, RobotInfo[] nearbyEnemies) {
+        return rc.canMove(direction)
+                && !RobotUtil.anyCanAttack(nearbyEnemies, next);
     }
 
     protected void clearRubble() throws GameActionException {
@@ -436,6 +424,10 @@ public abstract class Robot {
 
     protected void tryMove(Direction targetDirection) throws GameActionException {
         int initialDirection = getDirectionNumber(targetDirection);
+        if (initialDirection < 0) {
+            return;
+        }
+
         Direction currentDirection;
         for (int i = 0; i < rotations.length; i++) {
             currentDirection = directions[(initialDirection + rotations[i]) % 8];
