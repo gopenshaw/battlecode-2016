@@ -222,12 +222,39 @@ public class Scout extends Robot {
             RobotInfo closest = RobotUtil.getClosestRobotToLocation(highValueTargets, currentLocation);
             Message target = MessageBuilder.buildTargetMessage(closest);
             rc.broadcastMessageSignal(target.getFirst(), target.getSecond(), 2);
+            return;
         }
-        else {
-            RobotInfo closest = RobotUtil.getClosestRobotToLocation(nearbyEnemies, currentLocation);
+
+        int enemyTurretCount = countEnemyTurrets();
+        if (enemyTurretCount > 0) {
+            RobotData closest = RobotUtil.getClosestRobotToLocation(enemyTurrets, enemyTurretCount, currentLocation);
             Message target = MessageBuilder.buildTargetMessage(closest);
             rc.broadcastMessageSignal(target.getFirst(), target.getSecond(), 2);
+            return;
         }
+
+
+        RobotInfo closest = RobotUtil.getClosestRobotToLocation(nearbyEnemies, currentLocation);
+        if (closest == null) {
+            return;
+        }
+
+        Message target = MessageBuilder.buildTargetMessage(closest);
+        rc.broadcastMessageSignal(target.getFirst(), target.getSecond(), 2);
+    }
+
+    private int countEnemyTurrets() {
+        int count = 0;
+        for (int i = 0; i < enemyTurrets.length; i++) {
+            if (enemyTurrets[i] == null) {
+                return count;
+            }
+            else {
+                count++;
+            }
+        }
+
+        return count;
     }
 
     private void moveTowardMyPair() throws GameActionException {

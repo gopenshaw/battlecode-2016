@@ -371,4 +371,18 @@ public class RobotUtil {
 
         return -1;
     }
+
+    public static RobotData getClosestRobotToLocation(RobotData[] robots, int robotCount, MapLocation currentLocation) {
+        RobotData closest = null;
+        int closestDistance = 1000000;
+        for (int i = 0; i < robotCount; i++) {
+            int currentDistance = currentLocation.distanceSquaredTo(robots[i].location);
+            if (currentDistance < closestDistance) {
+                closestDistance = currentDistance;
+                closest = robots[i];
+            }
+        }
+
+        return closest;
+    }
 }

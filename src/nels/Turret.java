@@ -90,7 +90,6 @@ public class Turret extends Robot {
     private void getTarget() {
         int[] message = getFirstMessageOfType(roundSignals, MessageType.TARGET);
         if (message == null) {
-            setIndicatorString(2, "i have no target");
             return;
         }
 

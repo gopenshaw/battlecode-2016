@@ -91,4 +91,8 @@ public class MessageBuilder {
 
         return new Message(first, second, MessageType.DESTROYED_DENS);
     }
+
+    public static Message buildTargetMessage(RobotData closest) {
+        return buildRobotMessage(closest.health, closest.id, closest.type, closest.location, MessageType.TARGET);
+    }
 }
