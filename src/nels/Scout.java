@@ -14,7 +14,9 @@ public class Scout extends Robot {
     private int ignoreEnemiesRound;
     private RobotInfo[] nearbyEnemies;
     private Signal[] roundSignals;
+
     private RobotInfo lastEnemy;
+
     private RobotInfo lastZombieAddedToMessageStore = null;
     private RobotInfo[] nearbyFriendlies;
     private RobotInfo myPair;
@@ -44,12 +46,17 @@ public class Scout extends Robot {
         if (myPair == null) {
             zombiesDead.participate(roundSignals, roundNumber);
             setIndicatorString(2, "zombies dead " + zombiesDead.isConsensusReached());
+            if (!zombiesDead.isConsensusReached()) {
+                discoverDestroyedDens();
+                readDenMessages();
+            }
 
-            discoverDestroyedDens();
-            readDenMessages();
             addNearbyDensToDenQueue();
             broadcastZombies();
-            broadcastDensAndDestroyedDens();
+            if (!zombiesDead.isConsensusReached()) {
+                broadcastDensAndDestroyedDens();
+            }
+
             broadcastEnemy();
             moveAwayFromZombies();
             explore();
@@ -197,6 +204,7 @@ public class Scout extends Robot {
 
         zombieDens.add(den);
         Message message = MessageBuilder.buildZombieMessage(den, roundNumber);
+        setIndicatorString(1, "broadcast den " + den.location);
         rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), senseRadius * 2);
     }
 
@@ -344,8 +352,11 @@ public class Scout extends Robot {
         nearbyFriendlies = senseNearbyFriendlies();
 
         if (nearbyEnemies.length > 0) {
-            RobotInfo closest = RobotUtil.getClosestRobotToLocation(nearbyEnemies, currentLocation);
-            lastEnemy = closest;
+            RobotInfo highPriority = RobotUtil.getHighestPriorityEnemyUnit(nearbyEnemies);
+            if (lastEnemy == null
+                    || RobotUtil.getPriority(highPriority.type) >= RobotUtil.getPriority(lastEnemy.type)) {
+                lastEnemy = highPriority;
+            }
         }
     }
 
@@ -371,7 +382,7 @@ public class Scout extends Robot {
             exploreDirection = getExploreDirection(null);
         }
 
-        if (nearbyEnemies.length > 0
+        if (RobotUtil.anyCanAttack(nearbyEnemies, currentLocation)
                 && roundNumber > ignoreEnemiesRound + ROUNDS_TO_REVERSE) {
             exploreDirection = exploreDirection.opposite();
             ignoreEnemiesRound = roundNumber;

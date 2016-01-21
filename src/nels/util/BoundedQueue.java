@@ -56,6 +56,10 @@ public class BoundedQueue<T> {
 
         return false;
     }
+
+    public T peek() {
+        return memory[head];
+    }
 }
 
 

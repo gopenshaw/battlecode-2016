@@ -6,6 +6,13 @@ import battlecode.common.RobotType;
 import nels.RobotData;
 
 public class RobotUtil {
+    private static final RobotType[] ENEMY_PRIORITY = {
+            RobotType.SCOUT, RobotType.VIPER,
+            RobotType.SOLDIER, RobotType.GUARD,
+            RobotType.TTM,
+            RobotType.TURRET, RobotType.ARCHON
+    };
+
     public static RobotInfo getLowestHealthRobot(RobotInfo[] robots) {
         double minHealth = Double.MAX_VALUE;
         int minIndex = -1;
@@ -319,5 +326,48 @@ public class RobotUtil {
         }
 
         return false;
+    }
+
+    public static RobotInfo[] removeRobotsOfType(RobotInfo[] robots, RobotType typeToRemove) {
+        int countToRemove = 0;
+        int robotCount = robots.length;
+        for (int i = 0; i < robotCount; i++) {
+            if (robots[i].type == typeToRemove) countToRemove++;
+        }
+
+        RobotInfo[] trimmed = new RobotInfo[countToRemove];
+        int index = 0;
+        for (int i = 0; i < robotCount; i++) {
+            if (robots[i].type == typeToRemove) {
+                trimmed[index++] = robots[i];
+            }
+        }
+
+        return trimmed;
+    }
+
+    public static RobotInfo getHighestPriorityEnemyUnit(RobotInfo[] enemies) {
+        int highestPriority = -1;
+        int enemyCount = enemies.length;
+        RobotInfo highestRobot = null;
+        for (int i = 0; i < enemyCount; i++) {
+            int currentPriority = RobotUtil.getPriority(enemies[i].type);
+            if (currentPriority > highestPriority) {
+                highestPriority = currentPriority;
+                highestRobot = enemies[i];
+            }
+        }
+
+        return highestRobot;
+    }
+
+    public static int getPriority(RobotType type) {
+        for (int i = 0; i < ENEMY_PRIORITY.length; i++) {
+            if (type == ENEMY_PRIORITY[i]) {
+                return i;
+            }
+        }
+
+        return -1;
     }
 }

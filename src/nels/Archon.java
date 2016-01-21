@@ -4,13 +4,11 @@ import battlecode.common.*;
 import nels.message.MessageParser;
 import nels.message.consensus.ZombiesDeadConsensus;
 import nels.nav.Bug;
-import nels.util.AverageMapLocation;
-import nels.util.DirectionUtil;
-import nels.util.LocationUtil;
-import nels.util.RobotUtil;
+import nels.util.*;
 
 public class Archon extends Robot {
 
+    private static final int SCOUT_ALIVE_ROUNDS = 200;
     private RobotType[] lowUnitCountBuildQueue = {
             RobotType.SCOUT, RobotType.SOLDIER, RobotType.SOLDIER,
             RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER,
@@ -33,6 +31,9 @@ public class Archon extends Robot {
     private double lastRoundHealth;
     private RobotInfo[] nearbyFriendlies;
     private final ZombiesDeadConsensus zombiesDead;
+    private int[] scoutAliveRound = new int[32001];
+    private RobotQueueNoDuplicates aliveScouts = new RobotQueueNoDuplicates(30);
+    private int scoutCountEstimate;
 
     public Archon(RobotController rc) {
         super(rc);
@@ -45,6 +46,7 @@ public class Archon extends Robot {
         roundSignals = rc.emptySignalQueue();
         getTurretBroadcasts(roundSignals);
         senseRobots();
+        estimateScoutCount();
         
         zombiesDead.updateZombieCount(nearbyZombies.length, roundNumber);
         zombiesDead.participate(roundSignals, roundNumber);
@@ -59,6 +61,32 @@ public class Archon extends Robot {
         lastRoundHealth = rc.getHealth();
     }
 
+    private void estimateScoutCount() {
+        RobotInfo[] nearbyScouts = RobotUtil.getRobotsOfType(nearbyFriendlies, RobotType.SCOUT);
+        if (nearbyScouts == null) {
+            return;
+        }
+
+        for (int i = 0; i < nearbyScouts.length; i++) {
+            RobotInfo scout = nearbyScouts[i];
+            scoutAliveRound[scout.ID] = roundNumber;
+            aliveScouts.add(new RobotData(scout.ID, null, (int)scout.health, scout.type));
+        }
+
+        if (!aliveScouts.isEmpty()) {
+            RobotData oldScout = aliveScouts.peek();
+            if (scoutAliveRound[oldScout.id] + SCOUT_ALIVE_ROUNDS > roundNumber) {
+                aliveScouts.add(oldScout);
+            }
+            else {
+                aliveScouts.remove();
+            }
+        }
+
+        scoutCountEstimate = aliveScouts.getSize();
+        setIndicatorString(2, "scout alive estimate: " + scoutCountEstimate);
+    }
+
     private void moveWithArmy() throws GameActionException {
         if (nearbyEnemies.length > 0
                 || nearbyZombies.length > 0
@@ -67,7 +95,12 @@ public class Archon extends Robot {
             return;
         }
 
-        MapLocation armyCenter = RobotUtil.findAverageLocation(nearbyFriendlies);
+        RobotInfo[] nonArchonUnits = RobotUtil.removeRobotsOfType(nearbyFriendlies, RobotType.ARCHON);
+        if (nonArchonUnits.length == 0) {
+            return;
+        }
+
+        MapLocation armyCenter = RobotUtil.findAverageLocation(nonArchonUnits);
         setIndicatorString(2, "army center is " + armyCenter);
         if (armyCenter.distanceSquaredTo(currentLocation) > 8) {
             setIndicatorString(2, "moving toward center");
@@ -138,12 +171,25 @@ public class Archon extends Robot {
 
         if (rc.getRobotCount() > Config.HIGH_UNIT_COUNT
                 || (roundNumber > 600 && rc.getTeamParts() > 350)) {
-            if (tryBuild(highUnitCountBuildQueue[highUnitQueuePosition % highUnitCountBuildQueue.length])) {
+            RobotType robotType = highUnitCountBuildQueue[highUnitQueuePosition % highUnitCountBuildQueue.length];
+            if (robotType == RobotType.SCOUT
+                    && scoutCountEstimate > 8) {
+                highUnitQueuePosition++;
+                robotType = highUnitCountBuildQueue[highUnitQueuePosition % highUnitCountBuildQueue.length];
+            }
+
+            if (tryBuild(robotType)) {
                 highUnitQueuePosition++;
             }
         }
         else {
-            if (tryBuild(lowUnitCountBuildQueue[lowUnitQueuePosition % lowUnitCountBuildQueue.length])) {
+            RobotType robotType = lowUnitCountBuildQueue[lowUnitQueuePosition % lowUnitCountBuildQueue.length];
+            if (robotType == RobotType.SCOUT
+                    && scoutCountEstimate > 8) {
+                lowUnitQueuePosition++;
+                robotType = lowUnitCountBuildQueue[lowUnitQueuePosition % lowUnitCountBuildQueue.length];
+            }
+            if (tryBuild(robotType)) {
                 lowUnitQueuePosition++;
             }
         }

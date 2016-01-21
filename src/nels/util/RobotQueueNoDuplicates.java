@@ -29,6 +29,14 @@ public class RobotQueueNoDuplicates {
         return robot;
     }
 
+    public RobotData peek() {
+        if (robots.isEmpty()) {
+            return null;
+        }
+
+        return robots.peek();
+    }
+
     public boolean isEmpty() {
         return robots.isEmpty();
     }

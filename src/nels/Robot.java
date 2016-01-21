@@ -23,7 +23,13 @@ public abstract class Robot {
 
     private StringBuilder[] debugString;
 
-    private final int MAX_RUBBLE_CAN_IGNORE = 50;
+    private static final int MAX_RUBBLE_CAN_IGNORE = 50;
+    private static final int MAX_RUBBLE_CAN_PASS = 10000;
+
+    private static int[] rotations = {0, 7, 1, 6, 2, 5, 3};
+    private static int[] moveSequence1 = {0, 7, 1};
+    private static int[] digSequence1 = {0, 7, 1};
+    private static int[] moveSequence2 = {6, 2, 5, 3};
 
     protected final Direction[] directions = {Direction.NORTH, Direction.NORTH_EAST, Direction.EAST,
         Direction.SOUTH_EAST, Direction.SOUTH, Direction.SOUTH_WEST, Direction.WEST, Direction.NORTH_WEST};
@@ -117,28 +123,6 @@ public abstract class Robot {
         return rc.senseNearbyRobots(senseRadius, Team.NEUTRAL);
     }
 
-    protected void tryMoveOnto(MapLocation location) throws GameActionException {
-        MapLocation currentLocation = rc.getLocation();
-        if (currentLocation.equals(location)) {
-            return;
-        }
-
-        if (currentLocation.isAdjacentTo(location)
-                && rc.senseRubble(location) >= 100) {
-            rc.clearRubble(currentLocation.directionTo(location));
-            return;
-        }
-
-        Direction moveDirection = currentLocation.directionTo(location);
-        if (type == RobotType.ARCHON
-                || type == RobotType.TTM) {
-            tryMove(moveDirection);
-        }
-        else {
-            tryMoveDig(moveDirection);
-        }
-    }
-
     protected void tryMoveToward(MapLocation location) throws GameActionException {
         MapLocation currentLocation = rc.getLocation();
         if (currentLocation.equals(location)) {
@@ -156,9 +140,6 @@ public abstract class Robot {
     }
 
     private void tryMoveDig(Direction targetDirection) throws GameActionException {
-        int[] moveSequence1 = {0, 7, 1};
-        int[] digSequence1 = {0, 7, 1};
-        int[] moveSequence2 = {6, 2, 5, 3};
         int initialDirection = getDirectionNumber(targetDirection);
         Direction currentDirection;
         for (int i = 0; i < moveSequence1.length; i++) {
@@ -171,6 +152,9 @@ public abstract class Robot {
 
         for (int i = 0; i < digSequence1.length; i++) {
             currentDirection = directions[(initialDirection + digSequence1[i]) % 8];
+            if (tryDig(currentLocation, currentDirection)) {
+                return;
+            }
         }
 
         for (int i = 0; i < moveSequence2.length; i++) {
@@ -182,6 +166,17 @@ public abstract class Robot {
         }
 
         tryClearRubble(targetDirection);
+    }
+
+    private boolean tryDig(MapLocation currentLocation, Direction direction) throws GameActionException {
+        MapLocation nextLocation = currentLocation.add(direction);
+        if (rc.onTheMap(nextLocation)
+                && rc.senseRubble(nextLocation) < MAX_RUBBLE_CAN_PASS) {
+            rc.clearRubble(direction);
+            return true;
+        }
+
+        return false;
     }
 
     protected boolean trySafeMoveToward(MapLocation location, RobotData[] nearbyEnemies) throws GameActionException {
@@ -337,7 +332,6 @@ public abstract class Robot {
     }
 
     protected void tryMove(Direction targetDirection) throws GameActionException {
-        int[] rotations = {0, 7, 1, 6, 2, 5, 3};
         int initialDirection = getDirectionNumber(targetDirection);
         Direction currentDirection;
         for (int i = 0; i < rotations.length; i++) {
