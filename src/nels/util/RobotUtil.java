@@ -295,16 +295,17 @@ public class RobotUtil {
 
     public static RobotInfo[] removeRobots(RobotInfo[] robots, RobotData[] robotsToRemove) {
         int removeCount = 0;
-        for (int i = 0; i < robots.length; i++) {
+        int robotCount = robots.length;
+        for (int i = 0; i < robotCount; i++) {
             if (RobotUtil.robotInCollection(robots[i], robotsToRemove)) {
                 removeCount++;
             }
         }
 
-        int newCount = robots.length - removeCount;
+        int newCount = robotCount - removeCount;
         RobotInfo[] trimmed = new RobotInfo[newCount];
         int index = 0;
-        for (int i = 0; i < robots.length; i++) {
+        for (int i = 0; i < robotCount; i++) {
             if (!RobotUtil.robotInCollection(robots[i], robotsToRemove)) {
                 trimmed[index++] = robots[i];
             }

@@ -277,7 +277,20 @@ public class Scout extends Robot {
             return;
         }
 
-        tryPairWithOneRobot(sensedEnemyTurrets);
+        setIndicatorString(1, "reading turrets");
+        for (int i = 0; i < enemyTurrets.length; i++) {
+            if (enemyTurrets[i] == null) {
+                break;
+            }
+            else {
+                setIndicatorString(1, " " + enemyTurrets[i].location);
+            }
+        }
+
+        RobotInfo[] turretsNotBeingBroadcast = RobotUtil.removeRobots(sensedEnemyTurrets, enemyTurrets);
+        if (turretsNotBeingBroadcast.length > 0) {
+            tryPairWithOneRobot(turretsNotBeingBroadcast);
+        }
     }
 
     private boolean tryPairWithOneRobot(RobotInfo[] turrets) throws GameActionException {
