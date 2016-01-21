@@ -21,7 +21,7 @@ public class Soldier extends Robot {
     BoundedQueue<Integer> zombieMemory = new BoundedQueue<Integer>(3);
     private LocationCollection zombieDens = new LocationCollection(20);
     private RobotData zombieToAttack;
-    private MapLocation enemyLocation;
+    private RobotData enemyToApproach;
     private RobotData zombieDen;
     private boolean[] denDestroyed = new boolean[32001];
 
@@ -103,7 +103,7 @@ public class Soldier extends Robot {
             }
         }
         else if (messageType == MessageType.ENEMY) {
-            enemyLocation = MessageParser.getRobotData(message[0], message[1]).location;
+            enemyToApproach = MessageParser.getRobotData(message[0], message[1]);
         }
         else if (messageType == MessageType.ENEMY_TURRET
                         && enemyTurretCount < Config.MAX_ENEMY_TURRETS) {
@@ -143,6 +143,7 @@ public class Soldier extends Robot {
         int maxEnemies = 6;
         BoundedQueue<RobotInfo> enemiesCanAttackMe = RobotUtil.getEnemiesThatCanAttack(nearbyEnemies, currentLocation, maxEnemies);
         int canAttackMe = enemiesCanAttackMe.getSize();
+        setIndicatorString(0, "can attack me: " + canAttackMe);
         if (canAttackMe == 0) {
             return;
         }
@@ -155,6 +156,7 @@ public class Soldier extends Robot {
         }
 
         if (canAttackMe + advantage > canAttackEnemy) {
+            setIndicatorString(2, "micro away from enemies");
             rc.broadcastSignal(senseRadius * 2);
             tryMove(DirectionUtil.getDirectionAwayFrom(nearbyEnemies, currentLocation));
         }
@@ -180,13 +182,18 @@ public class Soldier extends Robot {
             return;
         }
 
-        if (enemyLocation != null) {
+        if (enemyToApproach != null) {
             setIndicatorString(2, "try move to enemy location");
             if (enemyTurrets.length > 0) {
-                trySafeMoveToward(enemyLocation, enemyTurretLocations);
+                trySafeMoveToward(enemyToApproach.location, enemyTurretLocations);
             }
             else {
-                tryMoveToward(enemyLocation);
+                if (enemyToApproach.type != RobotType.TURRET) {
+                    tryMoveToward(enemyToApproach.location);
+                }
+                else {
+                    trySafeMoveTowardTurret(enemyToApproach);
+                }
             }
         }
     }
@@ -256,6 +263,7 @@ public class Soldier extends Robot {
         }
 
         if (currentLocation.distanceSquaredTo(zombieDen.location) > 8) {
+            setIndicatorString(2, "move toward den " + zombieDen.location);
             if (roundNumber < MIN_SAFE_MOVE_ROUND) {
                 tryMoveToward(zombieDen.location);
             }

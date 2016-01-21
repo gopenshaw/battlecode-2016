@@ -111,7 +111,11 @@ public class Turret extends Robot {
             return;
         }
 
-        setIndicatorString(1, "e");
+        setIndicatorString(0, "enemy turrets: ");
+        for (int i = 0; i < enemyTurretCount; i++) {
+            setIndicatorString(0, " " + enemyTurrets[i].location);
+        }
+
         if (enemyTurretCount == 0) {
             tryMoveToward(enemyLocation);
         }

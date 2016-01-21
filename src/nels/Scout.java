@@ -209,7 +209,7 @@ public class Scout extends Robot {
         zombieDens.add(den);
         Message message = MessageBuilder.buildZombieMessage(den, roundNumber);
         setIndicatorString(1, "broadcast den " + den.location);
-        rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), senseRadius * 2);
+        rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), senseRadius * 6);
     }
 
     private void broadcastTargets() throws GameActionException {

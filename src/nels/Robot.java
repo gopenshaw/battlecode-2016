@@ -183,6 +183,11 @@ public abstract class Robot {
         return false;
     }
 
+    protected void trySafeMoveTowardTurret(RobotData turret) throws GameActionException {
+        RobotData[] turretArray = {turret};
+        trySafeMoveDigToward(turret.location, turretArray, 1);
+    }
+
     protected boolean trySafeMoveToward(MapLocation location, RobotData[] nearbyEnemies) throws GameActionException {
         Direction direction = currentLocation.directionTo(location);
         return trySafeMove(direction, nearbyEnemies);
