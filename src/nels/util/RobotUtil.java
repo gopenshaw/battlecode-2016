@@ -335,10 +335,10 @@ public class RobotUtil {
             if (robots[i].type == typeToRemove) countToRemove++;
         }
 
-        RobotInfo[] trimmed = new RobotInfo[countToRemove];
+        RobotInfo[] trimmed = new RobotInfo[robotCount - countToRemove];
         int index = 0;
         for (int i = 0; i < robotCount; i++) {
-            if (robots[i].type == typeToRemove) {
+            if (robots[i].type != typeToRemove) {
                 trimmed[index++] = robots[i];
             }
         }
