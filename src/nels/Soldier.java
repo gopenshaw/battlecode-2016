@@ -24,9 +24,13 @@ public class Soldier extends Robot {
     private MapLocation enemyLocation;
     private RobotData zombieDen;
     private boolean[] denDestroyed = new boolean[32001];
+
     private MapLocation helpLocation;
+    private static final int MAX_HELP_LOCATIONS = 4;
+    private MapLocation[] helpLocations = new MapLocation[MAX_HELP_LOCATIONS];
     private int helpLocationTurn = 0;
     private static final int IGNORE_HELP_TURNS = 3;
+
     private RobotInfo[] nearbyFriendlies;
 
     public Soldier(RobotController rc) {
@@ -36,8 +40,11 @@ public class Soldier extends Robot {
     @Override
     protected void doTurn() throws GameActionException {
         setBytecodeIndicator(0, "before readbroadcasts");
-        readBroadcasts();
+        processAllBroadcasts();
         setBytecodeIndicator(1, "after readbroadcasts");
+        if (zombieDen == null) {
+            setIndicatorString(0, "zombie den is null");
+        }
         senseRobots();
         shootZombies();
         shootEnemies();
@@ -53,6 +60,81 @@ public class Soldier extends Robot {
         spread();
     }
 
+    private void processAllBroadcasts() {
+        int helpLocationCount = 0;
+        enemyTurretCount = 0;
+        zombieToAttack = null;
+
+        roundSignals = rc.emptySignalQueue();
+        int signalCount = roundSignals.length;
+        for (int i = 0; i < signalCount; i++) {
+            if (roundSignals[i].getTeam() != team) {
+                continue;
+            }
+
+            int[] message = roundSignals[i].getMessage();
+            if (message == null) {
+                //--broadcasts with no message are "help" messages
+                if (helpLocationCount < MAX_HELP_LOCATIONS) {
+                    helpLocations[helpLocationCount++] = roundSignals[i].getLocation();
+                    helpLocationTurn = roundNumber;
+                }
+            }
+            else {
+                processBroadcastWithMessage(message);
+            }
+        }
+
+        if (helpLocationCount > 0) {
+            helpLocation = LocationUtil.findClosestLocation(helpLocations, helpLocationCount, currentLocation);
+        }
+    }
+
+    private void processBroadcastWithMessage(int[] message) {
+        MessageType messageType = MessageParser.getMessageType(message[0], message[1]);
+        if (messageType == MessageType.ZOMBIE) {
+            RobotData zombie = MessageParser.getRobotData(message[0], message[1]);
+            if (zombie.type == RobotType.ZOMBIEDEN) {
+                setIndicatorString(1, "adding den " + zombie.location);
+                updateZombieDen(zombie);
+            }
+            else {
+                zombieToAttack = zombie;
+            }
+        }
+        else if (messageType == MessageType.ENEMY) {
+            enemyLocation = MessageParser.getRobotData(message[0], message[1]).location;
+        }
+        else if (messageType == MessageType.ENEMY_TURRET
+                        && enemyTurretCount < Config.MAX_ENEMY_TURRETS) {
+            enemyTurretLocations[enemyTurretCount++] = MessageParser.getLocation(message);
+        }
+        else if (messageType == MessageType.DESTROYED_DENS) {
+            DestroyedDenData denData = MessageParser.getDestroyedDens(message[0], message[1]);
+            updateDestroyedDens(denData);
+        }
+    }
+
+    private void updateZombieDen(RobotData den) {
+        if (denDestroyed[den.id]
+                || (zombieDen != null
+                && den.location == zombieDen.location)) {
+            return;
+        }
+
+        //--we either add it to the queue, or replace our current destination
+        //  with this one
+        if (zombieDen == null) {
+            zombieDens.add(den);
+        }
+        else if (currentLocation.distanceSquaredTo(den.location)
+                < currentLocation.distanceSquaredTo(zombieDen.location)) {
+            //--let broadcast den overwrite ours if it is closer
+            zombieDens.add(zombieDen);
+            zombieDen = den;
+        }
+    }
+
     private void microAwayFromEnemies() throws GameActionException {
         if (!rc.isCoreReady()) {
             return;
@@ -66,8 +148,6 @@ public class Soldier extends Robot {
         }
 
         int canAttackEnemy = RobotUtil.countCanAttack(nearbyFriendlies, enemiesCanAttackMe) + 1;
-        setIndicatorString(2, "can attack me: " + canAttackMe);
-        setIndicatorString(2, "can attack attackers: " + canAttackEnemy);
         int advantage = 2;
         if (canAttackMe == 1
                 && canAttackEnemy == 2) {
@@ -138,103 +218,12 @@ public class Soldier extends Robot {
         rc.attackLocation(lowestHealthEnemy.location);
     }
 
-    private void readBroadcasts() {
-        roundSignals = rc.emptySignalQueue();
-        zombieToAttack = getZombieToAttack();
-        RobotData broadcastDen = getZombieDen();
-        setBytecodeIndicator(0, "after get zombie den");
-        if (broadcastDen != null
-                && !denDestroyed[broadcastDen.id]
-                && (zombieDen == null
-                        || broadcastDen.location != zombieDen.location)) {
-            if (zombieDen == null) {
-                zombieDens.add(broadcastDen);
-            }
-            else if (currentLocation.distanceSquaredTo(broadcastDen.location)
-                        < currentLocation.distanceSquaredTo(zombieDen.location)) {
-                //--let broadcast den overwrite ours if it is closer
-                zombieDens.add(zombieDen);
-                zombieDen = broadcastDen;
-            }
-        }
-
-        MapLocation newEnemyLocation = getEnemyLocation();
-        if (newEnemyLocation != null) {
-            enemyLocation = newEnemyLocation;
-        }
-
-        setBytecodeIndicator(0, "after get enemy location");
-        updateDestroyedDens();
-        setBytecodeIndicator(0, "after update destroyed dens");
-        getClosestHelpLocation();
-        setBytecodeIndicator(1, "after get help loc");
-        getTurretBroadcastsLocationOnly(roundSignals);
-        setBytecodeIndicator(1, "after get turret broad");
-    }
-
-    private void getClosestHelpLocation() {
-        int maxSignals = 4;
-        BoundedQueue<Signal> broadcasts = getBroadcasts(roundSignals, maxSignals);
-        if (broadcasts.isEmpty()) {
-            return;
-        }
-
-        MapLocation[] helpLocations = getLocationsFromSignals(broadcasts);
-        helpLocation = LocationUtil.findClosestLocation(helpLocations, currentLocation);
-        helpLocationTurn = roundNumber;
-    }
-
-    private MapLocation[] getLocationsFromSignals(BoundedQueue<Signal> signals) {
-        int count = signals.getSize();
-        MapLocation[] locations = new MapLocation[count];
-        for (int i = 0; i < count; i++) {
-            locations[i] = signals.remove().getLocation();
-        }
-
-        return locations;
-    }
-
-    private BoundedQueue<Signal> getBroadcasts(Signal[] roundSignals, int maxSignals) {
-        BoundedQueue<Signal> broadcasts = new BoundedQueue<Signal>(maxSignals);
-        for (Signal s : roundSignals) {
-            if (s.getTeam() == team
-                    && s.getMessage() == null) {
-                broadcasts.add(s);
-                if (broadcasts.isFull()) {
-                    return broadcasts;
-                }
-            }
-        }
-
-        return broadcasts;
-    }
-
-    private Signal getFirstBroadcast(Signal[] signals) {
-        for (Signal s : signals) {
-            if (s.getTeam() == team
-                    && s.getMessage() == null) {
-                return s;
-            }
-        }
-
-        return null;
-    }
-
-    private void updateDestroyedDens() {
-        int[][] messages = getMessagesOfType(roundSignals, MessageType.DESTROYED_DENS);
-        int messageCount = messages.length;
-        for (int i = 0; i < messageCount; i++) {
-            if (messages[i] == null) {
-                break;
-            }
-
-            DestroyedDenData denData = MessageParser.getDestroyedDens(messages[i][0], messages[i][1]);
-            for (int j = 0; j < denData.numberOfDens; j++) {
-                int currentId = denData.denId[j];
-                if (!denDestroyed[currentId]) {
-                    denDestroyed[currentId] = true;
-                    zombieDens.remove(currentId);
-                }
+    private void updateDestroyedDens(DestroyedDenData denData) {
+        for (int j = 0; j < denData.numberOfDens; j++) {
+            int currentId = denData.denId[j];
+            if (!denDestroyed[currentId]) {
+                denDestroyed[currentId] = true;
+                zombieDens.remove(currentId);
             }
         }
     }
@@ -301,6 +290,7 @@ public class Soldier extends Robot {
             if (zombie.type != RobotType.BIGZOMBIE
                     && zombie.type != RobotType.ZOMBIEDEN
                     && sawZombieLastTurn(zombie)) {
+                setIndicatorString(0, "move toward zombie not gettign closer");
                 tryMoveToward(zombie.location);
                 break;
             }
@@ -319,6 +309,7 @@ public class Soldier extends Robot {
             return;
         }
 
+        setIndicatorString(0, "micro away from zombies");
         tryMove(DirectionUtil.getDirectionAwayFrom(attackableZombies, currentLocation));
     }
 
@@ -338,6 +329,7 @@ public class Soldier extends Robot {
 
         RobotInfo archon = RobotUtil.getRobotOfType(adjacentTeammates, RobotType.ARCHON);
         if (archon != null) {
+            setIndicatorString(0, "move away from archon");
             tryMove(archon.location.directionTo(currentLocation));
         }
     }
@@ -365,52 +357,7 @@ public class Soldier extends Robot {
             return;
         }
 
+        setIndicatorString(0, "move toward zombie");
         tryMoveToward(zombieToAttack.location);
    }
-
-
-    private RobotData getZombieToAttack() {
-        for (Signal s : roundSignals) {
-            if (s.getTeam() != team) continue;
-
-            int[] message = s.getMessage();
-            if (message == null) continue;
-
-            if (MessageParser.matchesType(message, MessageType.ZOMBIE)) {
-                RobotData robotData = MessageParser.getRobotData(message);
-                if (robotData.type != RobotType.ZOMBIEDEN) {
-                    return robotData;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    private RobotData getZombieDen() {
-        for (Signal s : roundSignals) {
-            if (s.getTeam() != team) continue;
-
-            int[] message = s.getMessage();
-            if (message == null) continue;
-
-            if (MessageParser.matchesType(message, MessageType.ZOMBIE)) {
-                RobotData robotData = MessageParser.getRobotData(message);
-                if (robotData.type == RobotType.ZOMBIEDEN) {
-                    return robotData;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    private MapLocation getEnemyLocation() {
-        int[] message = getFirstMessageOfType(roundSignals, MessageType.ENEMY);
-        if (message != null) {
-            return MessageParser.getRobotData(message).location;
-        }
-
-        return null;
-    }
 }

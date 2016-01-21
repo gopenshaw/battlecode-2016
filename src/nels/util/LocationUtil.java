@@ -58,6 +58,21 @@ public class LocationUtil {
         return closestLocation;
     }
 
+    public static MapLocation findClosestLocation(MapLocation[] locations, int locationCount, MapLocation currentLocation) {
+        int shortestDistance = Integer.MAX_VALUE;
+        MapLocation closestLocation = null;
+
+        for (int i = 0; i < locationCount; i ++) {
+            int distance = currentLocation.distanceSquaredTo(locations[i]);
+            if (distance < shortestDistance) {
+                shortestDistance = distance;
+                closestLocation = locations[i];
+            }
+        }
+
+        return closestLocation;
+    }
+
     public static boolean anyWithinRange(MapLocation[] nearbyTurrets, MapLocation next, int range) {
         for (int i = 0; i < nearbyTurrets.length; i++) {
             if (nearbyTurrets[i] == null) {
