@@ -52,6 +52,18 @@ public class RobotUtil {
         return false;
     }
 
+    public static boolean anyCanAttack(RobotData[] robots, int count, MapLocation location) {
+        for (int i = 0; i < count; i++) {
+            RobotData robot = robots[i];
+            if (robot != null
+                    && robot.location.distanceSquaredTo(location) <= robot.type.attackRadiusSquared) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static boolean anyCanAttack(RobotInfo[] robots) {
         for (RobotInfo robot : robots) {
             if (robot.type.canAttack()) {

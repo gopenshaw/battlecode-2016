@@ -77,4 +77,8 @@ public class MessageParser {
     public static RobotData getRobotData(int[] message) {
         return getRobotData(message[0], message[1]);
     }
+
+    public static MapLocation getLocation(int[] message) {
+        return Serializer.decodeMapLocation(message[1] >>> 7);
+    }
 }

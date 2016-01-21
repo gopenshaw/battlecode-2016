@@ -8,7 +8,7 @@ import nels.util.LocationUtil;
 import nels.util.RobotUtil;
 
 public class Soldier extends Robot {
-    private static final int SAFE_DISTANCE = 250;
+    private static final int MIN_SAFE_MOVE_ROUND = 300;
 
     private Signal[] roundSignals;
 
@@ -35,7 +35,9 @@ public class Soldier extends Robot {
 
     @Override
     protected void doTurn() throws GameActionException {
+        setBytecodeIndicator(0, "before readbroadcasts");
         readBroadcasts();
+        setBytecodeIndicator(1, "after readbroadcasts");
         senseRobots();
         shootZombies();
         shootEnemies();
@@ -88,8 +90,8 @@ public class Soldier extends Robot {
                 && helpLocationTurn + IGNORE_HELP_TURNS > roundNumber
                 && currentLocation.distanceSquaredTo(helpLocation) > 2) {
             setIndicatorString(2, "try move to help location");
-            if (enemyTurrets.length > 0) {
-                trySafeMoveToward(helpLocation, enemyTurrets);
+            if (enemyTurretCount > 0) {
+                trySafeMoveToward(helpLocation, enemyTurretLocations);
             }
             else {
                 tryMoveToward(helpLocation);
@@ -101,7 +103,7 @@ public class Soldier extends Robot {
         if (enemyLocation != null) {
             setIndicatorString(2, "try move to enemy location");
             if (enemyTurrets.length > 0) {
-                trySafeMoveToward(enemyLocation, enemyTurrets);
+                trySafeMoveToward(enemyLocation, enemyTurretLocations);
             }
             else {
                 tryMoveToward(enemyLocation);
@@ -114,7 +116,9 @@ public class Soldier extends Robot {
             return;
         }
 
-        if (adjacentTeammates.length > 3) {
+        int nearbyArchonCount = RobotUtil.getCountOfType(nearbyFriendlies, RobotType.ARCHON);
+        if (nearbyArchonCount > 0
+                && adjacentTeammates.length > 3) {
             setIndicatorString(0, "spreading");
             tryMove(DirectionUtil.getDirectionAwayFrom(adjacentTeammates, currentLocation));
         }
@@ -138,6 +142,7 @@ public class Soldier extends Robot {
         roundSignals = rc.emptySignalQueue();
         zombieToAttack = getZombieToAttack();
         RobotData broadcastDen = getZombieDen();
+        setBytecodeIndicator(0, "after get zombie den");
         if (broadcastDen != null
                 && !denDestroyed[broadcastDen.id]
                 && (zombieDen == null
@@ -155,14 +160,16 @@ public class Soldier extends Robot {
 
         MapLocation newEnemyLocation = getEnemyLocation();
         if (newEnemyLocation != null) {
-            setIndicatorString(0, "old enemy location " + enemyLocation);
-            setIndicatorString(1, "new enemy location " + newEnemyLocation);
             enemyLocation = newEnemyLocation;
         }
 
+        setBytecodeIndicator(0, "after get enemy location");
         updateDestroyedDens();
+        setBytecodeIndicator(0, "after update destroyed dens");
         getClosestHelpLocation();
-        getTurretBroadcasts(roundSignals);
+        setBytecodeIndicator(1, "after get help loc");
+        getTurretBroadcastsLocationOnly(roundSignals);
+        setBytecodeIndicator(1, "after get turret broad");
     }
 
     private void getClosestHelpLocation() {
@@ -260,11 +267,11 @@ public class Soldier extends Robot {
         }
 
         if (currentLocation.distanceSquaredTo(zombieDen.location) > 8) {
-            if (roundNumber < 500) {
+            if (roundNumber < MIN_SAFE_MOVE_ROUND) {
                 tryMoveToward(zombieDen.location);
             }
             else {
-                trySafeMoveToward(zombieDen.location, enemyTurrets);
+                trySafeMoveToward(zombieDen.location, enemyTurretLocations);
             }
         }
     }

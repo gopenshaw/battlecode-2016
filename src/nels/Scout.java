@@ -7,7 +7,7 @@ import nels.util.*;
 
 public class Scout extends Robot {
     private static final int ROUNDS_TO_REVERSE = 4;
-    private static final int MIN_PAIRING_ROUND = 450;
+    private static final int MIN_PAIRING_ROUND = 300;
     private final int ZOMBIE_BROADCAST_RADIUS = senseRadius * 3;
     private Direction exploreDirection;
     private final int LOOKAHEAD_LENGTH = 5;
@@ -187,6 +187,7 @@ public class Scout extends Robot {
             destroyedDens.add(id);
         }
 
+        setIndicatorString(1, "broadcast destroyed dens");
         Message message = MessageBuilder.buildDestroyedDenMessage(denData);
         rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), getDestroyedDenBroadcastRadius());
     }
@@ -225,7 +226,6 @@ public class Scout extends Robot {
             return;
         }
 
-        int enemyTurretCount = countEnemyTurrets();
         if (enemyTurretCount > 0) {
             RobotData closest = RobotUtil.getClosestRobotToLocation(enemyTurrets, enemyTurretCount, currentLocation);
             Message target = MessageBuilder.buildTargetMessage(closest);
@@ -241,20 +241,6 @@ public class Scout extends Robot {
 
         Message target = MessageBuilder.buildTargetMessage(closest);
         rc.broadcastMessageSignal(target.getFirst(), target.getSecond(), 2);
-    }
-
-    private int countEnemyTurrets() {
-        int count = 0;
-        for (int i = 0; i < enemyTurrets.length; i++) {
-            if (enemyTurrets[i] == null) {
-                return count;
-            }
-            else {
-                count++;
-            }
-        }
-
-        return count;
     }
 
     private void moveTowardMyPair() throws GameActionException {

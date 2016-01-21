@@ -57,4 +57,17 @@ public class LocationUtil {
 
         return closestLocation;
     }
+
+    public static boolean anyWithinRange(MapLocation[] nearbyTurrets, MapLocation next, int range) {
+        for (int i = 0; i < nearbyTurrets.length; i++) {
+            if (nearbyTurrets[i] == null) {
+                return false;
+            }
+            else if (next.distanceSquaredTo(nearbyTurrets[i]) <= range) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
