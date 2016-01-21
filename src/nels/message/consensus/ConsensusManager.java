@@ -189,7 +189,6 @@ public abstract class ConsensusManager {
     private void deny(int currentRound) throws GameActionException {
         recordDenial(currentRound);
         Message denial = MessageBuilder.buildAnnouncement(Subject.ZOMBIES_DEAD, AnnouncementMode.DENY);
-        rc.setIndicatorString(0, currentRound + ": DENY");
         rc.broadcastMessageSignal(denial.getFirst(), denial.getSecond(), 80 * 80 * 2);
     }
 
@@ -205,7 +204,6 @@ public abstract class ConsensusManager {
         recordProposal(currentRound);
         Message message = MessageBuilder.buildAnnouncement(Subject.ZOMBIES_DEAD,
                 AnnouncementMode.PROPOSE);
-        rc.setIndicatorString(0, currentRound + ": PROPOSE");
         rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), 80 * 80 * 2);
     }
 

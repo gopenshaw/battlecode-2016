@@ -7,6 +7,7 @@ import nels.util.*;
 
 public class Scout extends Robot {
     private static final int ROUNDS_TO_REVERSE = 4;
+    private static final int MIN_PAIRING_ROUND = 450;
     private final int ZOMBIE_BROADCAST_RADIUS = senseRadius * 3;
     private Direction exploreDirection;
     private final int LOOKAHEAD_LENGTH = 5;
@@ -92,12 +93,14 @@ public class Scout extends Robot {
     }
 
     private void broadcastAllTurrets() throws GameActionException {
+        setIndicatorString(0, "turrets: ");
         RobotInfo[] enemyTurrets = RobotUtil.getRobotsOfType(nearbyEnemies, RobotType.TURRET);
         if (enemyTurrets == null) {
             return;
         }
 
         for (RobotInfo robot : enemyTurrets) {
+            setIndicatorString(0, " " + robot.location);
             Message message = MessageBuilder.buildTurretMessage(robot, roundNumber);
             rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), senseRadius * 2);
         }
@@ -258,7 +261,9 @@ public class Scout extends Robot {
     }
 
     private void getPairIfUnpaired() throws GameActionException {
-        if (myPair != null) {
+        if (myPair != null
+                || nearbyZombies.length > 0
+                || roundNumber < MIN_PAIRING_ROUND) {
             return;
         }
 

@@ -58,7 +58,14 @@ public class Archon extends Robot {
         getParts();
         moveWithArmy();
         repairRobots();
+        requestHelpIfUnderAttack();
         lastRoundHealth = rc.getHealth();
+    }
+
+    private void requestHelpIfUnderAttack() throws GameActionException {
+        if (RobotUtil.anyCanAttack(nearbyZombies, currentLocation)) {
+            rc.broadcastSignal(senseRadius * 2);
+        }
     }
 
     private void estimateScoutCount() {
@@ -84,7 +91,7 @@ public class Archon extends Robot {
         }
 
         scoutCountEstimate = aliveScouts.getSize();
-        setIndicatorString(2, "scout alive estimate: " + scoutCountEstimate);
+        setIndicatorString(1, "scout alive estimate: " + scoutCountEstimate);
     }
 
     private void moveWithArmy() throws GameActionException {
@@ -97,6 +104,7 @@ public class Archon extends Robot {
 
         RobotInfo[] nonArchonUnits = RobotUtil.removeRobotsOfType(nearbyFriendlies, RobotType.ARCHON);
         if (nonArchonUnits.length == 0) {
+            setIndicatorString(2, "non archon friendlies: " + nonArchonUnits.length);
             return;
         }
 
@@ -165,7 +173,8 @@ public class Archon extends Robot {
     }
 
     private void buildRobots() throws GameActionException {
-        if (!rc.isCoreReady()) {
+        if (!rc.isCoreReady()
+                || id % 3 == roundNumber % 3) {
             return;
         }
 
@@ -173,7 +182,7 @@ public class Archon extends Robot {
                 || (roundNumber > 600 && rc.getTeamParts() > 350)) {
             RobotType robotType = highUnitCountBuildQueue[highUnitQueuePosition % highUnitCountBuildQueue.length];
             if (robotType == RobotType.SCOUT
-                    && scoutCountEstimate > 8) {
+                    && tooManyScouts()) {
                 highUnitQueuePosition++;
                 robotType = highUnitCountBuildQueue[highUnitQueuePosition % highUnitCountBuildQueue.length];
             }
@@ -185,7 +194,7 @@ public class Archon extends Robot {
         else {
             RobotType robotType = lowUnitCountBuildQueue[lowUnitQueuePosition % lowUnitCountBuildQueue.length];
             if (robotType == RobotType.SCOUT
-                    && scoutCountEstimate > 8) {
+                    && tooManyScouts()) {
                 lowUnitQueuePosition++;
                 robotType = lowUnitCountBuildQueue[lowUnitQueuePosition % lowUnitCountBuildQueue.length];
             }
@@ -193,6 +202,14 @@ public class Archon extends Robot {
                 lowUnitQueuePosition++;
             }
         }
+    }
+
+    private boolean tooManyScouts() {
+        if (scoutCountEstimate == 0) {
+            return false;
+        }
+
+        return rc.getRobotCount() / scoutCountEstimate < 3;
     }
 
     private void repairRobots() throws GameActionException {

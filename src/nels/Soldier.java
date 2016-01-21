@@ -88,14 +88,24 @@ public class Soldier extends Robot {
                 && helpLocationTurn + IGNORE_HELP_TURNS > roundNumber
                 && currentLocation.distanceSquaredTo(helpLocation) > 2) {
             setIndicatorString(2, "try move to help location");
-            tryMoveToward(helpLocation);
+            if (enemyTurrets.length > 0) {
+                trySafeMoveToward(helpLocation, enemyTurrets);
+            }
+            else {
+                tryMoveToward(helpLocation);
+            }
 
             return;
         }
 
         if (enemyLocation != null) {
             setIndicatorString(2, "try move to enemy location");
-            tryMoveToward(enemyLocation);
+            if (enemyTurrets.length > 0) {
+                trySafeMoveToward(enemyLocation, enemyTurrets);
+            }
+            else {
+                tryMoveToward(enemyLocation);
+            }
         }
     }
 
