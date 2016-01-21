@@ -218,11 +218,11 @@ public class Archon extends Robot {
 
         if (zombiesAreDangerous()
                 || RobotUtil.anyCanAttack(nearbyEnemies, currentLocation)) {
-            rc.broadcastSignal(32);
             Direction runDirection = DirectionUtil.getDirectionAwayFrom(nearbyEnemies, nearbyZombies, currentLocation);
 
             //--TODO check if we are going into a corner or some other trap
             tryMove(runDirection);
+            rc.broadcastSignal(senseRadius - 3);
         }
     }
 

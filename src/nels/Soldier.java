@@ -156,8 +156,8 @@ public class Soldier extends Robot {
 
         if (canAttackMe + advantage > canAttackEnemy) {
             setIndicatorString(2, "micro away from enemies");
-            rc.broadcastSignal(senseRadius * 2);
             tryMove(DirectionUtil.getDirectionAwayFrom(nearbyEnemies, currentLocation));
+            rc.broadcastSignal(senseRadius * 2);
         }
     }
 
