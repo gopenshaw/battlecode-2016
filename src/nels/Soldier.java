@@ -45,6 +45,7 @@ public class Soldier extends Robot {
     protected void doTurn() throws GameActionException {
         processAllBroadcasts();
         senseRobots();
+        //--TODO: We need to take out enemies before the dens
         shootZombies();
         shootEnemies();
         microAwayFromZombies();
@@ -235,8 +236,13 @@ public class Soldier extends Robot {
     }
 
     private void moveTowardDen() throws GameActionException {
-        if (nearbyZombies.length > 0
-                || !rc.isCoreReady()) {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        RobotInfo[] nonDenZombies = RobotUtil.removeRobotsOfType(nearbyZombies, RobotType.ZOMBIEDEN);
+        if (nonDenZombies != null
+                && nonDenZombies.length > 0) {
             return;
         }
 

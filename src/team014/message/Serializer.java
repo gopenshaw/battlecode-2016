@@ -16,7 +16,7 @@ public class Serializer {
             RobotType.GUARD, RobotType.RANGEDZOMBIE, RobotType.SCOUT, RobotType.SOLDIER, RobotType.STANDARDZOMBIE,
             RobotType.TTM, RobotType.TURRET, RobotType.VIPER, RobotType.ZOMBIEDEN };
 
-    private static final AnnouncementSubject[] announcementSubjectEncoding = { AnnouncementSubject.ZOMBIES_DEAD };
+    private static final Subject[] SUBJECT_ENCODING = { Subject.ZOMBIES_DEAD };
     private static final AnnouncementMode[] announcementModeEncoding = { AnnouncementMode.PROPOSE,
         AnnouncementMode.DENY };
 
@@ -42,28 +42,10 @@ public class Serializer {
         return encoded;
     }
 
-    public static MapLocation decodeMapLocation(int i, MapLocation validLocation) {
-        int x = getValidCoordinate(i / 1000, validLocation.x);
-        int y = getValidCoordinate(i % 1000, validLocation.y);
+    public static MapLocation decodeMapLocation(int i) {
+        int x = i / 1000;
+        int y = i % 1000;
         return new MapLocation(x, y);
-    }
-
-    private static int getValidCoordinate(int threeDigits, int validCoordinate) {
-        int candidate = (validCoordinate / 1000) * 1000 + threeDigits;
-
-        int currentThreeDigits = validCoordinate % 1000;
-        if (currentThreeDigits < 100) {
-            if (Math.abs(candidate - validCoordinate) > 100) {
-                candidate -= 1000;
-            }
-        }
-        else if (currentThreeDigits < 900) {
-            if (Math.abs(candidate - validCoordinate) > 100) {
-                candidate += 1000;
-            }
-        }
-
-        return candidate;
     }
 
     public static MessageType decodeMessageType(int encodedMessageType) {
@@ -74,17 +56,17 @@ public class Serializer {
         return robotTypeEncoding[encodedRobotType];
     }
 
-    public static int encode(AnnouncementSubject announcementSubject) {
+    public static int encode(Subject subject) {
         int encoded = 0;
-        while (announcementSubjectEncoding[encoded] != announcementSubject) {
+        while (SUBJECT_ENCODING[encoded] != subject) {
             encoded++;
         }
 
         return encoded;
     }
 
-    public static AnnouncementSubject decodeAnnouncementSubject(int encoded) {
-        return announcementSubjectEncoding[encoded];
+    public static Subject decodeAnnouncementSubject(int encoded) {
+        return SUBJECT_ENCODING[encoded];
     }
 
     public static AnnouncementMode decodeAnnouncementMode(int encoded) {

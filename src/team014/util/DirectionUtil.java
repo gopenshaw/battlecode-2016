@@ -123,4 +123,13 @@ public class DirectionUtil {
 
         return getAverageDirection(directions);
     }
+
+    public static Direction getDirectionToward(RobotData[] enemyTurrets, int size, MapLocation currentLocation) {
+        Direction[] directions = new Direction[size];
+        for (int i = 0; i < size; i++) {
+            directions[i] = currentLocation.directionTo(enemyTurrets[i].location);
+        }
+
+        return getAverageDirection(directions);
+    }
 }

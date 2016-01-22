@@ -1,4 +1,4 @@
-package team014.nav;
+package nels.nav;
 
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
