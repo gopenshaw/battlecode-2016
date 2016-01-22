@@ -4,62 +4,48 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 import team014.DestroyedDenData;
+import team014.RobotData;
 import team014.MessageType;
 import team014.PartsData;
-import team014.RobotData;
 
 public class MessageParser {
-    //--Message format
-    //--First integer : 1 bit open, 2 bit round number, 14 bit health, 15 bit id
-    //--Second integer: 20 bit location, 4 bit robot type, 3 bit message type
-
-    private final int first;
-    private final int second;
-    private final MapLocation validLocation;
-
-    public MessageParser(int first, int second, MapLocation validLocation) {
-        this.first = first;
-        this.second = second;
-        this.validLocation = validLocation;
-    }
-
-    public MessageType getMessageType() {
+    public static MessageType getMessageType(int first, int second) {
         return Serializer.decodeMessageType(second & 0x7);
     }
 
-    public RobotData getRobotData() {
+    public static RobotData getRobotData(int first, int second) {
         int id = first & 0x7FFF;
-        MapLocation location = Serializer.decodeMapLocation(second >>> 7, validLocation);
+        MapLocation location = Serializer.decodeMapLocation(second >>> 7);
         int health = first >>> 15;
         RobotType type = Serializer.decodeRobotType((second >>> 3) & 0xF);
         return new RobotData(id, location, health, type);
     }
 
-    public boolean isCurrent(int roundNumber) {
+    public static boolean isCurrent(int first, int second, int roundNumber) {
         return roundNumber % 4 == (first >>> 29) % 4;
     }
 
-    public int getCount() {
+    public static int getCount(int first, int second) {
         return first;
     }
 
-    public AnnouncementMode getAnnouncementMode() {
+    public static AnnouncementMode getAnnouncementMode(int first, int second) {
         return Serializer.decodeAnnouncementMode((second >>> 3) & 0xF);
     }
 
-    public AnnouncementSubject getAnnouncementSubject() {
+    public static Subject getSubject(int first, int second) {
         return Serializer.decodeAnnouncementSubject(first);
     }
 
-    public PartsData getPartsData() {
-        return new PartsData(Serializer.decodeMapLocation(first, validLocation));
+    public static PartsData getPartsData(int first, int second) {
+        return new PartsData(Serializer.decodeMapLocation(first));
     }
 
-    public boolean pairs(RobotInfo robot) {
+    public static boolean pairs(int first, int second, RobotInfo robot) {
         return robot.ID == first;
     }
 
-    public DestroyedDenData getDestroyedDens() {
+    public static DestroyedDenData getDestroyedDens(int first, int second) {
         int numberOfDens = first & 0x7;
         DestroyedDenData denData = new DestroyedDenData(numberOfDens);
         if (numberOfDens == 1) {
@@ -82,5 +68,17 @@ public class MessageParser {
         }
 
         return denData;
+    }
+
+    public static boolean matchesType(int[] message, MessageType messageType) {
+        return getMessageType(message[0], message[1]) == messageType;
+    }
+
+    public static RobotData getRobotData(int[] message) {
+        return getRobotData(message[0], message[1]);
+    }
+
+    public static MapLocation getLocation(int[] message) {
+        return Serializer.decodeMapLocation(message[1] >>> 7);
     }
 }
