@@ -44,6 +44,7 @@ public class Scout extends Robot {
     private MapLocation[][] zombieDenPath = new MapLocation[Config.MAX_DENS][MAX_WAYPOINTS];
     private MapLocation[] zombieDen = new MapLocation[Config.MAX_DENS];
     private int zombieDenCount;
+    private MapLocation unknownLocation;
 
     public Scout(RobotController rc) {
         super(rc);
@@ -67,7 +68,6 @@ public class Scout extends Robot {
         getPairIfUnpaired();
         if (myPair == null) {
             zombiesDead.participate(roundSignals, roundNumber);
-            setIndicatorString(2, "zombies dead " + zombiesDead.isConsensusReached());
             if (!zombiesDead.isConsensusReached()) {
                 discoverDestroyedDens();
                 readDenMessages();
@@ -96,7 +96,6 @@ public class Scout extends Robot {
         } else {
             // we are watching enemy turrets
             zombiesDead.observe(roundSignals, roundNumber);
-            setIndicatorString(2, "pair with " + myPair.ID);
             moveToSafety();
             moveCloser();
             broadcastAllTurrets();
@@ -107,7 +106,8 @@ public class Scout extends Robot {
 
     private void firstRound() {
         if (startLocation == null) {
-            startLocation = currentLocation;
+            startLocation = rc.getLocation();
+            setIndicatorString(0, "start location is " + startLocation);
         }
     }
 
@@ -157,14 +157,12 @@ public class Scout extends Robot {
     }
 
     private void broadcastAllTurrets() throws GameActionException {
-        setIndicatorString(0, "turrets: ");
         RobotInfo[] enemyTurrets = RobotUtil.getRobotsOfType(nearbyEnemies, RobotType.TURRET);
         if (enemyTurrets == null) {
             return;
         }
 
         for (RobotInfo robot : enemyTurrets) {
-            setIndicatorString(0, " " + robot.location);
             Message message = MessageBuilder.buildTurretMessage(robot);
             rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), senseRadius * 2);
         }
@@ -251,7 +249,6 @@ public class Scout extends Robot {
             destroyedDens.add(id);
         }
 
-        setIndicatorString(1, "broadcast destroyed dens");
         Message message = MessageBuilder.buildDestroyedDenMessage(denData);
         rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), getDestroyedDenBroadcastRadius());
     }
@@ -272,7 +269,6 @@ public class Scout extends Robot {
 
         zombieDenQueue.add(den);
         Message message = MessageBuilder.buildZombieMessage(den);
-        setIndicatorString(1, "broadcast den " + den.location);
         rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), senseRadius * 6);
     }
 
@@ -363,16 +359,6 @@ public class Scout extends Robot {
             return;
         }
 
-        setIndicatorString(1, "reading turrets");
-        for (int i = 0; i < enemyTurrets.length; i++) {
-            if (enemyTurrets[i] == null) {
-                break;
-            }
-            else {
-                setIndicatorString(1, " " + enemyTurrets[i].location);
-            }
-        }
-
         RobotInfo[] turretsNotBeingBroadcast = RobotUtil.removeRobots(sensedEnemyTurrets, enemyTurrets);
         if (turretsNotBeingBroadcast.length > 0) {
             tryPairWithOneRobot(turretsNotBeingBroadcast);
@@ -430,7 +416,7 @@ public class Scout extends Robot {
         rc.broadcastMessageSignal(enemyMessage.getFirst(), enemyMessage.getSecond(), senseRadius * 4);
     }
 
-    private void checkNearbyDensForPath() {
+    private void checkNearbyDensForPath() throws GameActionException {
         setIndicatorString(2, "check nearby dens for path");
         for (RobotInfo zombie : nearbyZombies) {
             if (zombie.type == RobotType.ZOMBIEDEN) {
@@ -453,36 +439,174 @@ public class Scout extends Robot {
         }
     }
 
-    private boolean tryFindDenPath(int i) {
+    private boolean tryFindDenPath(int i) throws GameActionException {
         MapLocation begin = startLocation;
         MapLocation end = zombieDen[i];
         int directPath = getDirectPathCost(begin, end);
-        int bugPathCost = getBugPathCost(begin, end);
-        setIndicatorString(2, String.format("cost from %s to %s is %d", begin, end, directPath));
         if (directPath < 0) {
             return false;
         }
 
+        int rightBugCost = getBugPathCost(begin, end, true, 50);
+        if (rightBugCost < 0) {
+            return false;
+        }
+
+        setIndicatorString(0, String.format("direction path to %s cost %d", end, directPath));
+        setIndicatorString(1, String.format("bug path to %s cost %d", end, rightBugCost));
+
         return true;
     }
 
-    private int getBugPathCost(MapLocation begin, MapLocation end, int maxLength) {
+    private int getBugPathCost(MapLocation begin, MapLocation end, boolean turnRight, int maxLength) throws GameActionException {
+        if (unknownLocation != null) {
+            rc.addMatchObservation(String.format("WAITING for %s - bug from %s to %s", unknownLocation, begin, end));
+            return -1;
+        }
+
+        rc.addMatchObservation(String.format("TRYING - bug from %s to %s", begin, end));
         MapLocation current = begin;
         int pathLength = 0;
+        Direction direction = current.directionTo(end);
+        rc.addMatchObservation(String.format("checking in front of wall %s %s", current, direction));
+        Ternary inFrontOfWall = inFrontOfWall(current, direction);
+        if (inFrontOfWall == Ternary.UNKNOWN) {
+            rc.addMatchObservation(String.format("can't know if in front of wall %s %s", current, direction));
+            return -1;
+        }
 
+        boolean followingWall = inFrontOfWall == Ternary.TRUE ? true : false;
+        rc.addMatchObservation(String.format("following wall? %s", followingWall));
+        int distanceStartBugging;
+        if (followingWall) {
+            distanceStartBugging = current.distanceSquaredTo(end);
+        }
+        else {
+            distanceStartBugging = 0;
+        }
+
+        rc.addMatchObservation(String.format("distance start bugging %d", distanceStartBugging));
+
+        int d = turnRight ? 7 : 1;
         while (!current.equals(end)) {
-            int x = current.x % 100;
-            int y = current.y % 100;
-            if (!recordedLocation[x][y]) {
-                return -1;
-            }
-
             if (++pathLength > maxLength) {
                 return -1;
             }
+
+            int x = current.x % 100;
+            int y = current.y % 100;
+            if (!recordedLocation[x][y]) {
+                unknownLocation = current;
+                rc.addMatchObservation(String.format("setting unknown location %s", current));
+                return -1;
+            }
+
+            if (followingWall) {
+                //--keep the wall on our left (default) and follow the wall until
+                // we are closer than when we started bugging
+                int currentDistance = current.distanceSquaredTo(end);
+                if (currentDistance < distanceStartBugging) {
+                    followingWall = false;
+                }
+                else {
+                    int directionNumber = getDirectionNumber(direction);
+                    Direction checkDirection = directions[(directionNumber + 2 * d) % 8];
+                    Direction followDirection = getFollowDirection(current, checkDirection, turnRight);
+                    if (followDirection == null) {
+                        rc.addMatchObservation(String.format("could not find follow direction %s %s", current, checkDirection));
+                        return -1;
+                    }
+
+                    rc.addMatchObservation(String.format("FOLLOW - from position %s going %s", current, followDirection));
+                    current = current.add(followDirection);
+                    direction = followDirection;
+                    continue;
+                }
+            }
+
+            if (!followingWall) { // might change to not following mid move
+                direction = current.directionTo(end);
+                inFrontOfWall = inFrontOfWall(current, direction);
+                if (inFrontOfWall == Ternary.UNKNOWN) {
+                    rc.addMatchObservation(String.format("can't know if in front of wall %s %s", current, direction));
+                    return -1;
+                }
+
+                if (inFrontOfWall == Ternary.TRUE) {
+                    rc.addMatchObservation(String.format("in front of wall %s %s", current, direction));
+                    //--measure the current distance to destination and start following wall
+                    distanceStartBugging = current.distanceSquaredTo(end);
+                    followingWall = true;
+                    Direction followDirection = getFollowDirection(current, direction, turnRight);
+                    if (followDirection == null) {
+                        rc.addMatchObservation(String.format("could not find follow direction %s %s", current, direction));
+                        return -1;
+                    }
+
+                    rc.addMatchObservation(String.format("WALL - from position %s going %s", current, followDirection));
+                    current = current.add(followDirection);
+                    direction = followDirection;
+                }
+                else {
+                    //--go straight ahead
+                    rc.addMatchObservation(String.format("STRAIGHT - from position %s going %s", current, direction));
+                    current = current.add(direction);
+                }
+            }
         }
 
+        rc.addMatchObservation(String.format("found path of length %d", pathLength));
         return pathLength;
+    }
+
+    private Direction getFollowDirection(MapLocation location, Direction direction, boolean turnRight) throws GameActionException {
+        Direction currentDirection = direction;
+        int currentDirectionNumber = getDirectionNumber(direction);
+        MapLocation next = location.add(currentDirection);
+        int d = turnRight ? 1 : 7;
+        while (true) {
+            if (!onTheMap(next)) {
+                return null;
+            }
+
+            int x = next.x % 100;
+            int y = next.y % 100;
+            if (!recordedLocation[x][y]) {
+                unknownLocation = next;
+                rc.addMatchObservation(String.format("setting unknown location %s", next));
+                return null;
+            }
+
+            if (rubble[x][y] == 0) {
+                return currentDirection;
+            }
+
+            currentDirectionNumber  = (currentDirectionNumber + d) % 8;
+            currentDirection = directions[currentDirectionNumber];
+            next = location.add(currentDirection);
+        }
+    }
+
+    private Ternary inFrontOfWall(MapLocation current, Direction direction) throws GameActionException {
+        MapLocation next = current.add(direction);
+        if (!onTheMap(next)) {
+            return Ternary.FALSE;
+        }
+
+        int x = next.x % 100;
+        int y = next.y % 100;
+        if (!recordedLocation[x][y]) {
+            unknownLocation = next;
+            rc.addMatchObservation(String.format("setting unknown location %s", next));
+            return Ternary.UNKNOWN;
+        }
+
+        return rubble[x][y] > 0 ? Ternary.TRUE : Ternary.FALSE;
+    }
+
+    private boolean onTheMap(MapLocation next) {
+        //we need to check map bounds
+        return true;
     }
 
     private int getDirectPathCost(MapLocation begin, MapLocation end) {
@@ -493,6 +617,8 @@ public class Scout extends Robot {
             int x = current.x % 100;
             int y = current.y % 100;
             if (!recordedLocation[x][y]) {
+                unknownLocation = current;
+                rc.addMatchObservation(String.format("setting unknown location %s", current));
                 return -1;
             }
 
@@ -557,6 +683,17 @@ public class Scout extends Robot {
     private void explore() throws GameActionException {
         if (!rc.isCoreReady()) {
             return;
+        }
+
+        if (unknownLocation != null) {
+            if (rc.canSenseLocation(unknownLocation)) {
+                unknownLocation = null;
+                rc.addMatchObservation("clearing unknown location");
+            }
+            else {
+                tryMoveToward(unknownLocation);
+                return;
+            }
         }
 
         if (amFirstScout
