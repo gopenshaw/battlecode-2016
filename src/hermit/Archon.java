@@ -4,7 +4,6 @@ import battlecode.common.*;
 import hermit.message.Message;
 import hermit.message.MessageBuilder;
 import hermit.util.DirectionUtil;
-import scala.collection.Map;
 
 public class Archon extends Robot {
 

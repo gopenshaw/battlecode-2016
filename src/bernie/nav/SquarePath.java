@@ -4,7 +4,6 @@ import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
-import scala.tools.cmd.gen.AnyVals;
 
 public class SquarePath {
     private final MapLocation center;
