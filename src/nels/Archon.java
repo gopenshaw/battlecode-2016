@@ -40,6 +40,7 @@ public class Archon extends Robot {
 
     private static final int sensorRadius =  (int) Math.pow(RobotType.ARCHON.sensorRadiusSquared, 0.5) ;
     private RobotInfo[][] locationsOfNearbyEnemies = new RobotInfo[2 * sensorRadius + 1][2 * sensorRadius + 1];
+    private int[][] locationLastFilled = new int[2 * sensorRadius + 1][2 * sensorRadius + 1];
 
     public Archon(RobotController rc) {
         super(rc);
@@ -234,7 +235,6 @@ public class Archon extends Robot {
     static final int MAX_DISTANCE_TO_OFF_MAP = 35;
 
     private Direction safestDirectionTooRunTo() throws GameActionException {
-        clearLocationsOfNearbyEnemies();
         setLocationsOfEnemies(nearbyEnemies);
         setLocationsOfEnemies(nearbyZombies);
 
@@ -266,7 +266,7 @@ public class Archon extends Robot {
                 int normalizedX = j * direction.dx + sensorRadius;
                 int normalizedY = j * direction.dy + sensorRadius;
 
-                if (locationsOfNearbyEnemies[normalizedX][normalizedY] != null) {
+                if (locationLastFilled[normalizedX][normalizedY] == roundNumber) {
                     enemyCountInCurrentDirection++;
                 }
             }
@@ -287,14 +287,6 @@ public class Archon extends Robot {
         return safestDirection;
     }
 
-    private void clearLocationsOfNearbyEnemies() {
-        for (int i = 0; i < 2 * sensorRadius + 1; i++) {
-            for (int j = 0; j < 2 * sensorRadius + 1; j++) {
-                locationsOfNearbyEnemies[i][j] = null;
-            }
-        }
-    }
-
     private void setLocationsOfEnemies(RobotInfo[] locationsOfEnemies) {
         for (RobotInfo zombie : locationsOfEnemies) {
             int xLocation = zombie.location.x - currentLocation.x + sensorRadius;
@@ -308,6 +300,7 @@ public class Archon extends Robot {
             }
 
             locationsOfNearbyEnemies[xLocation][yLocation] = zombie;
+            locationLastFilled[xLocation][yLocation] = roundNumber;
         }
     }
 
