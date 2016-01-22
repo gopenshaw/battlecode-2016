@@ -209,6 +209,12 @@ public abstract class Robot {
 
     protected void trySafeMoveDigToward(MapLocation location, RobotData[] nearbyEnemies, int enemyCount) throws GameActionException {
         Direction direction = currentLocation.directionTo(location);
+        if (currentLocation.isAdjacentTo(location)
+                && rc.senseRubble(location) >= 100) {
+            rc.clearRubble(currentLocation.directionTo(location));
+            return;
+        }
+
         trySafeMoveDig(direction, nearbyEnemies, enemyCount);
     }
 
@@ -541,13 +547,7 @@ public abstract class Robot {
     }
 
     protected int getDirectionNumber(Direction direction) {
-        for (int i = 0; i < 8; i++) {
-            if (directions[i] == direction) {
-                return i;
-            }
-        }
-
-        return -1;
+        return direction.ordinal();
     }
 
     protected void sendMessage(Message message, int radius) throws GameActionException {
