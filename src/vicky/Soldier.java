@@ -45,8 +45,8 @@ public class Soldier extends Robot {
     protected void doTurn() throws GameActionException {
         processAllBroadcasts();
         senseRobots();
-        shootZombies();
         shootEnemies();
+        shootZombies();
         microAwayFromZombies();
         moveTowardZombieNotGettingCloser();
         microAwayFromEnemies();
