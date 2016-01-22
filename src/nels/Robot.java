@@ -262,11 +262,6 @@ public abstract class Robot {
             }
         }
 
-        if (type == RobotType.TTM
-                || type == RobotType.SCOUT) {
-            return false;
-        }
-
         return tryClearRubble(direction);
     }
 
@@ -285,11 +280,6 @@ public abstract class Robot {
                 rc.move(d);
                 return true;
             }
-        }
-
-        if (type == RobotType.TTM
-                || type == RobotType.SCOUT) {
-            return false;
         }
 
         return tryClearRubble(direction);
@@ -328,11 +318,6 @@ public abstract class Robot {
             }
         }
 
-        if (type == RobotType.TTM
-                || type == RobotType.SCOUT) {
-            return false;
-        }
-
         return tryClearRubble(direction);
     }
 
@@ -350,11 +335,6 @@ public abstract class Robot {
                 rc.move(d);
                 return true;
             }
-        }
-
-        if (type == RobotType.TTM
-                || type == RobotType.SCOUT) {
-            return false;
         }
 
         return tryClearRubble(direction);
@@ -446,6 +426,11 @@ public abstract class Robot {
     }
 
     private boolean tryClearRubble(Direction direction) throws GameActionException {
+        if (rc.getType() == RobotType.TTM
+                || rc.getType() == RobotType.ARCHON) {
+            return false;
+        }
+
         MapLocation nextLocation = rc.getLocation().add(direction);
 
         double rubble = rc.senseRubble(nextLocation);

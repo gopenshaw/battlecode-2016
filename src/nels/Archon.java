@@ -191,7 +191,12 @@ public class Archon extends Robot {
         setIndicatorString(2, "army center is " + armyCenter);
         if (armyCenter.distanceSquaredTo(currentLocation) > 8) {
             setIndicatorString(2, "moving toward center");
-            tryMove(DirectionUtil.getDirectionToward(nearbyFriendlies, currentLocation));
+            if (enemyTurretCount > 0) {
+                trySafeMove(DirectionUtil.getDirectionToward(nearbyFriendlies, currentLocation), enemyTurretLocations);
+            }
+            else {
+                tryMove(DirectionUtil.getDirectionToward(nearbyFriendlies, currentLocation));
+            }
         }
     }
 
