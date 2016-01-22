@@ -417,4 +417,26 @@ public class RobotUtil {
 
         return closest;
     }
+
+    public static boolean allAreType(RobotInfo[] robots, RobotType type) {
+        int robotCount = robots.length;
+        for (int i = 0; i < robotCount; i++) {
+            if (robots[i].type != type) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static boolean anyAreType(RobotInfo[] robots, RobotType type) {
+        int robotCount = robots.length;
+        for (int i = 0; i < robotCount; i++) {
+            if (robots[i].type != type) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

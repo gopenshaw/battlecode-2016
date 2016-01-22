@@ -53,7 +53,8 @@ public abstract class Robot {
         senseRadius = type.sensorRadiusSquared;
         attackRadius = type.attackRadiusSquared;
 
-        if (Config.DEBUG) {
+        if (Config.DEBUG
+                || Config.BYTECODE_DEBUG) {
             debugString = new StringBuilder[3];
             for (int i = 0; i < 3; i++) {
                 debugString[i] = new StringBuilder();
@@ -68,7 +69,8 @@ public abstract class Robot {
                 roundNumber = rc.getRoundNum();
                 doTurn();
 
-                if (Config.DEBUG) {
+                if (Config.DEBUG
+                        || Config.BYTECODE_DEBUG) {
                     resetDebugStrings();
                     updateMaxBytecode();
                 }

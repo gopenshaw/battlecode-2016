@@ -37,6 +37,9 @@ public class Scout extends Robot {
     private boolean initialPathCompleted;
     private boolean amFirstScout;
 
+    private boolean[][] recordedLocation = new boolean[100][100];
+    private int[][] rubble = new int[100][100];
+
     public Scout(RobotController rc) {
         super(rc);
         zombiesDead = new ZombiesDeadConsensus(rc);
@@ -53,6 +56,7 @@ public class Scout extends Robot {
         senseRobots();
         zombiesDead.updateZombieCount(nearbyZombies.length, roundNumber);
 
+        readRubble();
         updateConnectionWithPair();
         getPairIfUnpaired();
         if (myPair == null) {
@@ -92,6 +96,25 @@ public class Scout extends Robot {
             broadcastZombies();
             unpairIfZombiesAreClose();
         }
+    }
+
+    private void readRubble() throws GameActionException {
+        setBytecodeIndicator(1, "before rubble");
+        MapLocation[] nearbyLocations = MapLocation.getAllMapLocationsWithinRadiusSq(currentLocation, senseRadius);
+        int locationCount = nearbyLocations.length;
+        for (int i = 0; i < locationCount; i++) {
+            MapLocation location = nearbyLocations[i];
+            int x = location.x % 100;
+            int y = location.y % 100;
+            if (!recordedLocation[x][y]) {
+                if (rc.onTheMap(location)) {
+                    rubble[x][y] = (int) rc.senseRubble(location);
+                }
+
+                recordedLocation[x][y] = true;
+            }
+        }
+        setBytecodeIndicator(1, "after rubble");
     }
 
     private void unpairIfZombiesAreClose() {
@@ -434,6 +457,11 @@ public class Scout extends Robot {
             return;
         }
 
+        if (RobotUtil.allAreType(nearbyZombies, RobotType.ZOMBIEDEN)
+                && getRoundsTillNextSpawn(roundNumber) > 3) {
+            return;
+        }
+
         if (rand.nextInt(4) == 0) {
             exploreDirection = getExploreDirection(exploreDirection);
         }
@@ -470,9 +498,12 @@ public class Scout extends Robot {
         }
         else {
             //--check ahead
+            boolean canSeeDen = RobotUtil.anyAreType(nearbyZombies, RobotType.ZOMBIEDEN);
             MapLocation lookaheadLocation = currentLocation.add(exploreDirection, LOOKAHEAD_LENGTH);
             Direction newDirection = null;
-            while (!rc.onTheMap(lookaheadLocation)) {
+            while (canSeeDen
+                    || !rc.onTheMap(lookaheadLocation)) {
+                canSeeDen = false; // one-time flag
                 newDirection = getExploreDirection(exploreDirection);
                 lookaheadLocation = currentLocation.add(newDirection, LOOKAHEAD_LENGTH);
             }
