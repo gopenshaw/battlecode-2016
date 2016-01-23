@@ -95,6 +95,17 @@ public class RobotUtil {
         return null;
     }
 
+    public static RobotInfo getRobotOfType(RobotInfo[] robots, RobotType type1, RobotType type2) {
+        for (int i = 0; i < robots.length; i++) {
+            if (robots[i].type == type1
+                    || robots[i].type == type2) {
+                return robots[i];
+            }
+        }
+
+        return null;
+    }
+
     public static RobotInfo[] getRobotsOfType(RobotInfo[] robots, RobotType type) {
         int count = 0;
         for (int i = 0; i < robots.length; i++) {

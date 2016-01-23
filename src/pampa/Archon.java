@@ -26,12 +26,14 @@ public class Archon extends Robot {
     private int highUnitQueuePosition = 0;
 
     private RobotInfo[] nearbyZombies;
+    private RobotInfo[] nearbyEnemies;
+    private RobotInfo[] nearbyFriendlies;
+    private RobotInfo[] nearbyNeutrals;
+
     private AverageMapLocation previousZombieLocation = new AverageMapLocation(5);
     private Signal[] roundSignals;
     private MapLocation previousPartLocation;
-    private RobotInfo[] nearbyEnemies;
     private double lastRoundHealth;
-    private RobotInfo[] nearbyFriendlies;
     private final ZombiesDeadConsensus zombiesDead;
     private int[] scoutAliveRound = new int[32001];
     private RobotQueueNoDuplicates aliveScouts = new RobotQueueNoDuplicates(30);
@@ -77,9 +79,8 @@ public class Archon extends Robot {
             return;
         }
 
-        RobotInfo[] neutrals = senseNearbyNeutrals();
-        if (neutrals.length > 0) {
-            RobotInfo closest = RobotUtil.getClosestRobotToLocation(neutrals, currentLocation);
+        if (nearbyNeutrals.length > 0) {
+            RobotInfo closest = RobotUtil.getClosestRobotToLocation(nearbyNeutrals, currentLocation);
             trySafeMoveToward(closest.location, nearbyEnemies, nearbyZombies);
         }
     }
@@ -325,6 +326,7 @@ public class Archon extends Robot {
         nearbyZombies = senseNearbyZombies();
         nearbyEnemies = senseNearbyEnemies();
         nearbyFriendlies = senseNearbyFriendlies();
+        nearbyNeutrals = senseNearbyNeutrals();
         setIndicatorString(0, "nearby enemies: " + nearbyEnemies.length);
         setIndicatorString(0, "nearby zom: " + nearbyZombies.length);
         for (RobotInfo zombie : nearbyZombies) {
@@ -341,6 +343,22 @@ public class Archon extends Robot {
         if (rc.getRobotCount() > Config.HIGH_UNIT_COUNT
                 || (roundNumber > 600 && rc.getTeamParts() > 350)) {
             RobotType robotType = highUnitCountBuildQueue[highUnitQueuePosition % highUnitCountBuildQueue.length];
+            RobotInfo neutral = RobotUtil.getRobotOfType(nearbyNeutrals, robotType, RobotType.ARCHON);
+            if (neutral != null) {
+                if (currentLocation.isAdjacentTo(neutral.location)) {
+                    rc.activate(neutral.location);
+                    highUnitQueuePosition++;
+                    return;
+                }
+                else if (nearbyEnemies.length == 0) {
+                    Direction toward = currentLocation.directionTo(neutral.location);
+                    if (rc.canMove(toward)) {
+                        rc.move(toward);
+                        return;
+                    }
+                }
+            }
+
             if (robotType == RobotType.SCOUT
                     && tooManyScouts()) {
                 highUnitQueuePosition++;
@@ -353,6 +371,22 @@ public class Archon extends Robot {
         }
         else {
             RobotType robotType = lowUnitCountBuildQueue[lowUnitQueuePosition % lowUnitCountBuildQueue.length];
+            RobotInfo neutral = RobotUtil.getRobotOfType(nearbyNeutrals, robotType, RobotType.ARCHON);
+            if (neutral != null) {
+                if (currentLocation.isAdjacentTo(neutral.location)) {
+                    rc.activate(neutral.location);
+                    lowUnitQueuePosition++;
+                    return;
+                }
+                else if (nearbyEnemies.length == 0) {
+                    Direction toward = currentLocation.directionTo(neutral.location);
+                    if (rc.canMove(toward)) {
+                        rc.move(toward);
+                        return;
+                    }
+                }
+            }
+
             if (robotType == RobotType.SCOUT
                     && tooManyScouts()) {
                 lowUnitQueuePosition++;
@@ -396,7 +430,8 @@ public class Archon extends Robot {
     }
 
     public void getParts() throws GameActionException {
-        if (!rc.isCoreReady()) {
+        if (nearbyEnemies.length > 0
+                || !rc.isCoreReady()) {
             return;
         }
 

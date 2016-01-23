@@ -231,6 +231,7 @@ public class Soldier extends Robot {
         int nearbyArchonCount = RobotUtil.getCountOfType(nearbyFriendlies, RobotType.ARCHON);
         if (nearbyArchonCount > 0
                 && adjacentTeammates.length > 3) {
+            setIndicatorString(2, "spread out");
             tryMove(DirectionUtil.getDirectionAwayFrom(adjacentTeammates, currentLocation));
         }
     }
