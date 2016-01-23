@@ -150,7 +150,7 @@ public class Scout extends Robot {
         }
     }
 
-    private void discoverDestroyedDens() {
+    private void discoverDestroyedDens() throws GameActionException {
         checkLocationWeCanSense();
         checkBroadcastsForDestroyedDens();
     }
@@ -174,14 +174,17 @@ public class Scout extends Robot {
         }
     }
 
-    private void checkLocationWeCanSense() {
+    private void checkLocationWeCanSense() throws GameActionException {
         int count = zombieDens.getSize();
         for (int i = 0; i < count; i++) {
             RobotData den = zombieDens.remove();
-            if (rc.canSenseLocation(den.location)
-                    && !rc.canSenseRobot(den.id)) {
-                denDestroyed[den.id] = true;
-                destroyedDens.add(den.id);
+            if (rc.canSenseLocation(den.location)) {
+                RobotInfo robotAtLocation = rc.senseRobotAtLocation(den.location);
+                if (robotAtLocation == null
+                        || robotAtLocation.ID != den.id) {
+                    denDestroyed[den.id] = true;
+                    destroyedDens.add(den.id);
+                }
             }
             else {
                 zombieDens.add(den);
