@@ -5,6 +5,7 @@ import team014.message.Message;
 import team014.message.MessageBuilder;
 import team014.message.MessageParser;
 import team014.message.consensus.ZombiesDeadConsensus;
+import team014.nav.SquarePath;
 import team014.util.BoundedQueue;
 import team014.util.DirectionUtil;
 import team014.util.RobotQueueNoDuplicates;
@@ -14,6 +15,7 @@ public class Scout extends Robot {
     private static final int ROUNDS_TO_REVERSE = 4;
     private static final int MIN_PAIRING_ROUND = 300;
     private final int ZOMBIE_BROADCAST_RADIUS = senseRadius * 3;
+    private final SquarePath initialPath;
     private Direction exploreDirection;
     private final int LOOKAHEAD_LENGTH = 5;
     private RobotInfo[] nearbyZombies;
@@ -32,12 +34,16 @@ public class Scout extends Robot {
     private BoundedQueue<Integer> destroyedDens;
 
     private boolean[] denDestroyed = new boolean[32001];
+    private boolean initialPathCompleted;
+    private boolean amFirstScout;
 
     public Scout(RobotController rc) {
         super(rc);
         zombiesDead = new ZombiesDeadConsensus(rc);
         zombieDens = new RobotQueueNoDuplicates(Config.MAX_DENS);
         destroyedDens = new BoundedQueue<Integer>(Config.MAX_DENS);
+        initialPath = new SquarePath(rc.getLocation(), 8, rc);
+        amFirstScout = rc.getRoundNum() < 40;
     }
 
     @Override
@@ -438,6 +444,19 @@ public class Scout extends Robot {
     private void explore() throws GameActionException {
         if (!rc.isCoreReady()) {
             return;
+        }
+
+        if (amFirstScout
+                && roundNumber < 300
+                && !initialPathCompleted) {
+            Direction pathDirection = initialPath.getNextDirection(currentLocation);
+            if (initialPath.getRotationsCompleted() > 0) {
+                initialPathCompleted = true;
+            }
+            else {
+                trySafeMove(pathDirection, nearbyEnemies, nearbyZombies);
+                return;
+            }
         }
 
         if (exploreDirection == null) {

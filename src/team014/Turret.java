@@ -107,6 +107,7 @@ public class Turret extends Robot {
 
     private void moveToEnemy() throws GameActionException {
         if (enemyLocation == null
+                || rc.getType() == RobotType.TURRET
                 || !rc.isCoreReady()) {
             return;
         }
@@ -165,8 +166,8 @@ public class Turret extends Robot {
         }
 
         if (rc.getType() == RobotType.TTM
-                && nearbyEnemies.length > 0
-                || nearbyZombies.length > 0) {
+                && (nearbyEnemies.length > 0
+                || nearbyZombies.length > 0)) {
             //setIndicatorString(1, "unpacking in random move");
             rc.unpack();
             return true;
