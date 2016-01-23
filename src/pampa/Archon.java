@@ -15,6 +15,9 @@ public class Archon extends Robot {
             RobotType.SCOUT, RobotType.SOLDIER, RobotType.SOLDIER,
             RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER,
             RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER,
+            RobotType.SCOUT, RobotType.SOLDIER, RobotType.SOLDIER,
+            RobotType.SOLDIER, RobotType.VIPER, RobotType.SOLDIER, RobotType.SOLDIER,
+            RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER
     };
 
     private RobotType[] highUnitCountBuildQueue = {
@@ -63,10 +66,10 @@ public class Archon extends Robot {
         moveAwayFromZombiesAndEnemies();
         moveIfUnderAttack();
         moveIfNearEnemyTurrets();
+        moveWithArmy();
         buildRobots();
         convertAdjacentNeutrals();
         getParts();
-        moveWithArmy();
         repairRobots();
         requestHelpIfUnderAttack();
         goTowardNeutral();
@@ -178,7 +181,7 @@ public class Archon extends Robot {
     private void moveWithArmy() throws GameActionException {
         if (nearbyEnemies.length > 0
                 || nearbyZombies.length > 0
-                || nearbyFriendlies.length < 2
+                || roundNumber < 90
                 || !rc.isCoreReady()) {
             return;
         }
@@ -447,7 +450,7 @@ public class Archon extends Robot {
         if (partsLocations.length > 0) {
             MapLocation closest = LocationUtil.findClosestLocation(partsLocations, currentLocation);
             setIndicatorString(2, "moving toward closest parts");
-            trySafeMoveDigToward(closest, enemyTurrets, enemyTurretCount);
+            trySafeMoveDigOnto(closest, enemyTurrets, enemyTurretCount);
             return;
         }
 
@@ -465,7 +468,7 @@ public class Archon extends Robot {
 
         if (previousPartLocation != null) {
             setIndicatorString(2, "moving toward memory parts");
-            trySafeMoveDigToward(previousPartLocation, enemyTurrets, enemyTurretCount);
+            trySafeMoveDigOnto(previousPartLocation, enemyTurrets, enemyTurretCount);
             rc.broadcastSignal(31);
         }
     }

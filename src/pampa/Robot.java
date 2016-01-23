@@ -207,6 +207,17 @@ public abstract class Robot {
         return trySafeMove(direction, enemyTurretLocations);
     }
 
+    protected void trySafeMoveDigOnto(MapLocation location, RobotData[] nearbyEnemies, int enemyCount) throws GameActionException {
+        if (currentLocation.isAdjacentTo(location)
+                && rc.senseRubble(location) > 100) {
+            rc.clearRubble(currentLocation.directionTo(location));
+        }
+        else {
+            Direction direction = currentLocation.directionTo(location);
+            trySafeMoveDig(direction, nearbyEnemies, enemyCount);
+        }
+    }
+
     protected void trySafeMoveDigToward(MapLocation location, RobotData[] nearbyEnemies, int enemyCount) throws GameActionException {
         Direction direction = currentLocation.directionTo(location);
         trySafeMoveDig(direction, nearbyEnemies, enemyCount);
