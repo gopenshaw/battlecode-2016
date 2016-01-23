@@ -235,8 +235,13 @@ public class Soldier extends Robot {
     }
 
     private void moveTowardDen() throws GameActionException {
-        if (nearbyZombies.length > 0
-                || !rc.isCoreReady()) {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        RobotInfo[] nonDenZombies = RobotUtil.removeRobotsOfType(nearbyZombies, RobotType.ZOMBIEDEN);
+        if (nonDenZombies != null
+                && nonDenZombies.length > 0) {
             return;
         }
 

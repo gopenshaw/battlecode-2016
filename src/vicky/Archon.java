@@ -13,8 +13,8 @@ public class Archon extends Robot {
     private static final int SCOUT_ALIVE_ROUNDS = 200;
     private RobotType[] lowUnitCountBuildQueue = {
             RobotType.SCOUT, RobotType.SOLDIER, RobotType.SOLDIER,
-            RobotType.SOLDIER, RobotType.SOLDIER, RobotType.VIPER, RobotType.SOLDIER,
             RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER,
+            RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.VIPER,
     };
 
     private RobotType[] highUnitCountBuildQueue = {
