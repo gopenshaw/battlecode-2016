@@ -6,16 +6,14 @@ import questlove.message.consensus.ZombiesDeadConsensus;
 import questlove.nav.SquarePath;
 import questlove.message.Message;
 import questlove.message.MessageParser;
-import questlove.util.BoundedQueue;
-import questlove.util.DirectionUtil;
-import questlove.util.RobotQueueNoDuplicates;
-import questlove.util.RobotUtil;
+import questlove.util.*;
 
 public class Scout extends Robot {
     private static final int ROUNDS_TO_REVERSE = 4;
     private static final int MIN_PAIRING_ROUND = 300;
     private final int ZOMBIE_BROADCAST_RADIUS = senseRadius * 3;
     private final SquarePath initialPath;
+    private final MapBounds mapEstimate;
     private Direction exploreDirection;
     private final int LOOKAHEAD_LENGTH = 5;
     private RobotInfo[] nearbyZombies;
@@ -42,8 +40,12 @@ public class Scout extends Robot {
         zombiesDead = new ZombiesDeadConsensus(rc);
         zombieDens = new RobotQueueNoDuplicates(Config.MAX_DENS);
         destroyedDens = new BoundedQueue<Integer>(Config.MAX_DENS);
-        initialPath = new SquarePath(rc.getLocation(), 8, rc);
         amFirstScout = rc.getRoundNum() < 40;
+        mapEstimate = MapUtil.getBoundsThatEncloseLocations(rc.getInitialArchonLocations(rc.getTeam()),
+                rc.getInitialArchonLocations(rc.getTeam().opponent()));
+        int pathRadius = Math.min(mapEstimate.getHeight(), mapEstimate.getWidth()) / 4;
+        System.out.printf("height %d width %d radius\n", mapEstimate.getHeight(), mapEstimate.getWidth(), pathRadius);
+        initialPath = new SquarePath(rc.getLocation(), pathRadius, rc);
     }
 
     @Override
@@ -57,7 +59,6 @@ public class Scout extends Robot {
         getPairIfUnpaired();
         if (myPair == null) {
             zombiesDead.participate(roundSignals, roundNumber);
-            setIndicatorString(2, "zombies dead " + zombiesDead.isConsensusReached());
             if (!zombiesDead.isConsensusReached()) {
                 discoverDestroyedDens();
                 readDenMessages();
@@ -70,8 +71,8 @@ public class Scout extends Robot {
             }
 
             broadcastEnemy();
-            moveAwayFromZombies();
             explore();
+            moveAwayFromZombies();
         } else if (myPair.team == team) {
             zombiesDead.observe(roundSignals, roundNumber);
             moveTowardMyPair();
@@ -85,7 +86,6 @@ public class Scout extends Robot {
         } else {
             // we are watching enemy turrets
             zombiesDead.observe(roundSignals, roundNumber);
-            setIndicatorString(2, "pair with " + myPair.ID);
             moveToSafety();
             moveCloser();
             broadcastAllTurrets();
@@ -121,14 +121,12 @@ public class Scout extends Robot {
     }
 
     private void broadcastAllTurrets() throws GameActionException {
-        setIndicatorString(0, "turrets: ");
         RobotInfo[] enemyTurrets = RobotUtil.getRobotsOfType(nearbyEnemies, RobotType.TURRET);
         if (enemyTurrets == null) {
             return;
         }
 
         for (RobotInfo robot : enemyTurrets) {
-            setIndicatorString(0, " " + robot.location);
             Message message = MessageBuilder.buildTurretMessage(robot);
             rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), senseRadius * 2);
         }
@@ -218,7 +216,6 @@ public class Scout extends Robot {
             destroyedDens.add(id);
         }
 
-        setIndicatorString(1, "broadcast destroyed dens");
         Message message = MessageBuilder.buildDestroyedDenMessage(denData);
         rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), getDestroyedDenBroadcastRadius());
     }
@@ -239,7 +236,6 @@ public class Scout extends Robot {
 
         zombieDens.add(den);
         Message message = MessageBuilder.buildZombieMessage(den);
-        setIndicatorString(1, "broadcast den " + den.location);
         rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), senseRadius * 6);
     }
 
@@ -330,13 +326,12 @@ public class Scout extends Robot {
             return;
         }
 
-        setIndicatorString(1, "reading turrets");
         for (int i = 0; i < enemyTurrets.length; i++) {
             if (enemyTurrets[i] == null) {
                 break;
             }
             else {
-                setIndicatorString(1, " " + enemyTurrets[i].location);
+//                setIndicatorString(1, " " + enemyTurrets[i].location);
             }
         }
 
@@ -437,10 +432,6 @@ public class Scout extends Robot {
             return;
         }
 
-        if (rand.nextInt(4) == 0) {
-            exploreDirection = getExploreDirection(exploreDirection);
-        }
-
         tryMove(DirectionUtil.getDirectionAwayFrom(nearbyZombies, nearbyEnemies, currentLocation));
     }
 
@@ -485,6 +476,9 @@ public class Scout extends Robot {
             }
         }
 
+        if (RobotUtil.anyCanAttack(nearbyZombies, currentLocation.add(exploreDirection, 2))) {
+            return;
+        }
 
         if (rc.isCoreReady()) {
             tryMove(exploreDirection);

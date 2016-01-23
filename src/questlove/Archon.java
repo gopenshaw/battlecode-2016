@@ -39,7 +39,7 @@ public class Archon extends Robot {
     private double lastRoundHealth;
     private final ZombiesDeadConsensus zombiesDead;
     private int[] scoutAliveRound = new int[32001];
-    private RobotQueueNoDuplicates aliveScouts = new RobotQueueNoDuplicates(30);
+    private RobotQueueNoDuplicates aliveScouts = new RobotQueueNoDuplicates(60);
     private int scoutCountEstimate;
     private RobotData enemyToApproach;
 
@@ -409,7 +409,7 @@ public class Archon extends Robot {
             return false;
         }
 
-        return rc.getRobotCount() / scoutCountEstimate < 3;
+        return rc.getRobotCount() / scoutCountEstimate < 4;
     }
 
     private void repairRobots() throws GameActionException {

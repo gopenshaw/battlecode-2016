@@ -24,12 +24,14 @@ public class SquarePath {
         this.radius = radius;
         this.rc = rc;
         this.radius = radius;
+        rc.setIndicatorString(0, String.format("radius %d center %s", this.radius, this.center));
         updateBoundaries();
 
         previousDirection = Direction.NORTH;
         rotationCountDirection = Direction.NORTH;
     }
     public Direction getNextDirection(MapLocation currentLocation) throws GameActionException {
+        rc.setIndicatorString(2, "radius is: " + radius);
         countRotations(currentLocation);
         Direction pathDirection = getNextPathDirection(currentLocation);
 
