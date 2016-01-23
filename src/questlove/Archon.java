@@ -46,6 +46,7 @@ public class Archon extends Robot {
     private static final int sensorRadius =  (int) Math.pow(RobotType.ARCHON.sensorRadiusSquared, 0.5) ;
     private RobotInfo[][] locationsOfNearbyEnemies = new RobotInfo[2 * sensorRadius + 1][2 * sensorRadius + 1];
     private int[][] locationLastFilled = new int[2 * sensorRadius + 1][2 * sensorRadius + 1];
+    private Direction previousRoundsSafestDirection = Direction.NONE;
 
     public Archon(RobotController rc) {
         super(rc);
@@ -282,13 +283,11 @@ public class Archon extends Robot {
                 }
             }
 
-            // Less enemies increases score.
-            // Further distance to rubble location increases score.
-            // Further distance to off map location increases score.
             double currentDirectionScore = (1.0 - (double) enemyCountInCurrentDirection / (double) MAX_ENEMIES_IN_DIRECTION)
                     * ((double) offMapDistanceInCurrentDirection / (double) MAX_DISTANCE_TO_OFF_MAP)
                     * ((double) rubbleDistanceInCurrentDirection / (double) MAX_DISTANCE_TO_RUBBLE)
-                    * ((direction.equals(directionAwayFromEnemies) ? 2 : 1) / 2.0);
+                    * (direction.equals(directionAwayFromEnemies) ? 1.0 : 0.8)
+                    * (direction.equals(previousRoundsSafestDirection) ? 1.0 : 0.9);
 
             if (currentDirectionScore > safestDirectionScore) {
                 safestDirectionScore = currentDirectionScore;
@@ -296,7 +295,7 @@ public class Archon extends Robot {
             }
         }
 
-        return safestDirection;
+        return previousRoundsSafestDirection = safestDirection;
     }
 
     private void setLocationsOfEnemies(RobotInfo[] locationsOfEnemies) {
