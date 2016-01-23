@@ -30,6 +30,7 @@ public class Soldier extends Robot {
     private int canAttackMe;
     private int teammatesCanAttackEnemy;
     private LocationMemory locationMemory = new LocationMemory();
+    private RobotInfo[] adjacentEnemies;
 
     public Soldier(RobotController rc) {
         super(rc);
@@ -44,20 +45,17 @@ public class Soldier extends Robot {
 
         processAllBroadcasts();
         senseRobots();
-        //--TODO: We need to take out enemies before the dens
-        shootZombies();
-        shootEnemies();
-        shootDen();
-        microAwayFromZombies();
-        chaseArchon();
-        microAwayFromEnemies();
-        moveTowardZombie();
-        moveTowardDen();
-        moveTowardEnemy();
-        moveAwayFromArchon();
-        clearRubble();
-        spread();
-        recordZombieLocations();
+
+        RobotInfo closestRobot = RobotUtil.getClosestRobotToLocation(nearbyFriendlies, nearbyEnemies, currentLocation);
+        if (rc.isInfected()
+                && closestRobot != null
+                && closestRobot.team == team) {
+            tryMove(DirectionUtil.getDirectionToward(nearbyEnemies, currentLocation));
+        }
+        else {
+            shootEnemiesAndZombies();
+            moveTowardEnemy();
+        }
     }
 
     private void recordZombieLocations() {
@@ -169,8 +167,8 @@ public class Soldier extends Robot {
         }
 
         if (canAttackMe + advantage > canAttackEnemy) {
+            setIndicatorString(1, "micro away from enemies");
             tryMove(DirectionUtil.getDirectionAwayFrom(nearbyEnemies, currentLocation));
-            rc.broadcastSignal(senseRadius * 2);
         }
     }
 
@@ -180,31 +178,21 @@ public class Soldier extends Robot {
             return;
         }
 
-        if (enemyToApproach != null) {
-            setIndicatorString(2, "try move to enemy location");
-            int enemyCount = nearbyEnemies.length;
-            int allyCount = RobotUtil.countMoveReady(adjacentTeammates);
-            if (allyCount < enemyCount) {
-                return;
-            }
-
-            if (enemyTurrets.length > 0) {
-                trySafeMoveToward(enemyToApproach.location, enemyTurretLocations);
-            }
-            else {
-                if (enemyToApproach.type != RobotType.TURRET) {
-                    tryMoveToward(enemyToApproach.location);
-                }
-                else {
-                    trySafeMoveTowardTurret(enemyToApproach);
-                }
-            }
+        if (enemyToApproach == null) {
+            return;
         }
+
+        Direction towardEnemy = currentLocation.directionTo(enemyToApproach.location);
+        if (RobotUtil.anyCanAttack(nearbyEnemies, currentLocation.add(towardEnemy))) {
+            return;
+        }
+
+        tryMoveToward(enemyToApproach.location);
     }
 
     private void spread() throws GameActionException {
         //--TODO write some actual spread code
-        
+
         //--give archon space in early game for spawning
         if (roundNumber > 100
                 || !rc.isCoreReady()) {
@@ -219,24 +207,36 @@ public class Soldier extends Robot {
         }
     }
 
-    private void shootEnemies() throws GameActionException {
-        if (!rc.isWeaponReady()
-                || attackableEnemies.length == 0) {
+    private void shootEnemiesAndZombies() throws GameActionException {
+        if (!rc.isWeaponReady()) {
+            return;
+        }
+
+        if (attackableEnemies.length == 0
+                && attackableZombies.length == 0) {
             return;
         }
 
         RobotInfo enemyToAttack;
         if (type == RobotType.SOLDIER) {
             enemyToAttack = RobotUtil.getLowestHealthRobot(attackableEnemies);
+            if (enemyToAttack != null) {
+                rc.attackLocation(enemyToAttack.location);
+            }
         }
         else { // Viper
+            int infectedCount = RobotUtil.countInfected(nearbyEnemies);
+            if (2 * infectedCount >= nearbyEnemies.length
+                    || nearbyEnemies.length <= 2) {
+                return;
+            }
+
             enemyToAttack = RobotUtil.getLowestHealthNonInfectedRobot(attackableEnemies);
-            if (enemyToAttack == null) {
+            if (enemyToAttack != null) {
+                rc.attackLocation(enemyToAttack.location);
                 return;
             }
         }
-
-        rc.attackLocation(enemyToAttack.location);
     }
 
     private void updateDestroyedDens(DestroyedDenData denData) {
@@ -377,6 +377,7 @@ public class Soldier extends Robot {
         nearbyEnemies = senseNearbyEnemies();
         nearbyFriendlies = senseNearbyFriendlies();
         adjacentTeammates = rc.senseNearbyRobots(2, team);
+        adjacentEnemies = rc.senseNearbyRobots(2, enemy);
 
         int maxEnemies = 6;
         enemiesCanAttackMe = RobotUtil.getEnemiesThatCanAttack(nearbyEnemies, currentLocation, maxEnemies);
