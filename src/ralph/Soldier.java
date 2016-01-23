@@ -23,10 +23,6 @@ public class Soldier extends Robot {
     private static RobotData zombieDen;
     private static boolean[] denDestroyed = new boolean[32001];
 
-    private static MapLocation helpLocation;
-    private static final int MAX_HELP_LOCATIONS = 4;
-    private static MapLocation[] helpLocations = new MapLocation[MAX_HELP_LOCATIONS];
-    private static int helpLocationTurn = 0;
     private static final int IGNORE_HELP_TURNS = 3;
 
     private static boolean[] buggingTo = new boolean[32001];
@@ -42,6 +38,10 @@ public class Soldier extends Robot {
 
     @Override
     protected void doTurn() throws GameActionException {
+        if (roundNumber > 400) {
+            enemyToApproach = new RobotData(487, new MapLocation(436, 152), 1000, RobotType.ARCHON);
+        }
+
         processAllBroadcasts();
         senseRobots();
         //--TODO: We need to take out enemies before the dens
@@ -89,7 +89,6 @@ public class Soldier extends Robot {
     }
 
     private void processAllBroadcasts() {
-        int helpLocationCount = 0;
         enemyTurretCount = 0;
         zombieToAttack = null;
 
@@ -102,19 +101,10 @@ public class Soldier extends Robot {
 
             int[] message = roundSignals[i].getMessage();
             if (message == null) {
-                //--broadcasts with no message are "help" messages
-                if (helpLocationCount < MAX_HELP_LOCATIONS) {
-                    helpLocations[helpLocationCount++] = roundSignals[i].getLocation();
-                    helpLocationTurn = roundNumber;
-                }
             }
             else {
                 processBroadcastWithMessage(message);
             }
-        }
-
-        if (helpLocationCount > 0) {
-            helpLocation = LocationUtil.findClosestLocation(helpLocations, helpLocationCount, currentLocation);
         }
     }
 
@@ -190,22 +180,6 @@ public class Soldier extends Robot {
             return;
         }
 
-        if (helpLocation != null
-                && helpLocationTurn + IGNORE_HELP_TURNS > roundNumber
-                && currentLocation.distanceSquaredTo(helpLocation) > 2) {
-
-            setIndicatorString(2, "try move to help location");
-            //--TODO add micro stuff here?
-            if (enemyTurretCount > 0) {
-                trySafeMoveToward(helpLocation, enemyTurretLocations);
-            }
-            else {
-                tryMoveToward(helpLocation);
-            }
-
-            return;
-        }
-
         if (enemyToApproach != null) {
             setIndicatorString(2, "try move to enemy location");
             int enemyCount = nearbyEnemies.length;
@@ -229,6 +203,8 @@ public class Soldier extends Robot {
     }
 
     private void spread() throws GameActionException {
+        //--TODO write some actual spread code
+        
         //--give archon space in early game for spawning
         if (roundNumber > 100
                 || !rc.isCoreReady()) {

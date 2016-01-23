@@ -70,7 +70,7 @@ public class Scout extends Robot {
                 broadcastDensAndDestroyedDens();
             }
 
-            broadcastEnemy();
+//            broadcastEnemy();
             explore();
             moveAwayFromZombies();
         } else if (myPair.team == team) {

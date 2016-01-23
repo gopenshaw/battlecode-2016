@@ -468,7 +468,6 @@ public class Archon extends Robot {
         if (previousPartLocation != null) {
             setIndicatorString(2, "moving toward memory parts");
             trySafeMoveDigOnto(previousPartLocation, enemyTurrets, enemyTurretCount);
-            rc.broadcastSignal(31);
         }
     }
 }
