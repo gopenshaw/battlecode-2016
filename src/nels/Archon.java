@@ -240,6 +240,8 @@ public class Archon extends Robot {
     static final int MAX_DISTANCE_TO_OFF_MAP = 35;
 
     private Direction safestDirectionTooRunTo() throws GameActionException {
+        Direction directionAwayFromEnemies = DirectionUtil.getDirectionAwayFrom(nearbyEnemies, nearbyZombies, currentLocation);
+
         setLocationsOfEnemies(nearbyEnemies);
         setLocationsOfEnemies(nearbyZombies);
 
@@ -263,7 +265,7 @@ public class Archon extends Robot {
                     break;
                 }
 
-                if (rc.senseRubble(location) > 0) {
+                if (rc.senseRubble(location) > 100) {
                     rubbleDistanceInCurrentDirection = currentLocation.distanceSquaredTo(location);
                     break;
                 }
@@ -281,7 +283,8 @@ public class Archon extends Robot {
             // Further distance to off map location increases score.
             double currentDirectionScore = (1.0 - (double) enemyCountInCurrentDirection / (double) MAX_ENEMIES_IN_DIRECTION)
                     * ((double) offMapDistanceInCurrentDirection / (double) MAX_DISTANCE_TO_OFF_MAP)
-                    * ((double) rubbleDistanceInCurrentDirection / (double) MAX_DISTANCE_TO_RUBBLE);
+                    * ((double) rubbleDistanceInCurrentDirection / (double) MAX_DISTANCE_TO_RUBBLE)
+                    * ((direction.equals(directionAwayFromEnemies) ? 2 : 1) / 2.0);
 
             if (currentDirectionScore > safestDirectionScore) {
                 safestDirectionScore = currentDirectionScore;
