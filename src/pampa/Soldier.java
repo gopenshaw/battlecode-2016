@@ -80,6 +80,10 @@ public class Soldier extends Robot {
                 && RobotUtil.countMoveReady(adjacentTeammates) > 0) {
             tryMoveToward(archon.location);
         }
+        else if (nearbyFriendlies.length > nearbyEnemies.length * 2) {
+            tryMoveToward(archon.location);
+        }
+
     }
 
     private void processAllBroadcasts() {
@@ -243,12 +247,18 @@ public class Soldier extends Robot {
             return;
         }
 
-        RobotInfo lowestHealthEnemy = RobotUtil.getLowestHealthRobot(attackableEnemies);
-        if (lowestHealthEnemy == null) {
-            return;
+        RobotInfo enemyToAttack;
+        if (type == RobotType.SOLDIER) {
+            enemyToAttack = RobotUtil.getLowestHealthRobot(attackableEnemies);
+        }
+        else { // Viper
+            enemyToAttack = RobotUtil.getLowestHealthNonInfectedRobot(attackableEnemies);
+            if (enemyToAttack == null) {
+                return;
+            }
         }
 
-        rc.attackLocation(lowestHealthEnemy.location);
+        rc.attackLocation(enemyToAttack.location);
     }
 
     private void updateDestroyedDens(DestroyedDenData denData) {
