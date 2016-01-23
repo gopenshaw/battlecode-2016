@@ -335,64 +335,67 @@ public class Archon extends Robot {
     }
 
     private void buildRobots() throws GameActionException {
-        if (!rc.isCoreReady()
-                || id % 3 == roundNumber % 3) {
+        if (!rc.isCoreReady()) {
             return;
         }
 
-        if (rc.getRobotCount() > Config.HIGH_UNIT_COUNT
-                || (roundNumber > 600 && rc.getTeamParts() > 350)) {
-            RobotType robotType = highUnitCountBuildQueue[highUnitQueuePosition % highUnitCountBuildQueue.length];
-            RobotInfo neutral = RobotUtil.getRobotOfType(nearbyNeutrals, robotType, RobotType.ARCHON);
-            if (neutral != null) {
-                if (currentLocation.isAdjacentTo(neutral.location)) {
-                    rc.activate(neutral.location);
-                    highUnitQueuePosition++;
-                    return;
-                }
-                else if (nearbyEnemies.length == 0) {
-                    Direction toward = currentLocation.directionTo(neutral.location);
-                    if (rc.canMove(toward)) {
-                        rc.move(toward);
-                        return;
-                    }
-                }
-            }
+        boolean useHighQueue = rc.getRobotCount() > Config.HIGH_UNIT_COUNT
+                || (roundNumber > 600 && rc.getTeamParts() > 350);
 
-            if (robotType == RobotType.SCOUT
-                    && tooManyScouts()) {
-                highUnitQueuePosition++;
-                robotType = highUnitCountBuildQueue[highUnitQueuePosition % highUnitCountBuildQueue.length];
-            }
-
-            if (tryBuild(robotType)) {
-                highUnitQueuePosition++;
-            }
+        RobotType typeToBuild;
+        if (useHighQueue) {
+            typeToBuild = highUnitCountBuildQueue[highUnitQueuePosition % highUnitCountBuildQueue.length];
         }
         else {
-            RobotType robotType = lowUnitCountBuildQueue[lowUnitQueuePosition % lowUnitCountBuildQueue.length];
-            RobotInfo neutral = RobotUtil.getRobotOfType(nearbyNeutrals, robotType, RobotType.ARCHON);
-            if (neutral != null) {
-                if (currentLocation.isAdjacentTo(neutral.location)) {
-                    rc.activate(neutral.location);
+            typeToBuild = lowUnitCountBuildQueue[lowUnitQueuePosition % lowUnitCountBuildQueue.length];
+        }
+
+        //--try to get a free build by grabbing a neutral
+        RobotInfo neutral = RobotUtil.getRobotOfType(nearbyNeutrals, typeToBuild, RobotType.ARCHON);
+        if (neutral != null) {
+            if (currentLocation.isAdjacentTo(neutral.location)) {
+                rc.activate(neutral.location);
+                if (useHighQueue) {
+                    highUnitQueuePosition++;
+                }
+                else {
                     lowUnitQueuePosition++;
+                }
+
+                return;
+            }
+            else if (nearbyEnemies.length == 0) {
+                Direction toward = currentLocation.directionTo(neutral.location);
+                if (rc.canMove(toward)) {
+                    rc.move(toward);
                     return;
                 }
-                else if (nearbyEnemies.length == 0) {
-                    Direction toward = currentLocation.directionTo(neutral.location);
-                    if (rc.canMove(toward)) {
-                        rc.move(toward);
-                        return;
-                    }
-                }
             }
+        }
 
-            if (robotType == RobotType.SCOUT
-                    && tooManyScouts()) {
-                lowUnitQueuePosition++;
-                robotType = lowUnitCountBuildQueue[lowUnitQueuePosition % lowUnitCountBuildQueue.length];
+        //--randomize builds so they go evenly between archons
+        if (id % 3 == roundNumber % 3) {
+            return;
+        }
+
+        //--skip scouts if we have too many
+        if (typeToBuild == RobotType.SCOUT
+                && tooManyScouts()) {
+            if (useHighQueue) {
+                highUnitQueuePosition++;
+                typeToBuild = highUnitCountBuildQueue[highUnitQueuePosition % highUnitCountBuildQueue.length];
             }
-            if (tryBuild(robotType)) {
+            else {
+                lowUnitQueuePosition++;
+                typeToBuild = lowUnitCountBuildQueue[lowUnitQueuePosition % lowUnitCountBuildQueue.length];
+            }
+        }
+
+        if (tryBuild(typeToBuild)) {
+            if (useHighQueue) {
+                highUnitQueuePosition++;
+            }
+            else {
                 lowUnitQueuePosition++;
             }
         }
