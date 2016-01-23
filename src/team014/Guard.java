@@ -4,11 +4,14 @@ import battlecode.common.GameActionException;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
+import team014.util.DirectionUtil;
 import team014.util.RobotUtil;
 
 public class Guard extends Robot {
     private RobotInfo[] attackableZombies;
     private RobotInfo[] nearbyZombies;
+    private RobotInfo[] attackableEnemies;
+    private RobotInfo[] nearbyEnemies;
 
     public Guard(RobotController rc) {
         super(rc);
@@ -20,6 +23,27 @@ public class Guard extends Robot {
         moveAwayFromDens();
         attackZombies();
         moveTowardZombies();
+        attackEnemies();
+        moveTowardEnemies();
+    }
+
+    private void moveTowardEnemies() throws GameActionException {
+        if (attackableEnemies.length > 0
+                || !rc.isCoreReady()) {
+            return;
+        }
+
+        rc.move(DirectionUtil.getDirectionToward(nearbyEnemies, currentLocation));
+    }
+
+    private void attackEnemies() throws GameActionException {
+        if (attackableEnemies.length == 0
+                || !rc.isWeaponReady()) {
+            return;
+        }
+
+        RobotInfo lowestHealth = RobotUtil.getLowestHealthRobot(attackableEnemies);
+        rc.attackLocation(lowestHealth.location);
     }
 
     private void moveAwayFromDens() throws GameActionException {
@@ -41,6 +65,8 @@ public class Guard extends Robot {
 
     private void senseRobots() {
         attackableZombies = senseAttackableZombies();
+        attackableEnemies = senseAttackableEnemies();
+        nearbyEnemies = senseNearbyEnemies();
         nearbyZombies = senseNearbyZombies();
     }
 

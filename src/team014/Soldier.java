@@ -10,7 +10,6 @@ import team014.util.RobotUtil;
 
 public class Soldier extends Robot {
     private static final int MIN_SAFE_MOVE_ROUND = 300;
-    private static final double TOO_MUCH_RUBBLE = 30000;
 
     private Signal[] roundSignals;
 
@@ -81,6 +80,10 @@ public class Soldier extends Robot {
                 && RobotUtil.countMoveReady(adjacentTeammates) > 0) {
             tryMoveToward(archon.location);
         }
+        else if (nearbyFriendlies.length > nearbyEnemies.length * 2) {
+            tryMoveToward(archon.location);
+        }
+
     }
 
     private void processAllBroadcasts() {
@@ -224,13 +227,16 @@ public class Soldier extends Robot {
     }
 
     private void spread() throws GameActionException {
-        if (!rc.isCoreReady()) {
+        //--give archon space in early game for spawning
+        if (roundNumber > 100
+                || !rc.isCoreReady()) {
             return;
         }
 
         int nearbyArchonCount = RobotUtil.getCountOfType(nearbyFriendlies, RobotType.ARCHON);
         if (nearbyArchonCount > 0
                 && adjacentTeammates.length > 3) {
+            setIndicatorString(2, "spread out");
             tryMove(DirectionUtil.getDirectionAwayFrom(adjacentTeammates, currentLocation));
         }
     }
@@ -241,12 +247,18 @@ public class Soldier extends Robot {
             return;
         }
 
-        RobotInfo lowestHealthEnemy = RobotUtil.getLowestHealthRobot(attackableEnemies);
-        if (lowestHealthEnemy == null) {
-            return;
+        RobotInfo enemyToAttack;
+        if (type == RobotType.SOLDIER) {
+            enemyToAttack = RobotUtil.getLowestHealthRobot(attackableEnemies);
+        }
+        else { // Viper
+            enemyToAttack = RobotUtil.getLowestHealthNonInfectedRobot(attackableEnemies);
+            if (enemyToAttack == null) {
+                return;
+            }
         }
 
-        rc.attackLocation(lowestHealthEnemy.location);
+        rc.attackLocation(enemyToAttack.location);
     }
 
     private void updateDestroyedDens(DestroyedDenData denData) {
@@ -319,17 +331,17 @@ public class Soldier extends Robot {
 
     private boolean tooMuchRubble(Direction direction) {
         MapLocation forward = currentLocation.add(direction);
-        if (rc.senseRubble(forward) < TOO_MUCH_RUBBLE) {
+        if (rc.senseRubble(forward) < Config.TOO_MUCH_RUBBLE) {
             return false;
         }
 
         forward = currentLocation.add(direction.rotateLeft());
-        if (rc.senseRubble(forward) < TOO_MUCH_RUBBLE) {
+        if (rc.senseRubble(forward) < Config.TOO_MUCH_RUBBLE) {
             return false;
         }
 
         forward = currentLocation.add(direction.rotateRight());
-        if (rc.senseRubble(forward) < TOO_MUCH_RUBBLE) {
+        if (rc.senseRubble(forward) < Config.TOO_MUCH_RUBBLE) {
             return false;
         }
 
