@@ -45,6 +45,15 @@ public class DirectionUtil {
             y += d.dy;
         }
 
+        return getDirection(x, y);
+    }
+
+    public static Direction getDirection(int x, int y) {
+        if (x == 0
+                && y == 0) {
+            return Direction.NONE;
+        }
+
         if (x < 0) {
             if (y < 0) {
                 return Direction.NORTH_WEST;

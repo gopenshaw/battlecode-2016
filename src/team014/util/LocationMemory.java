@@ -4,21 +4,28 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotInfo;
 
 public class LocationMemory {
-    private int[] roundRecorded = new int[32000];
+    private int[] previousLocationRound = new int[32000];
     private MapLocation[] location = new MapLocation[32000];
+    private MapLocation[] previousLocation = new MapLocation[32000];
 
-    private static final int ROUND_TOLERANCE = 3;
+    private static final int ROUND_TOLERANCE = 6;
 
     public void saveLocation(RobotInfo robot, int currentRound) {
-        roundRecorded[robot.ID] = currentRound;
-        location[robot.ID] = robot.location;
+        int robotId = robot.ID;
+        MapLocation currentLocation = robot.location;
+        if (!currentLocation.equals(this.location[robotId]))  {
+            previousLocation[robotId] = this.location[robotId];
+            previousLocationRound[robotId] = currentRound;
+        }
+
+        this.location[robotId] = currentLocation;
     }
 
     public MapLocation getPreviousLocation(RobotInfo robot, int currentRound) {
-        if (roundRecorded[robot.ID] + ROUND_TOLERANCE < currentRound) {
+        if (previousLocationRound[robot.ID] + ROUND_TOLERANCE < currentRound) {
             return null;
         }
 
-        return location[robot.ID];
+        return previousLocation[robot.ID];
     }
 }

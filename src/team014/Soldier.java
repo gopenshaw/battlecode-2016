@@ -3,10 +3,7 @@ package team014;
 import battlecode.common.*;
 import team014.message.MessageParser;
 import team014.nav.Bug;
-import team014.util.BoundedQueue;
-import team014.util.DirectionUtil;
-import team014.util.LocationUtil;
-import team014.util.RobotUtil;
+import team014.util.*;
 
 public class Soldier extends Robot {
     private static final int MIN_SAFE_MOVE_ROUND = 300;
@@ -20,7 +17,6 @@ public class Soldier extends Robot {
     private static RobotInfo[] nearbyEnemies;
     private static RobotInfo[] nearbyFriendlies;
 
-    BoundedQueue<Integer> zombieMemory = new BoundedQueue<Integer>(3);
     private static LocationCollection zombieDens = new LocationCollection(20);
     private static RobotData zombieToAttack;
     private static RobotData enemyToApproach;
@@ -37,6 +33,7 @@ public class Soldier extends Robot {
     private BoundedQueue<RobotInfo> enemiesCanAttackMe;
     private int canAttackMe;
     private int teammatesCanAttackEnemy;
+    private LocationMemory locationMemory = new LocationMemory();
 
     public Soldier(RobotController rc) {
         super(rc);
@@ -52,16 +49,21 @@ public class Soldier extends Robot {
         shootEnemies();
         shootDen();
         microAwayFromZombies();
-        moveTowardZombieNotGettingCloser();
         chaseArchon();
         microAwayFromEnemies();
         moveTowardZombie();
         moveTowardDen();
         moveTowardEnemy();
         moveAwayFromArchon();
-        updateZombieMemory();
         clearRubble();
         spread();
+        recordZombieLocations();
+    }
+
+    private void recordZombieLocations() {
+        for (RobotInfo zombie : nearbyZombies) {
+            locationMemory.saveLocation(zombie, roundNumber);
+        }
     }
 
     private void chaseArchon() throws GameActionException {
@@ -348,43 +350,6 @@ public class Soldier extends Robot {
         return true;
     }
 
-    private void updateZombieMemory() {
-        forgetZombiesFromLastTurn();
-        rememberZombiesFromThisTurn();
-    }
-
-    private void rememberZombiesFromThisTurn() {
-        for (RobotInfo zombie : nearbyZombies) {
-            zombieMemory.add(zombie.ID);
-        }
-    }
-
-    private void forgetZombiesFromLastTurn() {
-        zombieMemory.clear();
-    }
-
-    private void moveTowardZombieNotGettingCloser() throws GameActionException {
-        if (nearbyZombies.length == 0
-                || !rc.isCoreReady()) {
-            return;
-        }
-
-        for (RobotInfo zombie : nearbyZombies) {
-            if (zombie.type != RobotType.BIGZOMBIE
-                    && zombie.type != RobotType.ZOMBIEDEN
-                    && sawZombieLastTurn(zombie)) {
-                setIndicatorString(2, "move toward zombie not gettign closer");
-                tryMoveToward(zombie.location);
-                break;
-            }
-        }
-
-    }
-
-    private boolean sawZombieLastTurn(RobotInfo zombie) {
-        return zombieMemory.contains(zombie.ID);
-    }
-
     private void microAwayFromZombies() throws GameActionException {
         if (attackableZombies.length == 0
                 || !rc.isCoreReady()
@@ -392,7 +357,41 @@ public class Soldier extends Robot {
             return;
         }
 
-        tryMove(DirectionUtil.getDirectionAwayFrom(attackableZombies, currentLocation));
+        int x = 0;
+        int y = 0;
+        for (RobotInfo zombie : attackableZombies) {
+            MapLocation previousLocation = locationMemory.getPreviousLocation(zombie, roundNumber);
+            if (previousLocation != null
+                    && !previousLocation.equals(zombie.location)) {
+                Direction previousDirection = previousLocation.directionTo(zombie.location);
+                x += previousDirection.dx;
+                y += previousDirection.dy;
+            }
+        }
+
+        Direction zombieDirection = DirectionUtil.getDirection(x, y);
+        setIndicatorString(2, "zombie direction " + zombieDirection);
+        if (zombieDirection == Direction.NONE) {
+            return;
+        }
+
+        if (willHitWall(currentLocation, zombieDirection)) {
+            setIndicatorString(2, "move away from zombies");
+            tryMove(DirectionUtil.getDirectionAwayFrom(nearbyZombies, currentLocation));
+        }
+        else if (RobotUtil.anyCanAttack(nearbyEnemies, currentLocation.add(zombieDirection))) {
+            setIndicatorString(2, "move away from enemies and zombies");
+            tryMove(DirectionUtil.getDirectionAwayFrom(nearbyZombies, nearbyEnemies, currentLocation));
+        }
+        else {
+            setIndicatorString(2, "move with zombies, " + zombieDirection);
+            tryMoveForward(zombieDirection);
+        }
+    }
+
+    private boolean willHitWall(MapLocation currentLocation, Direction direction) throws GameActionException {
+        MapLocation next = currentLocation.add(direction, 2);
+        return !rc.onTheMap(next);
     }
 
     private void senseRobots() {
@@ -458,6 +457,11 @@ public class Soldier extends Robot {
             return;
         }
 
+        if (rc.canSenseRobot(zombieToAttack.id)) {
+            return;
+        }
+
+        setIndicatorString(2, "move toward broadcast zombie");
         tryMoveToward(zombieToAttack.location);
    }
 }

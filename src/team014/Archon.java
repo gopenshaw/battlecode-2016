@@ -1,10 +1,10 @@
 package team014;
 
 import battlecode.common.*;
-import team014.message.consensus.ZombiesDeadConsensus;
 import team014.message.Message;
 import team014.message.MessageBuilder;
 import team014.message.MessageParser;
+import team014.message.consensus.ZombiesDeadConsensus;
 import team014.nav.Bug;
 import team014.util.*;
 

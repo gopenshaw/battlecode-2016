@@ -28,6 +28,7 @@ public abstract class Robot {
     private static final int MAX_RUBBLE_CAN_PASS = 10000;
 
     private static int[] rotations = {0, 7, 1, 6, 2, 5, 3};
+    private static int[] forwardRotations = {0, 7, 1, 6, 2};
     private static int[] moveSequence1 = {0, 7, 1};
     private static int[] digSequence1 = {0, 7, 1};
     private static int[] moveSequence2 = {6, 2, 5, 3};
@@ -413,7 +414,33 @@ public abstract class Robot {
         }
     }
 
+    protected void tryMoveForward(Direction targetDirection) throws GameActionException {
+        int initialDirection = getDirectionNumber(targetDirection);
+        if (initialDirection < 0) {
+            return;
+        }
+
+        Direction currentDirection;
+        for (int i = 0; i < forwardRotations.length; i++) {
+            currentDirection = directions[(initialDirection + rotations[i]) % 8];
+            if (rc.canMove(currentDirection)) {
+                rc.move(currentDirection);
+                return;
+            }
+        }
+
+        if (rc.getType() == RobotType.TTM
+                || rc.getType() == RobotType.TURRET) {
+            return;
+        }
+
+        tryClearRubble(targetDirection);
+    }
+
     protected void tryMove(Direction targetDirection) throws GameActionException {
+        //--TODO make an overload that takes dx and dy
+        //  and if it cannot move in the target direction it decides
+        //  its initial rotation based off the dx and dy preference
         int initialDirection = getDirectionNumber(targetDirection);
         if (initialDirection < 0) {
             return;
