@@ -10,7 +10,6 @@ import pampa.util.RobotUtil;
 
 public class Soldier extends Robot {
     private static final int MIN_SAFE_MOVE_ROUND = 300;
-    private static final double TOO_MUCH_RUBBLE = 30000;
 
     private Signal[] roundSignals;
 
@@ -224,7 +223,9 @@ public class Soldier extends Robot {
     }
 
     private void spread() throws GameActionException {
-        if (!rc.isCoreReady()) {
+        //--give archon space in early game for spawning
+        if (roundNumber > 100
+                || !rc.isCoreReady()) {
             return;
         }
 
@@ -320,17 +321,17 @@ public class Soldier extends Robot {
 
     private boolean tooMuchRubble(Direction direction) {
         MapLocation forward = currentLocation.add(direction);
-        if (rc.senseRubble(forward) < TOO_MUCH_RUBBLE) {
+        if (rc.senseRubble(forward) < Config.TOO_MUCH_RUBBLE) {
             return false;
         }
 
         forward = currentLocation.add(direction.rotateLeft());
-        if (rc.senseRubble(forward) < TOO_MUCH_RUBBLE) {
+        if (rc.senseRubble(forward) < Config.TOO_MUCH_RUBBLE) {
             return false;
         }
 
         forward = currentLocation.add(direction.rotateRight());
-        if (rc.senseRubble(forward) < TOO_MUCH_RUBBLE) {
+        if (rc.senseRubble(forward) < Config.TOO_MUCH_RUBBLE) {
             return false;
         }
 

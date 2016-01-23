@@ -8,4 +8,5 @@ public class Config {
     public static final int HIGH_UNIT_COUNT = 62;
     public static final int MAX_DENS = 50;
     public static final int MAX_ENEMY_TURRETS = 5;
+    public static final int TOO_MUCH_RUBBLE = 20000;
 }
