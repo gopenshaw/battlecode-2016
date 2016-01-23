@@ -1,9 +1,9 @@
-package pampa.util;
+package questlove.util;
 
 import battlecode.common.Direction;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotInfo;
-import pampa.RobotData;
+import questlove.RobotData;
 
 import java.util.ArrayList;
 
@@ -49,6 +49,11 @@ public class DirectionUtil {
     }
 
     public static Direction getDirection(int x, int y) {
+        if (x == 0
+                && y == 0) {
+            return Direction.NONE;
+        }
+
         if (x < 0) {
             if (y < 0) {
                 return Direction.NORTH_WEST;
