@@ -477,4 +477,16 @@ public class RobotUtil {
 
         return count;
     }
+
+    public static boolean anyInfected(RobotInfo[] robots) {
+        int robotCount = robots.length;
+        for (int i = 0; i < robotCount; i++) {
+            if (robots[i].viperInfectedTurns > 0
+                    || robots[i].zombieInfectedTurns > 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

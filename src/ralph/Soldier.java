@@ -174,6 +174,9 @@ public class Soldier extends Robot {
 
     private void moveTowardEnemy() throws GameActionException {
         if (attackableEnemies.length > 0
+                || nearbyZombies.length > 0
+                || RobotUtil.anyInfected(nearbyEnemies)
+                || RobotUtil.anyInfected(nearbyFriendlies)
                 || !rc.isCoreReady()) {
             return;
         }
@@ -222,6 +225,13 @@ public class Soldier extends Robot {
             enemyToAttack = RobotUtil.getLowestHealthRobot(attackableEnemies);
             if (enemyToAttack != null) {
                 rc.attackLocation(enemyToAttack.location);
+                return;
+            }
+
+            enemyToAttack = RobotUtil.getLowestHealthRobot(attackableZombies);
+            if (enemyToAttack != null) {
+                rc.attackLocation(enemyToAttack.location);
+                return;
             }
         }
         else { // Viper
