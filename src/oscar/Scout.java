@@ -477,8 +477,8 @@ public class Scout extends Robot {
             return false;
         }
 
-        setIndicatorString(0, String.format("direction path to %s cost %d", end, directPath));
-        setIndicatorString(1, String.format("bug path to %s cost %d", end, rightBugCost));
+        rc.addMatchObservation(String.format("direction path to %s cost %d", end, directPath));
+        rc.addMatchObservation(String.format("bug path to %s cost %d", end, rightBugCost));
         denDirectLength[denIndex] = directPath;
         denRightBugLength[denIndex] = rightBugCost;
 
@@ -552,7 +552,8 @@ public class Scout extends Robot {
 
         int d = turnRight ? 7 : 1;
         while (!current.equals(end)) {
-            if (++pathLength > maxLength) {
+            pathLength = pathLength + 2;
+            if (pathLength > maxLength) {
                 return -1;
             }
 
@@ -642,7 +643,6 @@ public class Scout extends Robot {
     }
 
     private Ternary reachableFromLastWaypoint(MapLocation destination, int denIndex) {
-        rc.addMatchObservation("firstWaypoint count is " + waypointCount[denIndex]);
         MapLocation source = denWaypoint[denIndex][waypointCount[denIndex] - 1];
         return directPathNoRubble(source, destination);
     }
@@ -735,7 +735,7 @@ public class Scout extends Robot {
                 return -1;
             }
 
-            cost += 1 + RubbleUtil.getRoundsToMakeMovable(rubble[x][y]);
+            cost += 2 + (2 * RubbleUtil.getRoundsToMakeMovable(rubble[x][y])); // 2 to move, 2 to clear rubble
             current = current.add(current.directionTo(end));
         }
 
