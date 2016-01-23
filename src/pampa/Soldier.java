@@ -35,6 +35,9 @@ public class Soldier extends Robot {
     private static final int IGNORE_HELP_TURNS = 3;
 
     private static boolean[] buggingTo = new boolean[32001];
+    private BoundedQueue<RobotInfo> enemiesCanAttackMe;
+    private int canAttackMe;
+    private int teammatesCanAttackEnemy;
 
     public Soldier(RobotController rc) {
         super(rc);
@@ -48,8 +51,10 @@ public class Soldier extends Robot {
         //--TODO: We need to take out enemies before the dens
         shootZombies();
         shootEnemies();
+        shootDen();
         microAwayFromZombies();
         moveTowardZombieNotGettingCloser();
+        chaseArchon();
         microAwayFromEnemies();
         moveTowardZombie();
         moveTowardDen();
@@ -58,6 +63,24 @@ public class Soldier extends Robot {
         updateZombieMemory();
         clearRubble();
         spread();
+    }
+
+    private void chaseArchon() throws GameActionException {
+        if (nearbyEnemies.length == 0
+                || !rc.isCoreReady()) {
+            return;
+        }
+
+        RobotInfo archon = RobotUtil.getRobotOfType(nearbyEnemies, RobotType.ARCHON);
+        if (archon == null) {
+            return;
+        }
+
+        if (nearbyEnemies.length < 5
+                && nearbyFriendlies.length >= nearbyEnemies.length
+                && RobotUtil.countMoveReady(adjacentTeammates) > 0) {
+            tryMoveToward(archon.location);
+        }
     }
 
     private void processAllBroadcasts() {
@@ -95,7 +118,6 @@ public class Soldier extends Robot {
         if (messageType == MessageType.ZOMBIE) {
             RobotData zombie = MessageParser.getRobotData(message[0], message[1]);
             if (zombie.type == RobotType.ZOMBIEDEN) {
-                setIndicatorString(1, "adding den " + zombie.location);
                 updateZombieDen(zombie);
             }
             else {
@@ -140,15 +162,11 @@ public class Soldier extends Robot {
             return;
         }
 
-        int maxEnemies = 6;
-        BoundedQueue<RobotInfo> enemiesCanAttackMe = RobotUtil.getEnemiesThatCanAttack(nearbyEnemies, currentLocation, maxEnemies);
-        int canAttackMe = enemiesCanAttackMe.getSize();
-        setIndicatorString(0, "can attack me: " + canAttackMe);
         if (canAttackMe == 0) {
             return;
         }
 
-        int canAttackEnemy = RobotUtil.countCanAttack(nearbyFriendlies, enemiesCanAttackMe) + 1;
+        int canAttackEnemy = teammatesCanAttackEnemy + 1; //--assuming we can attack too
         int advantage = 2;
         if (canAttackMe == 1
                 && canAttackEnemy == 2) {
@@ -156,7 +174,6 @@ public class Soldier extends Robot {
         }
 
         if (canAttackMe + advantage > canAttackEnemy) {
-            setIndicatorString(2, "micro away from enemies");
             tryMove(DirectionUtil.getDirectionAwayFrom(nearbyEnemies, currentLocation));
             rc.broadcastSignal(senseRadius * 2);
         }
@@ -171,7 +188,9 @@ public class Soldier extends Robot {
         if (helpLocation != null
                 && helpLocationTurn + IGNORE_HELP_TURNS > roundNumber
                 && currentLocation.distanceSquaredTo(helpLocation) > 2) {
+
             setIndicatorString(2, "try move to help location");
+            //--TODO add micro stuff here?
             if (enemyTurretCount > 0) {
                 trySafeMoveToward(helpLocation, enemyTurretLocations);
             }
@@ -184,6 +203,12 @@ public class Soldier extends Robot {
 
         if (enemyToApproach != null) {
             setIndicatorString(2, "try move to enemy location");
+            int enemyCount = nearbyEnemies.length;
+            int allyCount = RobotUtil.countMoveReady(adjacentTeammates);
+            if (allyCount < enemyCount) {
+                return;
+            }
+
             if (enemyTurrets.length > 0) {
                 trySafeMoveToward(enemyToApproach.location, enemyTurretLocations);
             }
@@ -206,7 +231,6 @@ public class Soldier extends Robot {
         int nearbyArchonCount = RobotUtil.getCountOfType(nearbyFriendlies, RobotType.ARCHON);
         if (nearbyArchonCount > 0
                 && adjacentTeammates.length > 3) {
-            setIndicatorString(0, "spreading");
             tryMove(DirectionUtil.getDirectionAwayFrom(adjacentTeammates, currentLocation));
         }
     }
@@ -309,7 +333,6 @@ public class Soldier extends Robot {
             return false;
         }
 
-        setIndicatorString(0, "TOO MUCH RUBBLE");
         return true;
     }
 
@@ -357,7 +380,6 @@ public class Soldier extends Robot {
             return;
         }
 
-        setIndicatorString(2, "micro away from zombies");
         tryMove(DirectionUtil.getDirectionAwayFrom(attackableZombies, currentLocation));
     }
 
@@ -368,6 +390,11 @@ public class Soldier extends Robot {
         nearbyEnemies = senseNearbyEnemies();
         nearbyFriendlies = senseNearbyFriendlies();
         adjacentTeammates = rc.senseNearbyRobots(2, team);
+
+        int maxEnemies = 6;
+        enemiesCanAttackMe = RobotUtil.getEnemiesThatCanAttack(nearbyEnemies, currentLocation, maxEnemies);
+        canAttackMe = enemiesCanAttackMe.getSize();
+        teammatesCanAttackEnemy = RobotUtil.countCanAttack(nearbyFriendlies, enemiesCanAttackMe);
     }
 
     private void moveAwayFromArchon() throws GameActionException {
@@ -377,14 +404,18 @@ public class Soldier extends Robot {
 
         RobotInfo archon = RobotUtil.getRobotOfType(adjacentTeammates, RobotType.ARCHON);
         if (archon != null) {
-            setIndicatorString(2, "move away from archon");
             tryMove(archon.location.directionTo(currentLocation));
         }
     }
 
     private void shootZombies() throws GameActionException {
-        if (!rc.isWeaponReady()
-                || attackableZombies.length == 0) {
+        if (!rc.isWeaponReady()) {
+            return;
+        }
+
+        RobotInfo[] nonDenZombies = RobotUtil.removeRobotsOfType(attackableZombies, RobotType.ZOMBIEDEN);
+        if (nonDenZombies == null
+                || nonDenZombies.length == 0) {
             return;
         }
 
@@ -396,6 +427,16 @@ public class Soldier extends Robot {
         rc.attackLocation(lowestHealthZombie.location);
     }
 
+    private void shootDen() throws GameActionException {
+        if (!rc.isWeaponReady()
+                || attackableZombies.length == 0) {
+            return;
+        }
+
+        RobotInfo den = RobotUtil.getRobotOfType(attackableZombies, RobotType.ZOMBIEDEN);
+        rc.attackLocation(den.location);
+    }
+
     private void moveTowardZombie() throws GameActionException {
         if (!rc.isCoreReady()) {
             return;
@@ -405,7 +446,6 @@ public class Soldier extends Robot {
             return;
         }
 
-        setIndicatorString(2, "move toward zombie");
         tryMoveToward(zombieToAttack.location);
    }
 }

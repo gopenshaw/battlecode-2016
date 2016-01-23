@@ -417,4 +417,16 @@ public class RobotUtil {
 
         return closest;
     }
+
+    public static int countMoveReady(RobotInfo[] adjacentTeammates) {
+        int count = 0;
+        int total = adjacentTeammates.length;
+        for (int i = 0; i < total; i++) {
+            if (adjacentTeammates[i].coreDelay < 1) {
+                count++;
+            }
+        }
+
+        return count;
+    }
 }
