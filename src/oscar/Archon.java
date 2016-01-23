@@ -409,23 +409,5 @@ public class Archon extends Robot {
             trySafeMoveDigToward(closest, enemyTurrets, enemyTurretCount);
             return;
         }
-
-        if (previousPartLocation == null) {
-            for (Signal s : roundSignals) {
-                if (s.getTeam() == team) {
-                    int[] message = s.getMessage();
-                    if (message == null) continue;
-                    if (MessageParser.matchesType(message, MessageType.PARTS)) {
-                        previousPartLocation = MessageParser.getPartsData(message[0], message[1]).location;
-                    }
-                }
-            }
-        }
-
-        if (previousPartLocation != null) {
-            setIndicatorString(2, "moving toward memory parts");
-            trySafeMoveDigToward(previousPartLocation, enemyTurrets, enemyTurretCount);
-            rc.broadcastSignal(31);
-        }
     }
 }

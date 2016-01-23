@@ -36,12 +36,6 @@ public class MessageBuilder {
         return buildRobotMessage(enemy.health, enemy.id, enemy.type, enemy.location, MessageType.ENEMY);
     }
 
-    public static Message buildPartsMessage(MapLocation center) {
-        int first = Serializer.encode(center);
-        int second = Serializer.encode(MessageType.PARTS);
-        return new Message(first, second, MessageType.PARTS);
-    }
-
     private static Message buildRobotMessage(double health, int id, RobotType robotType, MapLocation location, MessageType messageType) {
         int first = ((int) health << 15) + id;
         int second = (Serializer.encode(location) << 7)
@@ -94,5 +88,16 @@ public class MessageBuilder {
 
     public static Message buildTargetMessage(RobotData closest) {
         return buildRobotMessage(closest.health, closest.id, closest.type, closest.location, MessageType.TARGET);
+    }
+
+    public static Message buildDenPathMessage(MapLocation den, MapLocation firstWaypoint,
+                                              MapLocation secondWaypoint) {
+        int encodedDen = Serializer.encode(den);
+        int first = ((encodedDen << 12) & 0xFFF00000) + Serializer.encode(firstWaypoint);
+        int second = ((encodedDen & 0xFF) << 23)
+                + (Serializer.encode(secondWaypoint) << 3)
+                + Serializer.encode(MessageType.ZOMBIE_DEN);
+
+        return new Message(first, second, MessageType.ZOMBIE_DEN);
     }
 }

@@ -3,10 +3,7 @@ package oscar.message;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
-import oscar.DestroyedDenData;
-import oscar.PartsData;
-import oscar.RobotData;
-import oscar.MessageType;
+import oscar.*;
 
 public class MessageParser {
     public static MessageType getMessageType(int first, int second) {
@@ -33,12 +30,23 @@ public class MessageParser {
         return Serializer.decodeAnnouncementMode((second >>> 3) & 0xF);
     }
 
-    public static Subject getSubject(int first, int second) {
-        return Serializer.decodeAnnouncementSubject(first);
+    public static DenPath getDenPath(int first, int second) {
+        int denEncoded = ((first >>> 12) & 0xFFF00) + ((second >>> 23) & 0x000FF);
+        MapLocation firstWaypoint = Serializer.decodeMapLocation(first & 0xFFFFF);
+        MapLocation secondWaypoint = Serializer.decodeMapLocation((second >>> 3) & 0xFFFFF);
+        if (firstWaypoint.equals(Serializer.NULL_LOCATION)) {
+            firstWaypoint = null;
+        }
+
+        if (secondWaypoint.equals(Serializer.NULL_LOCATION)) {
+            secondWaypoint = null;
+        }
+
+        return new DenPath(Serializer.decodeMapLocation(denEncoded), firstWaypoint, secondWaypoint);
     }
 
-    public static PartsData getPartsData(int first, int second) {
-        return new PartsData(Serializer.decodeMapLocation(first));
+    public static Subject getSubject(int first, int second) {
+        return Serializer.decodeAnnouncementSubject(first);
     }
 
     public static boolean pairs(int first, int second, RobotInfo robot) {

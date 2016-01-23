@@ -4,6 +4,7 @@ import battlecode.common.*;
 import oscar.message.Message;
 import oscar.message.MessageBuilder;
 import oscar.message.MessageParser;
+import oscar.message.Serializer;
 import oscar.message.consensus.ZombiesDeadConsensus;
 import oscar.nav.SquarePath;
 import oscar.util.*;
@@ -11,7 +12,6 @@ import oscar.util.*;
 public class Scout extends Robot {
     private static final int ROUNDS_TO_REVERSE = 4;
     private static final int MIN_PAIRING_ROUND = 300;
-    private static final int MAX_WAYPOINTS = 3;
     private final int ZOMBIE_BROADCAST_RADIUS = senseRadius * 3;
     private final SquarePath initialPath;
     private Direction exploreDirection;
@@ -41,7 +41,11 @@ public class Scout extends Robot {
 
     private boolean[] recordedZombieDen = new boolean[32001];
     private boolean[] denHasPath = new boolean[Config.MAX_DENS];
-    private MapLocation[][] zombieDenPath = new MapLocation[Config.MAX_DENS][MAX_WAYPOINTS];
+    private int[] denDirectLength = new int[Config.MAX_DENS];
+    private int[] denRightBugLength = new int[Config.MAX_DENS];
+    private MapLocation[][] denWaypoint = new MapLocation[Config.MAX_DENS][Config.MAX_WAYPOINTS];
+    private int[] waypointCount = new int[Config.MAX_DENS];
+
     private MapLocation[] zombieDen = new MapLocation[Config.MAX_DENS];
     private int zombieDenCount;
     private MapLocation unknownLocation;
@@ -74,7 +78,7 @@ public class Scout extends Robot {
             }
 
             checkNearbyDensForPath();
-            addNearbyDensToDenQueue();
+//            addNearbyDensToDenQueue();
             broadcastZombies();
             if (!zombiesDead.isConsensusReached()) {
                 broadcastDensAndDestroyedDens();
@@ -417,6 +421,11 @@ public class Scout extends Robot {
     }
 
     private void checkNearbyDensForPath() throws GameActionException {
+        if (roundNumber > 200) {
+            //--TODO remove this (obviously)
+            return;
+        }
+
         setIndicatorString(2, "check nearby dens for path");
         for (RobotInfo zombie : nearbyZombies) {
             if (zombie.type == RobotType.ZOMBIEDEN) {
@@ -434,31 +443,85 @@ public class Scout extends Robot {
                 setIndicatorString(2, "try find path for index: " + i);
                 if (tryFindDenPath(i)) {
                     denHasPath[i] = true;
+                    Message path;
+                    if (denDirectLength[i] <= denRightBugLength[i]
+                            || waypointCount[i] > 3) {
+                        path = MessageBuilder.buildDenPathMessage(zombieDen[i], null, null);
+                    }
+                    else {
+                        path = MessageBuilder.buildDenPathMessage(
+                                zombieDen[i], denWaypoint[i][1], denWaypoint[i][2]);
+                    }
+
+                    rc.broadcastMessageSignal(path.getFirst(), path.getSecond(), senseRadius * 8);
                 }
             }
         }
     }
 
-    private boolean tryFindDenPath(int i) throws GameActionException {
+    private boolean tryFindDenPath(int denIndex) throws GameActionException {
         MapLocation begin = startLocation;
-        MapLocation end = zombieDen[i];
+        MapLocation end = zombieDen[denIndex];
         int directPath = getDirectPathCost(begin, end);
         if (directPath < 0) {
             return false;
         }
 
-        int rightBugCost = getBugPathCost(begin, end, true, 50);
+        if (waypointCount[denIndex] == 0) {
+            denWaypoint[denIndex][0] = begin;
+            waypointCount[denIndex] = 1;
+        }
+
+        int rightBugCost = getBugPathCost(begin, denIndex, true, 50);
         if (rightBugCost < 0) {
             return false;
         }
 
         setIndicatorString(0, String.format("direction path to %s cost %d", end, directPath));
         setIndicatorString(1, String.format("bug path to %s cost %d", end, rightBugCost));
+        denDirectLength[denIndex] = directPath;
+        denRightBugLength[denIndex] = rightBugCost;
+
+        int numberOfWaypoints = waypointCount[denIndex];
+        for (int i = 0; i < numberOfWaypoints; i++) {
+            rc.addMatchObservation(String.format("PRE-COMPRESSION: firstWaypoint %d location %s", i, denWaypoint[denIndex][i]));
+        }
+
+        compressWaypoints(denIndex);
+        numberOfWaypoints = waypointCount[denIndex];
+        for (int i = 0; i < numberOfWaypoints; i++) {
+            rc.addMatchObservation(String.format("POST-COMPRESSION: firstWaypoint %d location %s", i, denWaypoint[denIndex][i]));
+        }
+
+        if (numberOfWaypoints == 3
+                && id == 3158) {
+            rc.addMatchObservation(String.format("BROADCAST: path toward %s", zombieDen[denIndex]));
+            rc.addMatchObservation(String.format("SERIALIZED: %d", Serializer.encode(zombieDen[denIndex])));
+            Message message = MessageBuilder.buildDenPathMessage(zombieDen[denIndex], denWaypoint[denIndex][1],
+                    denWaypoint[denIndex][2]);
+            rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), senseRadius * 6);
+        }
 
         return true;
     }
 
-    private int getBugPathCost(MapLocation begin, MapLocation end, boolean turnRight, int maxLength) throws GameActionException {
+    private void compressWaypoints(int denIndex) {
+        //--see if a firstWaypoint can reach the destination
+        //--if it can, remove all intermediate waypoints
+        int numberOfWaypoints = waypointCount[denIndex];
+        MapLocation destination = zombieDen[denIndex];
+        for (int i = 1; i < numberOfWaypoints - 1; i++) {
+            MapLocation source = denWaypoint[denIndex][i];
+            if (directPathNoRubble(source, destination) == Ternary.TRUE) {
+                waypointCount[denIndex] = i + 1;
+                rc.addMatchObservation(String.format("after compression waypoint count is %d", i + 1));
+                return;
+            }
+        }
+    }
+
+    private int getBugPathCost(MapLocation begin, int denIndex, boolean turnRight, int maxLength) throws GameActionException {
+        MapLocation end = zombieDen[denIndex];
         if (unknownLocation != null) {
             rc.addMatchObservation(String.format("WAITING for %s - bug from %s to %s", unknownLocation, begin, end));
             return -1;
@@ -491,6 +554,25 @@ public class Scout extends Robot {
         while (!current.equals(end)) {
             if (++pathLength > maxLength) {
                 return -1;
+            }
+
+            Ternary reachable = reachableFromLastWaypoint(current, denIndex);
+            if (reachable == Ternary.UNKNOWN) {
+                unknownLocation = current;
+                rc.addMatchObservation(String.format("unknown location to firstWaypoint %s", current));
+                return -1;
+            }
+
+            if (reachable == Ternary.TRUE) {
+                denWaypoint[denIndex][waypointCount[denIndex]] = current;
+            }
+            else {
+                if (denWaypoint[denIndex][waypointCount[denIndex]] == null) {
+                    denWaypoint[denIndex][waypointCount[denIndex]] = current;
+                }
+
+                rc.addMatchObservation(String.format("WAYPOINT %d: %s", waypointCount[denIndex], denWaypoint[denIndex][waypointCount[denIndex]]));
+                waypointCount[denIndex]++;
             }
 
             int x = current.x % 100;
@@ -557,6 +639,37 @@ public class Scout extends Robot {
 
         rc.addMatchObservation(String.format("found path of length %d", pathLength));
         return pathLength;
+    }
+
+    private Ternary reachableFromLastWaypoint(MapLocation destination, int denIndex) {
+        rc.addMatchObservation("firstWaypoint count is " + waypointCount[denIndex]);
+        MapLocation source = denWaypoint[denIndex][waypointCount[denIndex] - 1];
+        return directPathNoRubble(source, destination);
+    }
+
+    private Ternary directPathNoRubble(MapLocation source, MapLocation destination) {
+        //--TODO should allows small rotations
+        if (source.equals(destination)) {
+            return Ternary.TRUE;
+        }
+
+        MapLocation current = source;
+        while (!current.equals(destination)) {
+            int x = current.x % 100;
+            int y = current.y % 100;
+            if (!recordedLocation[x][y]) {
+                return Ternary.UNKNOWN;
+            }
+
+            if (rubble[x][y] > 0) {
+                rc.addMatchObservation(String.format("WAYPOINT check found rubble %s source %s dest %s", current, source, destination));
+                return Ternary.FALSE;
+            }
+
+            current = current.add(current.directionTo(destination));
+        }
+
+        return Ternary.TRUE;
     }
 
     private Direction getFollowDirection(MapLocation location, Direction direction, boolean turnRight) throws GameActionException {

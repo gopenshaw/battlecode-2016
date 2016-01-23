@@ -1,6 +1,7 @@
 package oscar;
 
 import battlecode.common.*;
+import oscar.message.Message;
 import oscar.nav.Bug;
 import oscar.message.MessageParser;
 import oscar.util.BoundedQueue;
@@ -28,6 +29,8 @@ public class Soldier extends Robot {
     private static RobotData zombieDen;
     private static boolean[] denDestroyed = new boolean[32001];
 
+    private static DenPath denPath = null;
+
     private static MapLocation helpLocation;
     private static final int MAX_HELP_LOCATIONS = 4;
     private static MapLocation[] helpLocations = new MapLocation[MAX_HELP_LOCATIONS];
@@ -35,6 +38,8 @@ public class Soldier extends Robot {
     private static final int IGNORE_HELP_TURNS = 3;
 
     private static boolean[] buggingTo = new boolean[32001];
+    private MapLocation[] denWaypoint = new MapLocation[Config.MAX_WAYPOINTS];
+    private int currentWaypoint = 0;
 
     public Soldier(RobotController rc) {
         super(rc);
@@ -52,12 +57,32 @@ public class Soldier extends Robot {
         moveTowardZombieNotGettingCloser();
         microAwayFromEnemies();
         moveTowardZombie();
-        moveTowardDen();
+        newMoveTowardDen();
         moveTowardEnemy();
         moveAwayFromArchon();
         updateZombieMemory();
         clearRubble();
         spread();
+    }
+
+    private void newMoveTowardDen() throws GameActionException {
+        if (denWaypoint[currentWaypoint] == null
+                || !rc.isCoreReady()) {
+            return;
+        }
+
+        if (attackableZombies.length > 0) {
+            return;
+        }
+
+        MapLocation destination = denWaypoint[currentWaypoint];
+        setIndicatorString(1, "going to den waypoint " + destination);
+        if (currentLocation.equals(destination)) {
+            currentWaypoint++;
+            destination = denWaypoint[currentWaypoint];
+        }
+
+        tryMoveToward(destination);
     }
 
     private void processAllBroadcasts() {
@@ -95,11 +120,30 @@ public class Soldier extends Robot {
         if (messageType == MessageType.ZOMBIE) {
             RobotData zombie = MessageParser.getRobotData(message[0], message[1]);
             if (zombie.type == RobotType.ZOMBIEDEN) {
-                setIndicatorString(1, "adding den " + zombie.location);
                 updateZombieDen(zombie);
             }
             else {
                 zombieToAttack = zombie;
+            }
+        }
+        else if (messageType == MessageType.ZOMBIE_DEN) {
+            rc.addMatchObservation("SOLDIER GOT ZOMBIE DEN");
+            if (denWaypoint[0] == null) {
+                DenPath denPath = MessageParser.getDenPath(message[0], message[1]);
+                rc.addMatchObservation(String.format("parsed %s %s %s", denPath.denLocation, denPath.firstWaypoint, denPath.secondWaypoint));
+                int waypoints = denPath.getWaypointCount();
+                if (waypoints == 0) {
+                    denWaypoint[0] = denPath.denLocation;
+                }
+                else if (waypoints == 1) {
+                    denWaypoint[0] = denPath.firstWaypoint;
+                    denWaypoint[1] = denPath.denLocation;
+                }
+                else {
+                    denWaypoint[0] = denPath.firstWaypoint;
+                    denWaypoint[1] = denPath.secondWaypoint;
+                    denWaypoint[2] = denPath.denLocation;
+                }
             }
         }
         else if (messageType == MessageType.ENEMY) {

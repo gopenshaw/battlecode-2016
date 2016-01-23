@@ -6,8 +6,9 @@ import oscar.MessageType;
 
 public class Serializer {
     //--Max 8 types
+    protected static final MapLocation NULL_LOCATION = new MapLocation(999, 999);
     private static final MessageType[] messageEncoding = {
-            MessageType.PARTS, MessageType.ENEMY, MessageType.ENEMY_TURRET, MessageType.ZOMBIE,
+            MessageType.ZOMBIE_DEN, MessageType.ENEMY, MessageType.ENEMY_TURRET, MessageType.ZOMBIE,
             MessageType.ANNOUNCEMENT, MessageType.PAIR, MessageType.TARGET, MessageType.DESTROYED_DENS
     };
 
@@ -21,6 +22,10 @@ public class Serializer {
         AnnouncementMode.DENY };
 
     public static int encode(MapLocation location) {
+        if (location == null) {
+            location = NULL_LOCATION;
+        }
+
         return (location.x % 1000) * 1000 + (location.y % 1000);
     }
 
