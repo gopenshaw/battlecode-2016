@@ -27,12 +27,61 @@ public class RobotUtil {
         return minIndex < 0 ? null : robots[minIndex];
     }
 
+    public static RobotInfo[] getRobotsCanAttack(RobotInfo[] robots, MapLocation location) {
+        int canAttackCount = 0;
+        int robotCount = robots.length;
+        for (int i = 0; i < robotCount; i++) {
+            RobotInfo robot = robots[i];
+            if (robot != null
+                    && robot.type.canAttack()
+                    && robot.location.distanceSquaredTo(location) <= robot.type.attackRadiusSquared) {
+                canAttackCount++;
+            }
+        }
+
+        RobotInfo[] robotsCanAttack = new RobotInfo[canAttackCount];
+        int index = 0;
+        for (int i = 0; i < robotCount; i++) {
+            RobotInfo robot = robots[i];
+            if (robot != null
+                    && robot.type.canAttack()
+                    && robot.location.distanceSquaredTo(location) <= robot.type.attackRadiusSquared) {
+                robotsCanAttack[index++] = robot;
+            }
+        }
+
+        return robotsCanAttack;
+    }
+
     public static boolean anyCanAttack(RobotInfo[] robots, MapLocation location) {
         for (RobotInfo robot : robots) {
             if (robot != null
                     && robot.type.canAttack()
                     && robot.location.distanceSquaredTo(location) <= robot.type.attackRadiusSquared) {
                 return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static boolean anyCanAttackConsideringTTMsTurrets(RobotInfo[] robots, MapLocation location) {
+        for (RobotInfo robot : robots) {
+            if (robot == null) {
+                continue;
+            }
+
+            RobotType type = robot.type;
+            if (type == RobotType.TTM) {
+                if (robot.location.distanceSquaredTo(location) <= RobotType.TURRET.attackRadiusSquared) {
+                    return true;
+                }
+            }
+            else {
+                if (type.canAttack()
+                    && robot.location.distanceSquaredTo(location) <= type.attackRadiusSquared) {
+                    return true;
+                }
             }
         }
 

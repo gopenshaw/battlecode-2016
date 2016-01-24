@@ -101,12 +101,24 @@ public class Scout extends Robot {
     }
 
     private void moveCloser() throws GameActionException {
-        if (!rc.isCoreReady()) {
+        if (myPair == null
+                || !rc.isCoreReady()) {
             return;
         }
 
         Direction towardEnemy = DirectionUtil.getDirectionToward(nearbyEnemies, currentLocation);
-        trySafeMove(towardEnemy, nearbyEnemies);
+        setIndicatorString(2, "move closer");
+        Direction safeTowardEnemy = getSafeMoveDirectionConsideringTTMsTurrets(towardEnemy, nearbyEnemies);
+        if (safeTowardEnemy == null) {
+            return;
+        }
+
+        if (currentLocation.add(safeTowardEnemy).distanceSquaredTo(myPair.location) > type.sensorRadiusSquared) {
+            //--don't move if I would no longer be able to see my pair
+            return;
+        }
+
+        rc.move(safeTowardEnemy);
     }
 
 
@@ -115,8 +127,11 @@ public class Scout extends Robot {
             return;
         }
 
-        if (RobotUtil.anyCanAttack(nearbyEnemies, currentLocation)) {
-            tryMove(DirectionUtil.getDirectionAwayFrom(nearbyEnemies, currentLocation));
+        RobotInfo[] robotsCanAttackMe = RobotUtil.getRobotsCanAttack(nearbyEnemies, currentLocation);
+        if (robotsCanAttackMe != null
+                && robotsCanAttackMe.length > 0) {
+            setIndicatorString(2, "move to safety");
+            tryMove(DirectionUtil.getDirectionAwayFrom(robotsCanAttackMe, currentLocation));
         }
     }
 
@@ -286,6 +301,7 @@ public class Scout extends Robot {
         }
 
         if (!currentLocation.isAdjacentTo(myPair.location)) {
+            setIndicatorString(2, "move toward my pair");
             tryMove(currentLocation.directionTo(myPair.location));
         }
     }
@@ -296,11 +312,13 @@ public class Scout extends Robot {
         }
 
         if (!rc.canSenseRobot(myPair.ID)) {
+            setIndicatorString(0, "can't sense pair " + myPair.ID);
             myPair = null;
             return;
         }
 
         myPair = rc.senseRobot(myPair.ID);
+        setIndicatorString(0, "update connection with pair " + myPair.ID);
         broadcastPairMessage(myPair);
     }
 
@@ -353,6 +371,7 @@ public class Scout extends Robot {
         }
 
         myPair = unpairedTurret;
+        setIndicatorString(0, "pairing with " + myPair.ID);
         broadcastPairMessage(myPair);
         return true;
     }

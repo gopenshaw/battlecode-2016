@@ -333,6 +333,24 @@ public abstract class Robot {
         return tryClearRubble(direction);
     }
 
+    protected Direction getSafeMoveDirectionConsideringTTMsTurrets(Direction direction, RobotInfo[] nearbyEnemies) throws GameActionException {
+        MapLocation currentLocation = rc.getLocation();
+        int initialDirection = getDirectionNumber(direction);
+        if (initialDirection < 0) {
+            return null;
+        }
+
+        for (int i = 0; i < rotations.length; i++) {
+            Direction d = directions[(initialDirection + rotations[i]) % 8];
+            MapLocation next = currentLocation.add(d);
+            if (canMoveSafelyConsiderTTMsTurrets(d, next, nearbyEnemies)) {
+                return d;
+            }
+        }
+
+        return null;
+    }
+
     protected boolean trySafeMove(Direction direction, RobotInfo[] nearbyEnemies, RobotInfo[] nearbyZombies) throws GameActionException {
         MapLocation currentLocation = rc.getLocation();
         int initialDirection = getDirectionNumber(direction);
@@ -356,6 +374,11 @@ public abstract class Robot {
         return rc.canMove(direction)
                 && !RobotUtil.anyCanAttack(nearbyEnemies, next)
                 && !RobotUtil.anyCanAttack(nearbyZombies, next);
+    }
+
+    private boolean canMoveSafelyConsiderTTMsTurrets(Direction direction, MapLocation next, RobotInfo[] nearbyEnemies) {
+        return rc.canMove(direction)
+                && !RobotUtil.anyCanAttackConsideringTTMsTurrets(nearbyEnemies, next);
     }
 
     private boolean canMoveSafely(Direction direction, MapLocation next, RobotInfo[] nearbyEnemies) {
