@@ -6,16 +6,14 @@ import team014.message.MessageBuilder;
 import team014.message.MessageParser;
 import team014.message.consensus.ZombiesDeadConsensus;
 import team014.nav.SquarePath;
-import team014.util.BoundedQueue;
-import team014.util.DirectionUtil;
-import team014.util.RobotQueueNoDuplicates;
-import team014.util.RobotUtil;
+import team014.util.*;
 
 public class Scout extends Robot {
     private static final int ROUNDS_TO_REVERSE = 4;
     private static final int MIN_PAIRING_ROUND = 300;
     private final int ZOMBIE_BROADCAST_RADIUS = senseRadius * 3;
     private final SquarePath initialPath;
+    private final MapBounds mapEstimate;
     private Direction exploreDirection;
     private final int LOOKAHEAD_LENGTH = 5;
     private RobotInfo[] nearbyZombies;
@@ -42,8 +40,12 @@ public class Scout extends Robot {
         zombiesDead = new ZombiesDeadConsensus(rc);
         zombieDens = new RobotQueueNoDuplicates(Config.MAX_DENS);
         destroyedDens = new BoundedQueue<Integer>(Config.MAX_DENS);
-        initialPath = new SquarePath(rc.getLocation(), 8, rc);
         amFirstScout = rc.getRoundNum() < 40;
+        mapEstimate = MapUtil.getBoundsThatEncloseLocations(rc.getInitialArchonLocations(rc.getTeam()),
+                rc.getInitialArchonLocations(rc.getTeam().opponent()));
+        int pathRadius = Math.min(mapEstimate.getHeight(), mapEstimate.getWidth()) / 4;
+        System.out.printf("height %d width %d radius\n", mapEstimate.getHeight(), mapEstimate.getWidth(), pathRadius);
+        initialPath = new SquarePath(rc.getLocation(), pathRadius, rc);
     }
 
     @Override
@@ -57,7 +59,6 @@ public class Scout extends Robot {
         getPairIfUnpaired();
         if (myPair == null) {
             zombiesDead.participate(roundSignals, roundNumber);
-            setIndicatorString(2, "zombies dead " + zombiesDead.isConsensusReached());
             if (!zombiesDead.isConsensusReached()) {
                 discoverDestroyedDens();
                 readDenMessages();
@@ -70,8 +71,8 @@ public class Scout extends Robot {
             }
 
             broadcastEnemy();
-            moveAwayFromZombies();
             explore();
+            moveAwayFromZombies();
         } else if (myPair.team == team) {
             zombiesDead.observe(roundSignals, roundNumber);
             moveTowardMyPair();
@@ -85,7 +86,6 @@ public class Scout extends Robot {
         } else {
             // we are watching enemy turrets
             zombiesDead.observe(roundSignals, roundNumber);
-            setIndicatorString(2, "pair with " + myPair.ID);
             moveToSafety();
             moveCloser();
             broadcastAllTurrets();
@@ -101,12 +101,24 @@ public class Scout extends Robot {
     }
 
     private void moveCloser() throws GameActionException {
-        if (!rc.isCoreReady()) {
+        if (myPair == null
+                || !rc.isCoreReady()) {
             return;
         }
 
         Direction towardEnemy = DirectionUtil.getDirectionToward(nearbyEnemies, currentLocation);
-        trySafeMove(towardEnemy, nearbyEnemies);
+        setIndicatorString(2, "move closer");
+        Direction safeTowardEnemy = getSafeMoveDirectionConsideringTTMsTurrets(towardEnemy, nearbyEnemies);
+        if (safeTowardEnemy == null) {
+            return;
+        }
+
+        if (currentLocation.add(safeTowardEnemy).distanceSquaredTo(myPair.location) > type.sensorRadiusSquared) {
+            //--don't move if I would no longer be able to see my pair
+            return;
+        }
+
+        rc.move(safeTowardEnemy);
     }
 
 
@@ -115,20 +127,21 @@ public class Scout extends Robot {
             return;
         }
 
-        if (RobotUtil.anyCanAttack(nearbyEnemies, currentLocation)) {
-            tryMove(DirectionUtil.getDirectionAwayFrom(nearbyEnemies, currentLocation));
+        RobotInfo[] robotsCanAttackMe = RobotUtil.getRobotsCanAttack(nearbyEnemies, currentLocation);
+        if (robotsCanAttackMe != null
+                && robotsCanAttackMe.length > 0) {
+            setIndicatorString(2, "move to safety");
+            tryMove(DirectionUtil.getDirectionAwayFrom(robotsCanAttackMe, currentLocation));
         }
     }
 
     private void broadcastAllTurrets() throws GameActionException {
-        setIndicatorString(0, "turrets: ");
         RobotInfo[] enemyTurrets = RobotUtil.getRobotsOfType(nearbyEnemies, RobotType.TURRET);
         if (enemyTurrets == null) {
             return;
         }
 
         for (RobotInfo robot : enemyTurrets) {
-            setIndicatorString(0, " " + robot.location);
             Message message = MessageBuilder.buildTurretMessage(robot);
             rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), senseRadius * 2);
         }
@@ -150,7 +163,7 @@ public class Scout extends Robot {
         }
     }
 
-    private void discoverDestroyedDens() {
+    private void discoverDestroyedDens() throws GameActionException {
         checkLocationWeCanSense();
         checkBroadcastsForDestroyedDens();
     }
@@ -174,14 +187,17 @@ public class Scout extends Robot {
         }
     }
 
-    private void checkLocationWeCanSense() {
+    private void checkLocationWeCanSense() throws GameActionException {
         int count = zombieDens.getSize();
         for (int i = 0; i < count; i++) {
             RobotData den = zombieDens.remove();
-            if (rc.canSenseLocation(den.location)
-                    && !rc.canSenseRobot(den.id)) {
-                denDestroyed[den.id] = true;
-                destroyedDens.add(den.id);
+            if (rc.canSenseLocation(den.location)) {
+                RobotInfo robotAtLocation = rc.senseRobotAtLocation(den.location);
+                if (robotAtLocation == null
+                        || robotAtLocation.ID != den.id) {
+                    denDestroyed[den.id] = true;
+                    destroyedDens.add(den.id);
+                }
             }
             else {
                 zombieDens.add(den);
@@ -215,7 +231,6 @@ public class Scout extends Robot {
             destroyedDens.add(id);
         }
 
-        setIndicatorString(1, "broadcast destroyed dens");
         Message message = MessageBuilder.buildDestroyedDenMessage(denData);
         rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), getDestroyedDenBroadcastRadius());
     }
@@ -236,7 +251,6 @@ public class Scout extends Robot {
 
         zombieDens.add(den);
         Message message = MessageBuilder.buildZombieMessage(den);
-        setIndicatorString(1, "broadcast den " + den.location);
         rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), senseRadius * 6);
     }
 
@@ -287,6 +301,7 @@ public class Scout extends Robot {
         }
 
         if (!currentLocation.isAdjacentTo(myPair.location)) {
+            setIndicatorString(2, "move toward my pair");
             tryMove(currentLocation.directionTo(myPair.location));
         }
     }
@@ -297,11 +312,13 @@ public class Scout extends Robot {
         }
 
         if (!rc.canSenseRobot(myPair.ID)) {
+            setIndicatorString(0, "can't sense pair " + myPair.ID);
             myPair = null;
             return;
         }
 
         myPair = rc.senseRobot(myPair.ID);
+        setIndicatorString(0, "update connection with pair " + myPair.ID);
         broadcastPairMessage(myPair);
     }
 
@@ -327,13 +344,12 @@ public class Scout extends Robot {
             return;
         }
 
-        setIndicatorString(1, "reading turrets");
         for (int i = 0; i < enemyTurrets.length; i++) {
             if (enemyTurrets[i] == null) {
                 break;
             }
             else {
-                setIndicatorString(1, " " + enemyTurrets[i].location);
+//                setIndicatorString(1, " " + enemyTurrets[i].location);
             }
         }
 
@@ -355,6 +371,7 @@ public class Scout extends Robot {
         }
 
         myPair = unpairedTurret;
+        setIndicatorString(0, "pairing with " + myPair.ID);
         broadcastPairMessage(myPair);
         return true;
     }
@@ -434,10 +451,6 @@ public class Scout extends Robot {
             return;
         }
 
-        if (rand.nextInt(4) == 0) {
-            exploreDirection = getExploreDirection(exploreDirection);
-        }
-
         tryMove(DirectionUtil.getDirectionAwayFrom(nearbyZombies, nearbyEnemies, currentLocation));
     }
 
@@ -482,6 +495,9 @@ public class Scout extends Robot {
             }
         }
 
+        if (RobotUtil.anyCanAttack(nearbyZombies, currentLocation.add(exploreDirection, 2))) {
+            return;
+        }
 
         if (rc.isCoreReady()) {
             tryMove(exploreDirection);

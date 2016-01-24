@@ -1,9 +1,6 @@
 package team014;
 
-import battlecode.common.GameActionException;
-import battlecode.common.RobotController;
-import battlecode.common.RobotInfo;
-import battlecode.common.RobotType;
+import battlecode.common.*;
 import team014.util.DirectionUtil;
 import team014.util.RobotUtil;
 
@@ -33,7 +30,13 @@ public class Guard extends Robot {
             return;
         }
 
-        rc.move(DirectionUtil.getDirectionToward(nearbyEnemies, currentLocation));
+        Direction towardEnemies = DirectionUtil.getDirectionToward(nearbyEnemies, currentLocation);
+        if (towardEnemies == Direction.OMNI
+                || towardEnemies == Direction.NONE) {
+            return;
+        }
+
+        rc.move(towardEnemies);
     }
 
     private void attackEnemies() throws GameActionException {
