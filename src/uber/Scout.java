@@ -52,19 +52,6 @@ public class Scout extends Robot {
         initialPath = new SquarePath(rc.getLocation(), pathRadius, rc);
     }
 
-    private void decideShouldDoInitialPath(int pathRadius, MapLocation[] archonLocations) {
-        if (archonLocations.length == 1) {
-            shouldDoInitialPath = true;
-            return;
-        }
-
-        int pathRadiusSquared = pathRadius * pathRadius * 2;
-        boolean allArchonsClose = LocationUtil.allWithinRange(archonLocations, currentLocation, pathRadiusSquared);
-        if (!allArchonsClose) {
-            shouldDoInitialPath = true;
-        }
-    }
-
     @Override
     protected void doTurn() throws GameActionException {
         roundSignals = rc.emptySignalQueue();
@@ -87,7 +74,7 @@ public class Scout extends Robot {
                 broadcastDensAndDestroyedDens();
             }
 
-            broadcastEnemy();
+            broadcastEnemyToApproach();
             explore();
             moveAwayFromZombies();
         } else if (myPair.team == team) {
@@ -108,6 +95,19 @@ public class Scout extends Robot {
             broadcastAllTurrets();
             broadcastZombies();
             unpairIfZombiesAreClose();
+        }
+    }
+
+    private void decideShouldDoInitialPath(int pathRadius, MapLocation[] archonLocations) {
+        if (archonLocations.length == 1) {
+            shouldDoInitialPath = true;
+            return;
+        }
+
+        int pathRadiusSquared = pathRadius * pathRadius * 2;
+        boolean allArchonsClose = LocationUtil.allWithinRange(archonLocations, currentLocation, pathRadiusSquared);
+        if (!allArchonsClose) {
+            shouldDoInitialPath = true;
         }
     }
 
@@ -418,13 +418,13 @@ public class Scout extends Robot {
         return false;
     }
 
-    private void broadcastEnemy() throws GameActionException {
+    private void broadcastEnemyToApproach() throws GameActionException {
         if (!zombiesDead.isConsensusReached()
                 || lastEnemy == null) {
             return;
         }
 
-        Message enemyMessage = MessageBuilder.buildEnemyMessage(lastEnemy);
+        Message enemyMessage = MessageBuilder.buildEnemyMessage(lastEnemy, true);
         rc.broadcastMessageSignal(enemyMessage.getFirst(), enemyMessage.getSecond(), senseRadius * 4);
     }
 
@@ -468,7 +468,7 @@ public class Scout extends Robot {
             return;
         }
 
-        tryMove(DirectionUtil.getDirectionAwayFrom(nearbyZombies, nearbyEnemies, currentLocation));
+        tryMove(safestDirectionTooRunTo(nearbyEnemies, nearbyZombies));
     }
 
     private void explore() throws GameActionException {

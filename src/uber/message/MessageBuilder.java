@@ -28,16 +28,32 @@ public class MessageBuilder {
         return buildRobotMessage(turret.health, turret.ID, turret.type, turret.location, MessageType.ENEMY_TURRET);
     }
 
-    public static Message buildEnemyMessage(RobotInfo enemy) {
-        return buildRobotMessage(enemy.health, enemy.ID, enemy.type, enemy.location, MessageType.ENEMY);
+    public static Message buildEnemyMessage(RobotInfo enemy, boolean shouldApproach) {
+        return buildRobotMessage(enemy.health, enemy.ID, enemy.type, enemy.location, MessageType.ENEMY, shouldApproach);
     }
 
     public static Message buildEnemyMessage(RobotData enemy) {
         return buildRobotMessage(enemy.health, enemy.id, enemy.type, enemy.location, MessageType.ENEMY);
     }
 
+    public static Message buildEnemyMessage(RobotData enemy, boolean shouldApproach) {
+        return buildRobotMessage(enemy.health, enemy.id, enemy.type, enemy.location, MessageType.ENEMY, shouldApproach);
+    }
+
     public static Message buildSpreadMessage() {
         return new Message(0, Serializer.encode(MessageType.SPREAD), MessageType.SPREAD);
+    }
+
+    private static Message buildRobotMessage(double health, int id, RobotType robotType, MapLocation location, MessageType messageType, boolean shouldApproach) {
+        int first = ((int) health << 15) + id;
+        if (shouldApproach) {
+            first += 0xF0000000;
+        }
+
+        int second = (Serializer.encode(location) << 7)
+                + (Serializer.encode(robotType) << 3)
+                + (Serializer.encode(messageType));
+        return new Message(first, second, messageType);
     }
 
     private static Message buildRobotMessage(double health, int id, RobotType robotType, MapLocation location, MessageType messageType) {

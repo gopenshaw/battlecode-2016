@@ -65,7 +65,8 @@ public class Turret extends Robot {
 
     public void getEnemyLocation() {
         int[] message = getFirstMessageOfType(roundSignals, MessageType.ENEMY);
-        if (message != null) {
+        if (message != null
+                && MessageParser.shouldApproach(message)) {
             enemyLocation = MessageParser.getRobotData(message).location;
         }
     }

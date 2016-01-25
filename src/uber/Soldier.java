@@ -60,7 +60,6 @@ public class Soldier extends Robot {
         moveTowardDen();
         moveTowardEnemy();
         moveTowardHelpLocation();
-        moveAwayFromArchon();
         clearRubble();
         recordZombieLocations();
         announceEnemy();
@@ -196,7 +195,10 @@ public class Soldier extends Robot {
             }
         }
         else if (messageType == MessageType.ENEMY) {
-            enemyToApproach = MessageParser.getRobotData(message[0], message[1]);
+            if (MessageParser.shouldApproach(message)) {
+                enemyToApproach = MessageParser.getRobotData(message[0], message[1]);
+                setIndicatorString(0, "enemy to approach " + enemyToApproach.location);
+            }
         }
         else if (messageType == MessageType.ENEMY_TURRET
                         && enemyTurretCount < Config.MAX_ENEMY_TURRETS) {
@@ -257,12 +259,18 @@ public class Soldier extends Robot {
             }
 
             Direction moveDirection = getTryMoveDirection(directionAwayFrom);
+            if (moveDirection == null) {
+                return;
+            }
+
             int distanceToClosestEnemy =
                     currentLocation.distanceSquaredTo(
                             RobotUtil.getClosestRobotToLocation(nearbyEnemies, currentLocation).location);
+
             int distanceToClosestEnemyAfterMove =
                     currentLocation.distanceSquaredTo(
                             RobotUtil.getClosestRobotToLocation(nearbyEnemies, currentLocation.add(moveDirection)).location);
+
             if (distanceToClosestEnemyAfterMove < distanceToClosestEnemy) {
                 return;
             }
@@ -498,18 +506,6 @@ public class Soldier extends Robot {
         RobotInfo den = RobotUtil.getRobotOfType(nearbyZombies, RobotType.ZOMBIEDEN);
         if (den != null) {
             zombieDens.add(den);
-        }
-    }
-
-    private void moveAwayFromArchon() throws GameActionException {
-        if (!rc.isCoreReady()) {
-            return;
-        }
-
-        RobotInfo archon = RobotUtil.getRobotOfType(adjacentTeammates, RobotType.ARCHON);
-        if (archon != null) {
-            setIndicatorString(2, "moving away from archon");
-            tryMove(archon.location.directionTo(currentLocation));
         }
     }
 

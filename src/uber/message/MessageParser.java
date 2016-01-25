@@ -81,4 +81,8 @@ public class MessageParser {
     public static MapLocation getLocation(int[] message) {
         return Serializer.decodeMapLocation(message[1] >>> 7);
     }
+
+    public static boolean shouldApproach(int[] message) {
+        return (message[0] & 0xF0000000) != 0;
+    }
 }
