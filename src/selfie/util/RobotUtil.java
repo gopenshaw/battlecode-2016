@@ -164,7 +164,7 @@ public class RobotUtil {
         }
 
         if (count == 0) {
-            return null;
+            return new RobotInfo[0];
         }
 
         int index = 0;
@@ -512,5 +512,47 @@ public class RobotUtil {
         }
 
         return closest;
+    }
+
+    public static RobotInfo[] getRobotsCloserToUs(RobotInfo[] robots, RobotInfo[] nearbyFriendlies, RobotInfo[] nearbyEnemies) {
+        int length = robots.length;
+        int index[] = new int[length];
+        for (int i = 0; i < length; i++) {
+            index[i] = -1;
+        }
+
+        int count = 0;
+        for (int i = 0; i < length; i++) {
+            int ourDistance = RobotUtil.getShortestDistance(robots[i], nearbyFriendlies);
+            int theirDistance = RobotUtil.getShortestDistance(robots[i], nearbyEnemies);
+            if (ourDistance <= theirDistance) {
+                index[i] = count++;
+            }
+        }
+
+        RobotInfo[] closerToUs = new RobotInfo[count];
+        for (int i = 0; i < length; i++) {
+            if (index[i] == -1) {
+                continue;
+            }
+
+            closerToUs[index[i]] = robots[i];
+        }
+
+        return closerToUs;
+    }
+
+    private static int getShortestDistance(RobotInfo robot, RobotInfo[] robots) {
+        int shortest = 1000000;
+        int length = robots.length;
+        MapLocation loc = robot.location;
+        for (int i = 0; i < length; i++) {
+            int distance = loc.distanceSquaredTo(robots[i].location);
+            if (distance < shortest) {
+                shortest = distance;
+            }
+        }
+
+        return shortest;
     }
 }

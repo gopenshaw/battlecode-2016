@@ -228,7 +228,7 @@ public class Soldier extends Robot {
 
     private void microAwayFromEnemies() throws GameActionException {
         if (!rc.isCoreReady()
-                || !rc.isInfected()) {
+                || rc.isInfected()) {
             return;
         }
 
@@ -292,7 +292,13 @@ public class Soldier extends Robot {
 
         RobotInfo enemyToAttack;
         if (type == RobotType.SOLDIER) {
-            enemyToAttack = RobotUtil.getLowestHealthRobot(attackableEnemies);
+            RobotInfo[] turrets = RobotUtil.getRobotsOfType(attackableEnemies, RobotType.TURRET);
+            if (turrets.length > 0) {
+                enemyToAttack = RobotUtil.getLowestHealthRobot(turrets);
+            }
+            else {
+                enemyToAttack = RobotUtil.getLowestHealthRobot(attackableEnemies);
+            }
         }
         else { // Viper
             enemyToAttack = RobotUtil.getLowestHealthNonInfectedRobot(attackableEnemies);
@@ -400,11 +406,15 @@ public class Soldier extends Robot {
 
         int x = 0;
         int y = 0;
-        for (RobotInfo zombie : attackableZombies) {
+        int count = attackableZombies.length;
+        for (int i = 0; i < count; i++) {
+            RobotInfo zombie = attackableZombies[i];
             MapLocation previousLocation = locationMemory.getPreviousLocation(zombie, roundNumber);
+            MapLocation location = zombie.location;
             if (previousLocation != null
-                    && !previousLocation.equals(zombie.location)) {
-                Direction previousDirection = previousLocation.directionTo(zombie.location);
+                    && !previousLocation.equals(location)
+                    && location.distanceSquaredTo(currentLocation) < previousLocation.distanceSquaredTo(currentLocation)) {
+                Direction previousDirection = previousLocation.directionTo(location);
                 x += previousDirection.dx;
                 y += previousDirection.dy;
             }
@@ -462,7 +472,8 @@ public class Soldier extends Robot {
     }
 
     private void shootZombies() throws GameActionException {
-        if (!rc.isWeaponReady()) {
+        if (!rc.isWeaponReady()
+                || rc.getType() == RobotType.VIPER) {
             return;
         }
 
@@ -472,12 +483,23 @@ public class Soldier extends Robot {
             return;
         }
 
-        RobotInfo lowestHealthZombie = RobotUtil.getLowestHealthRobot(attackableZombies);
-        if (lowestHealthZombie == null) {
-            return;
-        }
+        if (nearbyEnemies.length == 0) {
+            RobotInfo lowestHealthZombie = RobotUtil.getLowestHealthRobot(nonDenZombies);
+            if (lowestHealthZombie == null) {
+                return;
+            }
 
-        rc.attackLocation(lowestHealthZombie.location);
+            rc.attackLocation(lowestHealthZombie.location);
+        }
+        else {
+            RobotInfo[] zombiesCloserToUs = RobotUtil.getRobotsCloserToUs(nonDenZombies, nearbyFriendlies, nearbyEnemies);
+            RobotInfo lowestHealthZombie = RobotUtil.getLowestHealthRobot(zombiesCloserToUs);
+            if (lowestHealthZombie == null) {
+                return;
+            }
+
+            rc.attackLocation(lowestHealthZombie.location);
+        }
     }
 
     private void shootDen() throws GameActionException {
@@ -487,11 +509,16 @@ public class Soldier extends Robot {
         }
 
         RobotInfo den = RobotUtil.getRobotOfType(attackableZombies, RobotType.ZOMBIEDEN);
+        if (den == null) {
+            return;
+        }
+
         rc.attackLocation(den.location);
     }
 
     private void moveTowardZombie() throws GameActionException {
-        if (!rc.isCoreReady()) {
+        if (!rc.isCoreReady()
+                || attackableEnemies.length > 0) {
             return;
         }
 
