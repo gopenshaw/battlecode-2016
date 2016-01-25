@@ -341,7 +341,7 @@ public class Archon extends Robot {
         }
 
         boolean useHighQueue = rc.getRobotCount() > Config.HIGH_UNIT_COUNT
-                || (roundNumber > 600 && rc.getTeamParts() > 350);
+                || (roundNumber > 600 && rc.getTeamParts() > 500);
 
         RobotType typeToBuild;
         if (useHighQueue) {

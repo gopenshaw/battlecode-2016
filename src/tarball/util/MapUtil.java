@@ -15,13 +15,17 @@ public class MapUtil {
             int y = location.y;
             if (x < west) {
                 west = x;
-            } else if (x > east) {
+            }
+
+            if (x > east) {
                 east = x;
             }
 
             if (y < north) {
                 north = y;
-            } else if (y > south) {
+            }
+
+            if (y > south) {
                 south = y;
             }
         }
@@ -31,13 +35,17 @@ public class MapUtil {
             int y = location.y;
             if (x < west) {
                 west = x;
-            } else if (x > east) {
+            }
+
+            if (x > east) {
                 east = x;
             }
 
             if (y < north) {
                 north = y;
-            } else if (y > south) {
+            }
+
+            if (y > south) {
                 south = y;
             }
         }

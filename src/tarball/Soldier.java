@@ -16,6 +16,7 @@ public class Soldier extends Robot {
     private static RobotInfo[] adjacentTeammates;
     private static RobotInfo[] nearbyEnemies;
     private static RobotInfo[] nearbyFriendlies;
+    private static RobotInfo[] infectedEnemies;
 
     private static LocationCollection zombieDens = new LocationCollection(20);
     private static RobotData zombieToAttack;
@@ -53,8 +54,7 @@ public class Soldier extends Robot {
         shootZombies();
         shootEnemies();
         shootDen();
-        microAwayFromZombies();
-        chaseArchon();
+        microAwayFromZombiesAndInfected();
         microAwayFromEnemies();
         moveTowardZombie();
         moveTowardDen();
@@ -83,6 +83,11 @@ public class Soldier extends Robot {
     private boolean suicideIfInfected() throws GameActionException {
         if (!rc.isInfected()
                 || nearbyEnemies.length == 0) {
+            return false;
+        }
+
+        if (rc.getViperInfectedTurns() == 0
+                || canAttackMe == 0) {
             return false;
         }
 
@@ -123,6 +128,7 @@ public class Soldier extends Robot {
     private void moveTowardHelpLocation() throws GameActionException {
         if (helpLocation == null
                 || nearbyEnemies.length > 0
+                || nearbyZombies.length > 0
                 || helpLocationTurn + IGNORE_HELP_TURNS < roundNumber
                 || !rc.isCoreReady()) {
             return;
@@ -141,32 +147,10 @@ public class Soldier extends Robot {
         for (RobotInfo zombie : nearbyZombies) {
             locationMemory.saveLocation(zombie, roundNumber);
         }
-    }
 
-    private void chaseArchon() throws GameActionException {
-        if (nearbyEnemies.length == 0
-                || nearbyZombies.length > 0
-                || RobotUtil.anyInfected(nearbyFriendlies)
-                || !rc.isCoreReady()) {
-            return;
+        for (RobotInfo zombie : nearbyEnemies) {
+            locationMemory.saveLocation(zombie, roundNumber);
         }
-
-        RobotInfo archon = RobotUtil.getRobotOfType(nearbyEnemies, RobotType.ARCHON);
-        if (archon == null) {
-            return;
-        }
-
-        if (nearbyEnemies.length <= 2
-                && nearbyFriendlies.length > nearbyEnemies.length
-                && RobotUtil.countMoveReady(adjacentTeammates) > 0) {
-            setIndicatorString(2, "chase archon 1");
-            tryMoveToward(archon.location);
-        }
-        else if (nearbyFriendlies.length > nearbyEnemies.length * 2) {
-            setIndicatorString(2, "chase archon 2");
-            tryMoveToward(archon.location);
-        }
-
     }
 
     private void processAllBroadcasts() {
@@ -268,8 +252,23 @@ public class Soldier extends Robot {
         setIndicatorString(0, "can attack enemy " + canAttackEnemy);
         if (canAttackMe + advantage > canAttackEnemy) {
             Direction directionAwayFrom = DirectionUtil.getDirectionAwayFrom(nearbyEnemies, currentLocation);
-            setIndicatorString(2, "micro away from enemy " + directionAwayFrom);
-            tryMove(directionAwayFrom);
+            if (directionAwayFrom == Direction.NONE) {
+                return;
+            }
+
+            Direction moveDirection = getTryMoveDirection(directionAwayFrom);
+            int distanceToClosestEnemy =
+                    currentLocation.distanceSquaredTo(
+                            RobotUtil.getClosestRobotToLocation(nearbyEnemies, currentLocation).location);
+            int distanceToClosestEnemyAfterMove =
+                    currentLocation.distanceSquaredTo(
+                            RobotUtil.getClosestRobotToLocation(nearbyEnemies, currentLocation.add(moveDirection)).location);
+            if (distanceToClosestEnemyAfterMove < distanceToClosestEnemy) {
+                return;
+            }
+
+            setIndicatorString(2, "micro away from enemy");
+            tryMove(moveDirection);
         }
     }
 
@@ -345,7 +344,8 @@ public class Soldier extends Robot {
     }
 
     private void moveTowardDen() throws GameActionException {
-        if (!rc.isCoreReady()) {
+        if (!rc.isCoreReady()
+                || nearbyEnemies.length > 0) {
             return;
         }
 
@@ -421,10 +421,9 @@ public class Soldier extends Robot {
         return true;
     }
 
-    private void microAwayFromZombies() throws GameActionException {
-        if (attackableZombies.length == 0
-                || !rc.isCoreReady()
-                || !RobotUtil.anyCanAttack(attackableZombies)) {
+    private void microAwayFromZombiesAndInfected() throws GameActionException {
+        if (!rc.isCoreReady()
+                || rc.getViperInfectedTurns() > 0) {
             return;
         }
 
@@ -433,6 +432,20 @@ public class Soldier extends Robot {
         int count = attackableZombies.length;
         for (int i = 0; i < count; i++) {
             RobotInfo zombie = attackableZombies[i];
+            MapLocation previousLocation = locationMemory.getPreviousLocation(zombie, roundNumber);
+            MapLocation location = zombie.location;
+            if (previousLocation != null
+                    && !previousLocation.equals(location)
+                    && location.distanceSquaredTo(currentLocation) < previousLocation.distanceSquaredTo(currentLocation)) {
+                Direction previousDirection = previousLocation.directionTo(location);
+                x += previousDirection.dx;
+                y += previousDirection.dy;
+            }
+        }
+
+        count = infectedEnemies.length;
+        for (int i = 0; i < count; i++) {
+            RobotInfo zombie = infectedEnemies[i];
             MapLocation previousLocation = locationMemory.getPreviousLocation(zombie, roundNumber);
             MapLocation location = zombie.location;
             if (previousLocation != null
@@ -474,6 +487,7 @@ public class Soldier extends Robot {
         attackableEnemies = senseAttackableEnemies();
         nearbyZombies = senseNearbyZombies();
         nearbyEnemies = senseNearbyEnemies();
+        infectedEnemies = RobotUtil.getRobotsAreInfected(nearbyEnemies);
         nearbyFriendlies = senseNearbyFriendlies();
         adjacentTeammates = rc.senseNearbyRobots(2, team);
 
