@@ -36,7 +36,7 @@ public class Guard extends Robot {
             return;
         }
 
-        rc.move(towardEnemies);
+        tryMove(towardEnemies);
     }
 
     private void attackEnemies() throws GameActionException {
