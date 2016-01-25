@@ -489,4 +489,28 @@ public class RobotUtil {
 
         return count;
     }
+
+    public static RobotInfo getClosestRobotToLocation(RobotInfo[] robots, RobotInfo[] robots2, MapLocation currentLocation) {
+        RobotInfo closest = null;
+        int closestDistance = 1000000;
+        int robotCount = robots.length;
+        for (int i = 0; i < robotCount; i++) {
+            int currentDistance = currentLocation.distanceSquaredTo(robots[i].location);
+            if (currentDistance < closestDistance) {
+                closestDistance = currentDistance;
+                closest = robots[i];
+            }
+        }
+
+        robotCount = robots2.length;
+        for (int i = 0; i < robotCount; i++) {
+            int currentDistance = currentLocation.distanceSquaredTo(robots2[i].location);
+            if (currentDistance < closestDistance) {
+                closestDistance = currentDistance;
+                closest = robots2[i];
+            }
+        }
+
+        return closest;
+    }
 }

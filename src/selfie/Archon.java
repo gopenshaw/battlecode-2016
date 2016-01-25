@@ -72,7 +72,6 @@ public class Archon extends Robot {
         convertAdjacentNeutrals();
         getParts();
         repairRobots();
-        requestHelpIfUnderAttack();
         goTowardNeutral();
 
         lastRoundHealth = rc.getHealth();
