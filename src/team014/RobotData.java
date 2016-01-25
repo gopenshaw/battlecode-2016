@@ -1,6 +1,7 @@
 package team014;
 
 import battlecode.common.MapLocation;
+import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 
 public class RobotData {
@@ -14,6 +15,13 @@ public class RobotData {
         this.location = location;
         this.type = type;
         this.id = id;
+    }
+
+    public RobotData(RobotInfo robot) {
+        this.health = (int) robot.health;
+        this.location = robot.location;
+        this.type = robot.type;
+        this.id = robot.ID;
     }
 
     @Override

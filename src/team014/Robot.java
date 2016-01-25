@@ -1,6 +1,7 @@
 package team014;
 
 import battlecode.common.*;
+import team014.message.MessageBuilder;
 import team014.message.Message;
 import team014.message.MessageParser;
 import team014.util.LocationUtil;
@@ -265,8 +266,8 @@ public abstract class Robot {
             return false;
         }
 
-        for (int i = 0; i < rotations.length; i++) {
-            Direction d = directions[(initialDirection + rotations[i]) % 8];
+        for (int i = 0; i < moveSequence1.length; i++) {
+            Direction d = directions[(initialDirection + moveSequence1[i]) % 8];
             MapLocation next = currentLocation.add(d);
             if (canMoveSafely(d, next, enemyTurretLocations)) {
                 rc.move(d);
@@ -274,7 +275,23 @@ public abstract class Robot {
             }
         }
 
-        return tryClearRubble(direction);
+        for (int i = 0; i < digSequence1.length; i++) {
+            Direction d = directions[(initialDirection + digSequence1[i]) % 8];
+            if (tryDig(currentLocation, d)) {
+                return true;
+            }
+        }
+
+        for (int i = 0; i < moveSequence2.length; i++) {
+            Direction d = directions[(initialDirection + moveSequence2[i]) % 8];
+            MapLocation next = currentLocation.add(d);
+            if (canMoveSafely(d, next, enemyTurretLocations)) {
+                rc.move(d);
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected boolean trySafeMove(Direction direction,
@@ -520,6 +537,9 @@ public abstract class Robot {
                 return true;
             }
         }
+
+        Message spreadMessage = MessageBuilder.buildSpreadMessage();
+        rc.broadcastMessageSignal(spreadMessage.getFirst(), spreadMessage.getSecond(), 8);
 
         return false;
     }

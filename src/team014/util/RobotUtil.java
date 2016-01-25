@@ -164,7 +164,7 @@ public class RobotUtil {
         }
 
         if (count == 0) {
-            return null;
+            return new RobotInfo[0];
         }
 
         int index = 0;
@@ -488,5 +488,98 @@ public class RobotUtil {
         }
 
         return count;
+    }
+
+    public static RobotInfo getClosestRobotToLocation(RobotInfo[] robots, RobotInfo[] robots2, MapLocation currentLocation) {
+        RobotInfo closest = null;
+        int closestDistance = 1000000;
+        int robotCount = robots.length;
+        for (int i = 0; i < robotCount; i++) {
+            int currentDistance = currentLocation.distanceSquaredTo(robots[i].location);
+            if (currentDistance < closestDistance) {
+                closestDistance = currentDistance;
+                closest = robots[i];
+            }
+        }
+
+        robotCount = robots2.length;
+        for (int i = 0; i < robotCount; i++) {
+            int currentDistance = currentLocation.distanceSquaredTo(robots2[i].location);
+            if (currentDistance < closestDistance) {
+                closestDistance = currentDistance;
+                closest = robots2[i];
+            }
+        }
+
+        return closest;
+    }
+
+    public static RobotInfo[] getRobotsCloserToUs(RobotInfo[] robots, RobotInfo[] nearbyFriendlies, RobotInfo[] nearbyEnemies) {
+        int length = robots.length;
+        int index[] = new int[length];
+        for (int i = 0; i < length; i++) {
+            index[i] = -1;
+        }
+
+        int count = 0;
+        for (int i = 0; i < length; i++) {
+            int ourDistance = RobotUtil.getShortestDistance(robots[i], nearbyFriendlies);
+            int theirDistance = RobotUtil.getShortestDistance(robots[i], nearbyEnemies);
+            if (ourDistance <= theirDistance) {
+                index[i] = count++;
+            }
+        }
+
+        RobotInfo[] closerToUs = new RobotInfo[count];
+        for (int i = 0; i < length; i++) {
+            if (index[i] == -1) {
+                continue;
+            }
+
+            closerToUs[index[i]] = robots[i];
+        }
+
+        return closerToUs;
+    }
+
+    private static int getShortestDistance(RobotInfo robot, RobotInfo[] robots) {
+        int shortest = 1000000;
+        int length = robots.length;
+        MapLocation loc = robot.location;
+        for (int i = 0; i < length; i++) {
+            int distance = loc.distanceSquaredTo(robots[i].location);
+            if (distance < shortest) {
+                shortest = distance;
+            }
+        }
+
+        return shortest;
+    }
+
+    public static RobotInfo[] removeRobotsOfType(RobotInfo[] robots,
+                                                 RobotType typeToRemove1,
+                                                 RobotType typeToRemove2,
+                                                 RobotType typeToRemove3) {
+        int countToRemove = 0;
+        int robotCount = robots.length;
+        for (int i = 0; i < robotCount; i++) {
+            RobotType type = robots[i].type;
+            if (type == typeToRemove1
+                    || type == typeToRemove2
+                    || type == typeToRemove3) countToRemove++;
+        }
+
+        RobotInfo[] trimmed = new RobotInfo[robotCount - countToRemove];
+        int index = 0;
+        for (int i = 0; i < robotCount; i++) {
+            RobotType type = robots[i].type;
+            if (type != typeToRemove1
+                    && type != typeToRemove2
+                    && type != typeToRemove3) {
+                trimmed[index++] = robots[i];
+            }
+        }
+
+        return trimmed;
     }
 }

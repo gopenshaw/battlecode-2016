@@ -1,8 +1,8 @@
 package team014;
 
 import battlecode.common.*;
-import team014.message.Message;
 import team014.message.MessageBuilder;
+import team014.message.Message;
 import team014.message.MessageParser;
 import team014.message.consensus.ZombiesDeadConsensus;
 import team014.nav.Bug;
@@ -72,7 +72,6 @@ public class Archon extends Robot {
         convertAdjacentNeutrals();
         getParts();
         repairRobots();
-        requestHelpIfUnderAttack();
         goTowardNeutral();
 
         lastRoundHealth = rc.getHealth();
@@ -187,7 +186,7 @@ public class Archon extends Robot {
             return;
         }
 
-        RobotInfo[] armyUnits = RobotUtil.removeRobotsOfType(nearbyFriendlies, RobotType.ARCHON, RobotType.SCOUT);
+        RobotInfo[] armyUnits = RobotUtil.removeRobotsOfType(nearbyFriendlies, RobotType.ARCHON, RobotType.SCOUT, RobotType.GUARD);
         if (armyUnits.length < 2) {
             return;
         }
@@ -451,18 +450,6 @@ public class Archon extends Robot {
             setIndicatorString(2, "moving toward closest parts");
             trySafeMoveDigOnto(closest, enemyTurrets, enemyTurretCount);
             return;
-        }
-
-        if (previousPartLocation == null) {
-            for (Signal s : roundSignals) {
-                if (s.getTeam() == team) {
-                    int[] message = s.getMessage();
-                    if (message == null) continue;
-                    if (MessageParser.matchesType(message, MessageType.PARTS)) {
-                        previousPartLocation = MessageParser.getPartsData(message[0], message[1]).location;
-                    }
-                }
-            }
         }
 
         if (previousPartLocation != null) {

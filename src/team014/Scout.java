@@ -3,9 +3,9 @@ package team014;
 import battlecode.common.*;
 import team014.message.Message;
 import team014.message.MessageBuilder;
+import team014.nav.SquarePath;
 import team014.message.MessageParser;
 import team014.message.consensus.ZombiesDeadConsensus;
-import team014.nav.SquarePath;
 import team014.util.*;
 
 public class Scout extends Robot {
@@ -44,12 +44,12 @@ public class Scout extends Robot {
         mapEstimate = MapUtil.getBoundsThatEncloseLocations(rc.getInitialArchonLocations(rc.getTeam()),
                 rc.getInitialArchonLocations(rc.getTeam().opponent()));
         int pathRadius = Math.min(mapEstimate.getHeight(), mapEstimate.getWidth()) / 4;
-        System.out.printf("height %d width %d radius\n", mapEstimate.getHeight(), mapEstimate.getWidth(), pathRadius);
         initialPath = new SquarePath(rc.getLocation(), pathRadius, rc);
     }
 
     @Override
     protected void doTurn() throws GameActionException {
+        rc.disintegrate();
         roundSignals = rc.emptySignalQueue();
         getTurretBroadcasts(roundSignals);
         senseRobots();
