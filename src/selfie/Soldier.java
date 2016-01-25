@@ -457,6 +457,10 @@ public class Soldier extends Robot {
         enemiesCanAttackMe = RobotUtil.getEnemiesThatCanAttack(nearbyEnemies, currentLocation, maxEnemies);
         canAttackMe = enemiesCanAttackMe.getSize();
         teammatesCanAttackEnemy = RobotUtil.countCanAttack(nearbyFriendlies, enemiesCanAttackMe);
+        RobotInfo den = RobotUtil.getRobotOfType(nearbyZombies, RobotType.ZOMBIEDEN);
+        if (den != null) {
+            zombieDens.add(den);
+        }
     }
 
     private void moveAwayFromArchon() throws GameActionException {

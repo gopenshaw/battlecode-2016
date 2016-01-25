@@ -1,6 +1,7 @@
 package selfie;
 
 import battlecode.common.MapLocation;
+import battlecode.common.RobotInfo;
 
 public class LocationCollection {
     private RobotData[] memory;
@@ -26,6 +27,10 @@ public class LocationCollection {
                 break;
             }
         }
+    }
+
+    public void add(RobotInfo robot) {
+        RobotData robotData = new RobotData(robot);
     }
 
     public boolean isEmpty() {
