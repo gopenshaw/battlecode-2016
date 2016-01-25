@@ -85,4 +85,36 @@ public class LocationUtil {
 
         return false;
     }
+
+    public static MapLocation findClosestDifferentLocation(MapLocation[] archonLocations, MapLocation currentLocation) {
+        int shortestDistance = Integer.MAX_VALUE;
+        MapLocation closestLocation = null;
+
+        int locationCount = archonLocations.length;
+        for (int i = 0; i < locationCount; i++) {
+            MapLocation location = archonLocations[i];
+            if (location.equals(closestLocation)) {
+                continue;
+            }
+
+            int distance = currentLocation.distanceSquaredTo(location);
+            if (distance < shortestDistance) {
+                shortestDistance = distance;
+                closestLocation = location;
+            }
+        }
+
+        return closestLocation;
+    }
+
+    public static boolean allWithinRange(MapLocation[] locations, MapLocation currentLocation, int pathRadiusSquared) {
+        int locationCount = locations.length;
+        for (int i = 0; i < locationCount; i++) {
+            if (locations[i].distanceSquaredTo(currentLocation) > pathRadiusSquared) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

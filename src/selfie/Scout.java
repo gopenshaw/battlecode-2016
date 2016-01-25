@@ -34,6 +34,7 @@ public class Scout extends Robot {
     private boolean[] denDestroyed = new boolean[32001];
     private boolean initialPathCompleted;
     private boolean amFirstScout;
+    private boolean shouldDoInitialPath;
 
     public Scout(RobotController rc) {
         super(rc);
@@ -41,11 +42,26 @@ public class Scout extends Robot {
         zombieDens = new RobotQueueNoDuplicates(Config.MAX_DENS);
         destroyedDens = new BoundedQueue<Integer>(Config.MAX_DENS);
         amFirstScout = rc.getRoundNum() < 40;
-        mapEstimate = MapUtil.getBoundsThatEncloseLocations(rc.getInitialArchonLocations(rc.getTeam()),
+        MapLocation[] initialArchonLocations = rc.getInitialArchonLocations(rc.getTeam());
+        mapEstimate = MapUtil.getBoundsThatEncloseLocations(initialArchonLocations,
                 rc.getInitialArchonLocations(rc.getTeam().opponent()));
         int pathRadius = Math.min(mapEstimate.getHeight(), mapEstimate.getWidth()) / 4;
+        decideShouldDoInitialPath(pathRadius, initialArchonLocations);
 //        System.out.printf("height %d width %d radius %d\n", mapEstimate.getHeight(), mapEstimate.getWidth(), pathRadius);
         initialPath = new SquarePath(rc.getLocation(), pathRadius, rc);
+    }
+
+    private void decideShouldDoInitialPath(int pathRadius, MapLocation[] archonLocations) {
+        if (archonLocations.length == 1) {
+            shouldDoInitialPath = true;
+            return;
+        }
+
+        int pathRadiusSquared = pathRadius * pathRadius * 2;
+        boolean allArchonsClose = LocationUtil.allWithinRange(archonLocations, currentLocation, pathRadiusSquared);
+        if (!allArchonsClose) {
+            shouldDoInitialPath = true;
+        }
     }
 
     @Override
@@ -461,7 +477,8 @@ public class Scout extends Robot {
 
         if (amFirstScout
                 && roundNumber < 300
-                && !initialPathCompleted) {
+                && !initialPathCompleted
+                && shouldDoInitialPath) {
             Direction pathDirection = initialPath.getNextDirection(currentLocation);
             if (initialPath.getRotationsCompleted() > 0) {
                 initialPathCompleted = true;
