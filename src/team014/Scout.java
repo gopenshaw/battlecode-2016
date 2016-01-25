@@ -49,7 +49,6 @@ public class Scout extends Robot {
 
     @Override
     protected void doTurn() throws GameActionException {
-        rc.disintegrate();
         roundSignals = rc.emptySignalQueue();
         getTurretBroadcasts(roundSignals);
         senseRobots();
