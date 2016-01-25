@@ -9,4 +9,6 @@ public class Config {
     public static final int MAX_DENS = 50;
     public static final int MAX_ENEMY_TURRETS = 5;
     public static final int TOO_MUCH_RUBBLE = 20000;
+    public static final int ENEMY_TOO_CLOSE_TO_DEN_DISTANCE = 16;
+    public static final int ENEMY_TOO_OLD = 100;
 }

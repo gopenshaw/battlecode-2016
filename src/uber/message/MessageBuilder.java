@@ -14,40 +14,37 @@ public class MessageBuilder {
     }
 
     //--Message format
-    //--First integer : 1 bit open, 2 bit round number, 14 bit health, 15 bit id
+    //--First integer : 1 bit open, 1 bit should approach, 15 bit round number, 15 bit id
     //--Second integer: 20 bit location, 4 bit robot type, 3 bit message type
     public static Message buildZombieMessage(RobotInfo zombie) {
-        return buildRobotMessage(zombie.health, zombie.ID, zombie.type, zombie.location, MessageType.ZOMBIE);
+        return buildRobotMessage(zombie.ID, zombie.type, zombie.location, MessageType.ZOMBIE);
     }
 
     public static Message buildZombieMessage(RobotData zombie) {
-        return buildRobotMessage(zombie.health, zombie.id, zombie.type, zombie.location, MessageType.ZOMBIE);
+        return buildRobotMessage(zombie.id, zombie.type, zombie.location, MessageType.ZOMBIE);
     }
 
     public static Message buildTurretMessage(RobotInfo turret) {
-        return buildRobotMessage(turret.health, turret.ID, turret.type, turret.location, MessageType.ENEMY_TURRET);
+        return buildRobotMessage(turret.ID, turret.type, turret.location, MessageType.ENEMY_TURRET);
     }
 
-    public static Message buildEnemyMessage(RobotInfo enemy, boolean shouldApproach) {
-        return buildRobotMessage(enemy.health, enemy.ID, enemy.type, enemy.location, MessageType.ENEMY, shouldApproach);
+    public static Message buildEnemyMessage(RobotInfo enemy, int roundNumber, boolean shouldApproach) {
+        return buildRobotMessage(enemy.ID, enemy.type, enemy.location, MessageType.ENEMY, roundNumber, shouldApproach);
     }
 
-    public static Message buildEnemyMessage(RobotData enemy) {
-        return buildRobotMessage(enemy.health, enemy.id, enemy.type, enemy.location, MessageType.ENEMY);
-    }
-
-    public static Message buildEnemyMessage(RobotData enemy, boolean shouldApproach) {
-        return buildRobotMessage(enemy.health, enemy.id, enemy.type, enemy.location, MessageType.ENEMY, shouldApproach);
+    public static Message buildEnemyMessage(RobotData enemy, int roundNumber, boolean shouldApproach) {
+        return buildRobotMessage(enemy.id, enemy.type, enemy.location, MessageType.ENEMY, roundNumber, shouldApproach);
     }
 
     public static Message buildSpreadMessage() {
         return new Message(0, Serializer.encode(MessageType.SPREAD), MessageType.SPREAD);
     }
 
-    private static Message buildRobotMessage(double health, int id, RobotType robotType, MapLocation location, MessageType messageType, boolean shouldApproach) {
-        int first = ((int) health << 15) + id;
+    private static Message buildRobotMessage(int id, RobotType robotType, MapLocation location, MessageType messageType,
+                                             int roundNumber, boolean shouldApproach) {
+        int first = (roundNumber << 15) + id;
         if (shouldApproach) {
-            first += 0xF0000000;
+            first += 0x40000000;
         }
 
         int second = (Serializer.encode(location) << 7)
@@ -56,8 +53,8 @@ public class MessageBuilder {
         return new Message(first, second, messageType);
     }
 
-    private static Message buildRobotMessage(double health, int id, RobotType robotType, MapLocation location, MessageType messageType) {
-        int first = ((int) health << 15) + id;
+    private static Message buildRobotMessage(int id, RobotType robotType, MapLocation location, MessageType messageType) {
+        int first = id;
         int second = (Serializer.encode(location) << 7)
                 + (Serializer.encode(robotType) << 3)
                 + (Serializer.encode(messageType));
@@ -78,7 +75,7 @@ public class MessageBuilder {
     }
 
     public static Message buildTargetMessage(RobotInfo closest) {
-        return buildRobotMessage(closest.health, closest.ID, closest.type, closest.location, MessageType.TARGET);
+        return buildRobotMessage(closest.ID, closest.type, closest.location, MessageType.TARGET);
     }
 
     public static Message buildDestroyedDenMessage(DestroyedDenData denData) {
@@ -107,6 +104,6 @@ public class MessageBuilder {
     }
 
     public static Message buildTargetMessage(RobotData closest) {
-        return buildRobotMessage(closest.health, closest.id, closest.type, closest.location, MessageType.TARGET);
+        return buildRobotMessage(closest.id, closest.type, closest.location, MessageType.TARGET);
     }
 }

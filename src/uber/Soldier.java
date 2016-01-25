@@ -19,6 +19,8 @@ public class Soldier extends Robot {
     private static RobotInfo[] infectedEnemies;
 
     private static LocationCollection zombieDens = new LocationCollection(20);
+    private static LocationCollection enemies = new LocationCollection(30);
+
     private static RobotData zombieToAttack;
     private static RobotData enemyToApproach;
     private static RobotData zombieDen;
@@ -198,6 +200,9 @@ public class Soldier extends Robot {
             if (MessageParser.shouldApproach(message)) {
                 enemyToApproach = MessageParser.getRobotData(message[0], message[1]);
                 setIndicatorString(0, "enemy to approach " + enemyToApproach.location);
+            }
+            else {
+                enemies.add(MessageParser.getRobotData(message[0], message[1]));
             }
         }
         else if (messageType == MessageType.ENEMY_TURRET
@@ -385,6 +390,12 @@ public class Soldier extends Robot {
             return;
         }
 
+        updateDenIfAnEnemyIsTooClose();
+
+        if (zombieDen == null) {
+            return;
+        }
+
         if (currentLocation.distanceSquaredTo(zombieDen.location) > 8) {
             setIndicatorString(2, "move toward den " + zombieDen.location);
             Direction direction = currentLocation.directionTo(zombieDen.location);
@@ -405,6 +416,55 @@ public class Soldier extends Robot {
                 }
                 else {
                     trySafeMoveToward(zombieDen.location, enemyTurretLocations);
+                }
+            }
+        }
+    }
+
+    private void updateDenIfAnEnemyIsTooClose() {
+        if (enemies.isEmpty()
+                || zombieDen == null) {
+            return;
+        }
+
+        RobotData enemyCloseToDen = enemies.removeClosestTo(zombieDen.location);
+        while (roundNumber - enemyCloseToDen.roundNumber > Config.ENEMY_TOO_OLD) {
+            setIndicatorString(0, "old close enemy is " + enemyCloseToDen);
+            if (enemies.isEmpty()) {
+                return;
+            }
+
+            enemyCloseToDen = enemies.removeClosestTo(zombieDen.location);
+        }
+
+        setIndicatorString(1, "closest enemy to den is " + enemyCloseToDen);
+        if (enemyCloseToDen.location.distanceSquaredTo(zombieDen.location) < Config.ENEMY_TOO_CLOSE_TO_DEN_DISTANCE) {
+            if (zombieDens.isEmpty()) {
+                zombieDens.add(zombieDen);
+                zombieDen = null;
+            }
+            else {
+                RobotData otherDen = zombieDens.removeClosestTo(currentLocation);
+                setIndicatorString(2, "other den is " + otherDen);
+                if (!enemies.isEmpty()) {
+                    enemyCloseToDen = enemies.removeClosestTo(otherDen.location);
+                    while (roundNumber - enemyCloseToDen.roundNumber > Config.ENEMY_TOO_OLD) {
+                        setIndicatorString(0, "old close enemy is " + enemyCloseToDen);
+                        if (enemies.isEmpty()) {
+                            return;
+                        }
+
+                        enemyCloseToDen = enemies.removeClosestTo(zombieDen.location);
+                    }
+
+                    if (enemyCloseToDen.location.distanceSquaredTo(otherDen.location) < Config.ENEMY_TOO_CLOSE_TO_DEN_DISTANCE) {
+                        zombieDens.add(zombieDen);
+                        zombieDens.add(otherDen);
+                    }
+                    else {
+                        zombieDens.add(zombieDen);
+                        zombieDen = otherDen;
+                    }
                 }
             }
         }
@@ -505,7 +565,7 @@ public class Soldier extends Robot {
         teammatesCanAttackEnemy = RobotUtil.countCanAttack(nearbyFriendlies, enemiesCanAttackMe);
         RobotInfo den = RobotUtil.getRobotOfType(nearbyZombies, RobotType.ZOMBIEDEN);
         if (den != null) {
-            zombieDens.add(den);
+            zombieDens.add(den, roundNumber);
         }
     }
 

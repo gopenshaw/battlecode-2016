@@ -29,8 +29,8 @@ public class LocationCollection {
         }
     }
 
-    public void add(RobotInfo robot) {
-        RobotData robotData = new RobotData(robot);
+    public void add(RobotInfo robot, int roundNumber) {
+        RobotData robotData = new RobotData(robot, roundNumber);
         add(robotData);
     }
 

@@ -15,10 +15,10 @@ public class MessageParser {
 
     public static RobotData getRobotData(int first, int second) {
         int id = first & 0x7FFF;
+        int roundNumber = first & 0x3FFF800;
         MapLocation location = Serializer.decodeMapLocation(second >>> 7);
-        int health = first >>> 15;
         RobotType type = Serializer.decodeRobotType((second >>> 3) & 0xF);
-        return new RobotData(id, location, health, type);
+        return new RobotData(id, location, type, roundNumber);
     }
 
     public static boolean isCurrent(int first, int second, int roundNumber) {

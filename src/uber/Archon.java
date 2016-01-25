@@ -91,7 +91,7 @@ public class Archon extends Robot {
 
         //--broadcast so the information goes to robots we are spawning
         setIndicatorString(1, "broadcast enemy to approach " + enemyToApproach.location);
-        Message message = MessageBuilder.buildEnemyMessage(enemyToApproach, true);
+        Message message = MessageBuilder.buildEnemyMessage(enemyToApproach, enemyToApproach.roundNumber, true);
         rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), 2);
     }
 
@@ -156,7 +156,7 @@ public class Archon extends Robot {
         for (int i = 0; i < nearbyScouts.length; i++) {
             RobotInfo scout = nearbyScouts[i];
             scoutAliveRound[scout.ID] = roundNumber;
-            aliveScouts.add(new RobotData(scout.ID, null, (int)scout.health, scout.type));
+            aliveScouts.add(new RobotData(scout.ID, null, scout.type, roundNumber));
         }
 
         if (!aliveScouts.isEmpty()) {

@@ -35,6 +35,8 @@ public class Scout extends Robot {
     private boolean initialPathCompleted;
     private boolean amFirstScout;
     private boolean shouldDoInitialPath;
+    private int lastEnemySpottedRound;
+    private int lastBroadcastEnemy;
 
     public Scout(RobotController rc) {
         super(rc);
@@ -75,6 +77,7 @@ public class Scout extends Robot {
             }
 
             broadcastEnemyToApproach();
+            broadcastEnemies();
             explore();
             moveAwayFromZombies();
         } else if (myPair.team == team) {
@@ -95,6 +98,24 @@ public class Scout extends Robot {
             broadcastAllTurrets();
             broadcastZombies();
             unpairIfZombiesAreClose();
+        }
+    }
+
+    private void broadcastEnemies() throws GameActionException {
+        if (lastBroadcastEnemy + 5 > roundNumber) {
+            return;
+        }
+
+        setIndicatorString(0, "broadcasting enemy");
+        for (RobotInfo enemy : nearbyEnemies) {
+            if (rc.getMessageSignalCount() >= GameConstants.MESSAGE_SIGNALS_PER_TURN) {
+                return;
+            }
+
+            Message message = MessageBuilder.buildEnemyMessage(enemy, roundNumber, false);
+            setIndicatorString(0, " " + enemy.location);
+            rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), senseRadius * 2);
+            lastBroadcastEnemy = roundNumber;
         }
     }
 
@@ -424,7 +445,7 @@ public class Scout extends Robot {
             return;
         }
 
-        Message enemyMessage = MessageBuilder.buildEnemyMessage(lastEnemy, true);
+        Message enemyMessage = MessageBuilder.buildEnemyMessage(lastEnemy, lastEnemySpottedRound, true);
         rc.broadcastMessageSignal(enemyMessage.getFirst(), enemyMessage.getSecond(), senseRadius * 4);
     }
 
@@ -433,7 +454,7 @@ public class Scout extends Robot {
         for (RobotInfo zombie : nearbyZombies) {
             if (zombie.type == RobotType.ZOMBIEDEN
                     && zombie != lastZombieAddedToMessageStore) {
-                zombieDens.add(new RobotData(zombie.ID, zombie.location, (int) zombie.health, zombie.type));
+                zombieDens.add(new RobotData(zombie.ID, zombie.location, zombie.type, roundNumber));
             }
         }
     }
@@ -458,6 +479,7 @@ public class Scout extends Robot {
             if (lastEnemy == null
                     || RobotUtil.getPriority(highPriority.type) >= RobotUtil.getPriority(lastEnemy.type)) {
                 lastEnemy = highPriority;
+                lastEnemySpottedRound = roundNumber;
             }
         }
     }
