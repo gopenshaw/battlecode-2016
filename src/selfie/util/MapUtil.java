@@ -6,9 +6,9 @@ import selfie.MapBounds;
 public class MapUtil {
     public static MapBounds getBoundsThatEncloseLocations(MapLocation[] locations, MapLocation[] locations2) {
         int north = 1000000;
-        int east = 1000000;
+        int east = -1000000;
         int south = -1000000;
-        int west = -1000000;
+        int west = 1000000;
 
         for (MapLocation location : locations) {
             int x = location.x;

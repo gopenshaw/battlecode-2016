@@ -70,7 +70,7 @@ public class Soldier extends Robot {
     private void spread() throws GameActionException {
         if (!rc.isCoreReady()
                 || nearbyEnemies.length > 0) {
-
+            return;
         }
 
         if (spreadRequested) {
