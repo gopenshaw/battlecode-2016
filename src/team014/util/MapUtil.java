@@ -6,22 +6,26 @@ import team014.MapBounds;
 public class MapUtil {
     public static MapBounds getBoundsThatEncloseLocations(MapLocation[] locations, MapLocation[] locations2) {
         int north = 1000000;
-        int east = 1000000;
+        int east = -1000000;
         int south = -1000000;
-        int west = -1000000;
+        int west = 1000000;
 
         for (MapLocation location : locations) {
             int x = location.x;
             int y = location.y;
             if (x < west) {
                 west = x;
-            } else if (x > east) {
+            }
+
+            if (x > east) {
                 east = x;
             }
 
             if (y < north) {
                 north = y;
-            } else if (y > south) {
+            }
+
+            if (y > south) {
                 south = y;
             }
         }
@@ -31,13 +35,17 @@ public class MapUtil {
             int y = location.y;
             if (x < west) {
                 west = x;
-            } else if (x > east) {
+            }
+
+            if (x > east) {
                 east = x;
             }
 
             if (y < north) {
                 north = y;
-            } else if (y > south) {
+            }
+
+            if (y > south) {
                 south = y;
             }
         }

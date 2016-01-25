@@ -31,6 +31,7 @@ public class LocationCollection {
 
     public void add(RobotInfo robot) {
         RobotData robotData = new RobotData(robot);
+        add(robotData);
     }
 
     public boolean isEmpty() {

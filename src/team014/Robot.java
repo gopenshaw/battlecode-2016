@@ -1,9 +1,9 @@
 package team014;
 
 import battlecode.common.*;
-import team014.message.MessageBuilder;
 import team014.message.Message;
 import team014.message.MessageParser;
+import team014.message.MessageBuilder;
 import team014.util.LocationUtil;
 import team014.util.RobotUtil;
 
@@ -475,6 +475,26 @@ public abstract class Robot {
         }
 
         tryClearRubble(targetDirection);
+    }
+
+    protected Direction getTryMoveDirection(Direction targetDirection) throws GameActionException {
+        //--TODO make an overload that takes dx and dy
+        //  and if it cannot move in the target direction it decides
+        //  its initial rotation based off the dx and dy preference
+        int initialDirection = getDirectionNumber(targetDirection);
+        if (initialDirection < 0) {
+            return null;
+        }
+
+        Direction currentDirection;
+        for (int i = 0; i < rotations.length; i++) {
+            currentDirection = directions[(initialDirection + rotations[i]) % 8];
+            if (rc.canMove(currentDirection)) {
+                return currentDirection;
+            }
+        }
+
+        return null;
     }
 
     protected void tryMove(Direction targetDirection) throws GameActionException {

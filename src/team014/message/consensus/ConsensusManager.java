@@ -1,9 +1,9 @@
 package team014.message.consensus;
 
 import battlecode.common.*;
+import team014.message.*;
 import team014.Config;
 import team014.MessageType;
-import team014.message.*;
 
 public abstract class ConsensusManager {
 

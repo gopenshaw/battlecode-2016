@@ -582,4 +582,38 @@ public class RobotUtil {
 
         return trimmed;
     }
+
+    public static boolean anyInfected(RobotInfo[] robots) {
+        int count = robots.length;
+        for (int i = 0; i < count; i++) {
+            if (robots[i].viperInfectedTurns > 0
+                    || robots[i].zombieInfectedTurns > 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static RobotInfo[] getRobotsAreInfected(RobotInfo[] robots) {
+        int count = 0;
+        int length = robots.length;
+        for (int i = 0; i < length; i++) {
+            if (robots[i].viperInfectedTurns > 0
+                    || robots[i].zombieInfectedTurns > 0) {
+                count++;
+            }
+        }
+
+        RobotInfo[] infected = new RobotInfo[count];
+        int index = 0;
+        for (int i = 0; i < length; i++) {
+            if (robots[i].viperInfectedTurns > 0
+                    || robots[i].zombieInfectedTurns > 0) {
+                infected[index++] = robots[i];
+            }
+        }
+
+        return infected;
+    }
 }
