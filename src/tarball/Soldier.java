@@ -7,6 +7,7 @@ import tarball.util.*;
 
 public class Soldier extends Robot {
     private static final int MIN_SAFE_MOVE_ROUND = 300;
+    private static final int THRESHOLD_DENSITY = 6;
 
     private Signal[] roundSignals;
 
@@ -257,6 +258,9 @@ public class Soldier extends Robot {
             }
 
             Direction moveDirection = getTryMoveDirection(directionAwayFrom);
+            if (moveDirection == null) {
+                return;
+            }
             int distanceToClosestEnemy =
                     currentLocation.distanceSquaredTo(
                             RobotUtil.getClosestRobotToLocation(nearbyEnemies, currentLocation).location);
@@ -295,14 +299,20 @@ public class Soldier extends Robot {
 
         setIndicatorString(2, "try move to enemy location");
         if (enemyTurrets.length > 0) {
-            trySafeMoveToward(enemyToApproach.location, enemyTurretLocations);
+            if (shouldMove(currentLocation.directionTo(enemyToApproach.location))) {
+                trySafeMoveToward(enemyToApproach.location, enemyTurretLocations);
+            }
         }
         else {
             if (enemyToApproach.type != RobotType.TURRET) {
-                tryMoveToward(enemyToApproach.location);
+                if (shouldMove(currentLocation.directionTo(enemyToApproach.location))) {
+                    tryMoveToward(enemyToApproach.location);
+                }
             }
             else {
-                trySafeMoveTowardTurret(enemyToApproach);
+                if (shouldMove(currentLocation.directionTo(enemyToApproach.location))) {
+                    trySafeMoveTowardTurret(enemyToApproach);
+                }
             }
         }
     }
@@ -385,18 +395,28 @@ public class Soldier extends Robot {
                 Bug.setDestination(zombieDen.location);
                 buggingTo[zombieDen.id] = true;
                 if (roundNumber < MIN_SAFE_MOVE_ROUND) {
-                    tryMove(Bug.getDirection(currentLocation));
+                    Direction d = Bug.getDirection(currentLocation);
+                    if (shouldMove(d)) {
+                        tryMove(d);
+                    }
                 }
                 else {
-                    trySafeMove(Bug.getDirection(currentLocation), enemyTurretLocations);
+                    Direction d = Bug.getDirection(currentLocation);
+                    if (shouldMove(d)) {
+                        trySafeMove(d, enemyTurretLocations);
+                    }
                 }
             }
             else {
                 if (roundNumber < MIN_SAFE_MOVE_ROUND) {
-                    tryMoveToward(zombieDen.location);
+                    if (shouldMove(currentLocation.directionTo(zombieDen.location))) {
+                        tryMoveToward(zombieDen.location);
+                    }
                 }
                 else {
-                    trySafeMoveToward(zombieDen.location, enemyTurretLocations);
+                    if (shouldMove(currentLocation.directionTo(zombieDen.location))) {
+                        trySafeMoveToward(zombieDen.location, enemyTurretLocations);
+                    }
                 }
             }
         }
@@ -575,4 +595,23 @@ public class Soldier extends Robot {
         setIndicatorString(2, "move toward broadcast zombie");
         tryMoveToward(zombieToAttack.location);
    }
+
+    private boolean shouldMove(Direction direction) {
+        int behind = 0;
+        int ahead = 0;
+
+        for (RobotInfo friendly : nearbyFriendlies) {
+            double dotProd = direction.dx * (friendly.location.x - currentLocation.x)
+                    + direction.dy * (friendly.location.y - currentLocation.y);
+            if (dotProd >= 0) {
+                ahead++;
+            } else {
+                behind++;
+            }
+        }
+
+        boolean shouldMove = ahead >= behind || nearbyFriendlies.length > THRESHOLD_DENSITY;
+        rc.setIndicatorString(1, roundNumber + ", " + direction + ", " + shouldMove + ", " + behind + ", " + ahead + ", " + nearbyFriendlies.length);
+        return shouldMove;
+    }
 }
