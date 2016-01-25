@@ -555,4 +555,31 @@ public class RobotUtil {
 
         return shortest;
     }
+
+    public static RobotInfo[] removeRobotsOfType(RobotInfo[] robots,
+                                                 RobotType typeToRemove1,
+                                                 RobotType typeToRemove2,
+                                                 RobotType typeToRemove3) {
+        int countToRemove = 0;
+        int robotCount = robots.length;
+        for (int i = 0; i < robotCount; i++) {
+            RobotType type = robots[i].type;
+            if (type == typeToRemove1
+                    || type == typeToRemove2
+                    || type == typeToRemove3) countToRemove++;
+        }
+
+        RobotInfo[] trimmed = new RobotInfo[robotCount - countToRemove];
+        int index = 0;
+        for (int i = 0; i < robotCount; i++) {
+            RobotType type = robots[i].type;
+            if (type != typeToRemove1
+                    && type != typeToRemove2
+                    && type != typeToRemove3) {
+                trimmed[index++] = robots[i];
+            }
+        }
+
+        return trimmed;
+    }
 }

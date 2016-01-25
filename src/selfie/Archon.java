@@ -186,7 +186,7 @@ public class Archon extends Robot {
             return;
         }
 
-        RobotInfo[] armyUnits = RobotUtil.removeRobotsOfType(nearbyFriendlies, RobotType.ARCHON, RobotType.SCOUT);
+        RobotInfo[] armyUnits = RobotUtil.removeRobotsOfType(nearbyFriendlies, RobotType.ARCHON, RobotType.SCOUT, RobotType.GUARD);
         if (armyUnits.length < 2) {
             return;
         }
