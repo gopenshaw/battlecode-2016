@@ -145,6 +145,8 @@ public class Soldier extends Robot {
 
     private void chaseArchon() throws GameActionException {
         if (nearbyEnemies.length == 0
+                || nearbyZombies.length > 0
+                || RobotUtil.anyInfected(nearbyFriendlies)
                 || !rc.isCoreReady()) {
             return;
         }
@@ -262,9 +264,12 @@ public class Soldier extends Robot {
             return;
         }
 
+        setIndicatorString(0, "can attack me " + canAttackMe);
+        setIndicatorString(0, "can attack enemy " + canAttackEnemy);
         if (canAttackMe + advantage > canAttackEnemy) {
-            setIndicatorString(2, "micro away from enemy");
-            tryMove(DirectionUtil.getDirectionAwayFrom(nearbyEnemies, currentLocation));
+            Direction directionAwayFrom = DirectionUtil.getDirectionAwayFrom(nearbyEnemies, currentLocation);
+            setIndicatorString(2, "micro away from enemy " + directionAwayFrom);
+            tryMove(directionAwayFrom);
         }
     }
 
