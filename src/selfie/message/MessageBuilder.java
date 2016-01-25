@@ -36,10 +36,8 @@ public class MessageBuilder {
         return buildRobotMessage(enemy.health, enemy.id, enemy.type, enemy.location, MessageType.ENEMY);
     }
 
-    public static Message buildPartsMessage(MapLocation center) {
-        int first = Serializer.encode(center);
-        int second = Serializer.encode(MessageType.PARTS);
-        return new Message(first, second, MessageType.PARTS);
+    public static Message buildSpreadMessage() {
+        return new Message(0, Serializer.encode(MessageType.SPREAD), MessageType.SPREAD);
     }
 
     private static Message buildRobotMessage(double health, int id, RobotType robotType, MapLocation location, MessageType messageType) {

@@ -35,6 +35,7 @@ public class Soldier extends Robot {
     private int teammatesCanAttackEnemy;
     private LocationMemory locationMemory = new LocationMemory();
     private int announceRound;
+    private boolean spreadRequested;
 
     public Soldier(RobotController rc) {
         super(rc);
@@ -63,6 +64,20 @@ public class Soldier extends Robot {
         clearRubble();
         recordZombieLocations();
         announceEnemy();
+        spread();
+    }
+
+    private void spread() throws GameActionException {
+        if (!rc.isCoreReady()
+                || nearbyEnemies.length > 0) {
+
+        }
+
+        if (spreadRequested) {
+            RobotInfo archon = RobotUtil.getRobotOfType(rc.senseNearbyRobots(8, team), RobotType.ARCHON);
+            if (archon == null) return;
+            tryMove(archon.location.directionTo(currentLocation));
+        }
     }
 
     private boolean suicideIfInfected() throws GameActionException {
@@ -156,6 +171,7 @@ public class Soldier extends Robot {
         int helpLocationCount = 0;
         enemyTurretCount = 0;
         zombieToAttack = null;
+        spreadRequested = false;
 
         roundSignals = rc.emptySignalQueue();
         int signalCount = roundSignals.length;
@@ -203,6 +219,9 @@ public class Soldier extends Robot {
         else if (messageType == MessageType.DESTROYED_DENS) {
             DestroyedDenData denData = MessageParser.getDestroyedDens(message[0], message[1]);
             updateDestroyedDens(denData);
+        }
+        else if (messageType == MessageType.SPREAD) {
+            spreadRequested = true;
         }
     }
 

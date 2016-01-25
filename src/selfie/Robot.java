@@ -2,6 +2,7 @@ package selfie;
 
 import battlecode.common.*;
 import selfie.message.Message;
+import selfie.message.MessageBuilder;
 import selfie.message.MessageParser;
 import selfie.util.LocationUtil;
 import selfie.util.RobotUtil;
@@ -536,6 +537,9 @@ public abstract class Robot {
                 return true;
             }
         }
+
+        Message spreadMessage = MessageBuilder.buildSpreadMessage();
+        rc.broadcastMessageSignal(spreadMessage.getFirst(), spreadMessage.getSecond(), 8);
 
         return false;
     }
