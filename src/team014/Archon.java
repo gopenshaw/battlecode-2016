@@ -12,6 +12,9 @@ public class Archon extends Robot {
     private RobotType[] lowUnitCountBuildQueue = {
             RobotType.SCOUT, RobotType.SOLDIER, RobotType.SOLDIER,
             RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER,
+            RobotType.SOLDIER, RobotType.SOLDIER, RobotType.VIPER, RobotType.SOLDIER,
+            RobotType.SCOUT, RobotType.SOLDIER, RobotType.SOLDIER,
+            RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER,
             RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER,
             RobotType.SCOUT, RobotType.SOLDIER, RobotType.SOLDIER,
             RobotType.SOLDIER, RobotType.VIPER, RobotType.SOLDIER, RobotType.SOLDIER,

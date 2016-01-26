@@ -1,9 +1,9 @@
 package team014;
 
 import battlecode.common.*;
-import team014.util.*;
 import team014.message.MessageParser;
 import team014.nav.Bug;
+import team014.util.*;
 
 public class Soldier extends Robot {
     private static final int MIN_SAFE_MOVE_ROUND = 300;
@@ -17,6 +17,8 @@ public class Soldier extends Robot {
     private static RobotInfo[] nearbyZombies;
     private static RobotInfo[] attackableEnemies;
     private static RobotInfo[] adjacentTeammates;
+    private static RobotInfo[] closeTeammates;
+    private static RobotInfo[] closeFighters;
     private static RobotInfo[] nearbyEnemies;
     private static RobotInfo[] nearbyFriendlies;
     private static RobotInfo[] infectedEnemies;
@@ -94,8 +96,7 @@ public class Soldier extends Robot {
             return false;
         }
 
-        RobotInfo[] armyUnits = RobotUtil.removeRobotsOfType(nearbyFriendlies, RobotType.ARCHON, RobotType.SCOUT);
-        if (armyUnits.length > 5) {
+        if (closeFighters.length > 8) {
             return false;
         }
 
@@ -250,6 +251,10 @@ public class Soldier extends Robot {
             return;
         }
 
+        if (closeFighters.length > 8) {
+            return;
+        }
+
         int canAttackEnemy = teammatesCanAttackEnemy + 1; //--assuming we can attack too
         int advantage = 2;
         if (canAttackMe == 1
@@ -340,7 +345,13 @@ public class Soldier extends Robot {
             }
         }
         else { // Viper
-            enemyToAttack = RobotUtil.getLowestHealthNonInfectedRobot(attackableEnemies);
+            if (roundNumber < 2000) {
+                enemyToAttack = RobotUtil.getLowestHealthNonInfectedRobot(attackableEnemies);
+            }
+            else {
+                enemyToAttack = RobotUtil.getLowestHealthRobotNotOfType(attackableEnemies, RobotType.ARCHON);
+            }
+
             if (enemyToAttack == null) {
                 return;
             }
@@ -516,6 +527,8 @@ public class Soldier extends Robot {
         infectedEnemies = RobotUtil.getRobotsAreInfected(nearbyEnemies);
         nearbyFriendlies = senseNearbyFriendlies();
         adjacentTeammates = rc.senseNearbyRobots(2, team);
+        closeTeammates = rc.senseNearbyRobots(5, team);
+        closeFighters = RobotUtil.removeRobotsOfType(closeTeammates, RobotType.ARCHON, RobotType.SCOUT);
 
         int maxEnemies = 6;
         enemiesCanAttackMe = RobotUtil.getEnemiesThatCanAttack(nearbyEnemies, currentLocation, maxEnemies);
