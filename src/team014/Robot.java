@@ -1,11 +1,12 @@
 package team014;
 
 import battlecode.common.*;
+import team014.util.RobotUtil;
+import team014.message.Message;
 import team014.message.MessageBuilder;
 import team014.message.MessageParser;
+import team014.util.DirectionUtil;
 import team014.util.LocationUtil;
-import team014.message.Message;
-import team014.util.RobotUtil;
 
 import java.util.Random;
 
@@ -43,6 +44,11 @@ public abstract class Robot {
     protected MapLocation[] enemyTurretLocations = new MapLocation[Config.MAX_ENEMY_TURRETS];
     protected int enemyTurretCount = 0;
 
+    protected static int sensorRadius;
+    protected RobotInfo[][] locationsOfNearbyEnemies;
+    protected int[][] locationLastFilled;
+    protected Direction previousRoundsSafestDirection;
+
     public Robot(RobotController rc) {
         this.rc = rc;
         rand = new Random(rc.getID());
@@ -52,6 +58,12 @@ public abstract class Robot {
 
         id = rc.getID();
         type = rc.getType();
+
+        sensorRadius =  (int) Math.pow(type.sensorRadiusSquared, 0.5) ;
+        locationsOfNearbyEnemies = new RobotInfo[2 * sensorRadius + 1][2 * sensorRadius + 1];
+        locationLastFilled = new int[2 * sensorRadius + 1][2 * sensorRadius + 1];
+        previousRoundsSafestDirection = Direction.NONE;
+
         senseRadius = type.sensorRadiusSquared;
         attackRadius = type.attackRadiusSquared;
 
@@ -384,7 +396,12 @@ public abstract class Robot {
             }
         }
 
-        return tryClearRubble(direction);
+        if (type.canClearRubble()) {
+            return tryClearRubble(direction);
+        }
+        else {
+            return false;
+        }
     }
 
     private boolean canMoveSafely(Direction direction, MapLocation next, RobotInfo[] nearbyEnemies, RobotInfo[] nearbyZombies) {
@@ -739,6 +756,81 @@ public abstract class Robot {
             if (enemyTurretCount == Config.MAX_ENEMY_TURRETS) {
                 break;
             }
+        }
+    }
+
+    static final int MAX_ENEMIES_IN_DIRECTION = 5;
+    static final int MAX_DISTANCE_TO_RUBBLE = 35;
+    static final int MAX_DISTANCE_TO_OFF_MAP = 35;
+
+    protected Direction safestDirectionTooRunTo(RobotInfo[] nearbyEnemies, RobotInfo[] nearbyZombies) throws GameActionException {
+        Direction directionAwayFromEnemies = DirectionUtil.getDirectionAwayFrom(nearbyEnemies, nearbyZombies, currentLocation);
+
+        setLocationsOfEnemies(nearbyEnemies);
+        setLocationsOfEnemies(nearbyZombies);
+
+        Direction safestDirection = Direction.EAST;
+        double safestDirectionScore = 0;
+
+        for (int i = 0; i < directions.length; i++) {
+            Direction direction = directions[i];
+
+            int enemyCountInCurrentDirection = 0;
+            int rubbleDistanceInCurrentDirection = MAX_DISTANCE_TO_RUBBLE;
+            int offMapDistanceInCurrentDirection = MAX_DISTANCE_TO_OFF_MAP;
+
+            for (int j = 1; j <= sensorRadius; j++) {
+                int x = j * direction.dx + currentLocation.x;
+                int y = j * direction.dy + currentLocation.y;
+                MapLocation location = new MapLocation(x, y);
+
+                if (rc.canSenseLocation(location) && !rc.onTheMap(location)) {
+                    offMapDistanceInCurrentDirection = currentLocation.distanceSquaredTo(location);
+                    break;
+                }
+
+                if (rc.senseRubble(location) > 100) {
+                    rubbleDistanceInCurrentDirection = currentLocation.distanceSquaredTo(location);
+                    break;
+                }
+
+                int normalizedX = j * direction.dx + sensorRadius;
+                int normalizedY = j * direction.dy + sensorRadius;
+
+                if (locationLastFilled[normalizedX][normalizedY] == roundNumber) {
+                    enemyCountInCurrentDirection++;
+                }
+            }
+
+            double currentDirectionScore = (1.0 - (double) enemyCountInCurrentDirection / (double) MAX_ENEMIES_IN_DIRECTION)
+                    * ((double) offMapDistanceInCurrentDirection / (double) MAX_DISTANCE_TO_OFF_MAP)
+                    * ((double) rubbleDistanceInCurrentDirection / (double) MAX_DISTANCE_TO_RUBBLE)
+                    * (direction.equals(directionAwayFromEnemies) ? 1.0 : 0.8)
+                    * (direction.equals(previousRoundsSafestDirection) ? 1.0 : 0.9);
+
+            if (currentDirectionScore > safestDirectionScore) {
+                safestDirectionScore = currentDirectionScore;
+                safestDirection = direction;
+            }
+        }
+
+        return previousRoundsSafestDirection = safestDirection;
+    }
+
+    private void setLocationsOfEnemies(RobotInfo[] locationsOfEnemies) {
+        for (RobotInfo zombie : locationsOfEnemies) {
+            int xLocation = zombie.location.x - currentLocation.x + sensorRadius;
+            int yLocation = zombie.location.y - currentLocation. y+ sensorRadius;
+
+            if (xLocation >= 2 * sensorRadius + 1
+                    || xLocation < 0
+                    || yLocation >= 2 * sensorRadius + 1
+                    || yLocation < 0) {
+                continue;
+            }
+
+            locationsOfNearbyEnemies[xLocation][yLocation] = zombie;
+            locationLastFilled[xLocation][yLocation] = roundNumber;
         }
     }
 }

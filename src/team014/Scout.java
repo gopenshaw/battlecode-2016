@@ -1,12 +1,12 @@
 package team014;
 
 import battlecode.common.*;
-import team014.util.*;
 import team014.message.Message;
 import team014.message.MessageBuilder;
 import team014.message.MessageParser;
 import team014.message.consensus.ZombiesDeadConsensus;
 import team014.nav.SquarePath;
+import team014.util.*;
 
 public class Scout extends Robot {
     private static final int ROUNDS_TO_REVERSE = 4;
@@ -14,6 +14,7 @@ public class Scout extends Robot {
     private final int ZOMBIE_BROADCAST_RADIUS = senseRadius * 3;
     private final SquarePath initialPath;
     private final MapBounds mapEstimate;
+    private final MapLocation center;
     private Direction exploreDirection;
     private final int LOOKAHEAD_LENGTH = 5;
     private RobotInfo[] nearbyZombies;
@@ -35,6 +36,8 @@ public class Scout extends Robot {
     private boolean initialPathCompleted;
     private boolean amFirstScout;
     private boolean shouldDoInitialPath;
+    private int moveTowardCenterRound;
+    private int ROUNDS_TO_MOVE_TO_CENTER = 10;
 
     public Scout(RobotController rc) {
         super(rc);
@@ -42,11 +45,13 @@ public class Scout extends Robot {
         zombieDens = new RobotQueueNoDuplicates(Config.MAX_DENS);
         destroyedDens = new BoundedQueue<Integer>(Config.MAX_DENS);
         amFirstScout = rc.getRoundNum() < 40;
-        MapLocation[] initialArchonLocations = rc.getInitialArchonLocations(rc.getTeam());
-        mapEstimate = MapUtil.getBoundsThatEncloseLocations(initialArchonLocations,
-                rc.getInitialArchonLocations(rc.getTeam().opponent()));
+        MapLocation[] initialTeamArchonLocs = rc.getInitialArchonLocations(rc.getTeam());
+        MapLocation[] initialEnemyArchonLocs = rc.getInitialArchonLocations(rc.getTeam().opponent());
+        center = LocationUtil.findAverageLocation(initialTeamArchonLocs, initialEnemyArchonLocs);
+        mapEstimate = MapUtil.getBoundsThatEncloseLocations(initialTeamArchonLocs,
+                initialEnemyArchonLocs);
         int pathRadius = Math.min(mapEstimate.getHeight(), mapEstimate.getWidth()) / 2;
-        decideShouldDoInitialPath(pathRadius, initialArchonLocations);
+        decideShouldDoInitialPath(pathRadius, initialTeamArchonLocs);
         System.out.printf("height %d width %d radius %d\n", mapEstimate.getHeight(), mapEstimate.getWidth(), pathRadius);
         System.out.printf("map bound: %s\n", mapEstimate);
         initialPath = new SquarePath(rc.getLocation(), pathRadius, rc);
@@ -67,6 +72,7 @@ public class Scout extends Robot {
 
     @Override
     protected void doTurn() throws GameActionException {
+        setIndicatorString(1, "zombies dead " + zombiesDead.isConsensusReached());
         roundSignals = rc.emptySignalQueue();
         getTurretBroadcasts(roundSignals);
         senseRobots();
@@ -89,6 +95,7 @@ public class Scout extends Robot {
 
             broadcastEnemy();
             explore();
+            moveTowardCenter();
             moveAwayFromZombies();
         } else if (myPair.team == team) {
             zombiesDead.observe(roundSignals, roundNumber);
@@ -108,6 +115,16 @@ public class Scout extends Robot {
             broadcastAllTurrets();
             broadcastZombies();
             unpairIfZombiesAreClose();
+        }
+    }
+
+    private void moveTowardCenter() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        if (!trySafeMoveToward(center, nearbyEnemies, nearbyZombies)) {
+            tryMove(safestDirectionTooRunTo(nearbyEnemies, nearbyZombies));
         }
     }
 
@@ -361,15 +378,6 @@ public class Scout extends Robot {
             return;
         }
 
-        for (int i = 0; i < enemyTurrets.length; i++) {
-            if (enemyTurrets[i] == null) {
-                break;
-            }
-            else {
-//                setIndicatorString(1, " " + enemyTurrets[i].location);
-            }
-        }
-
         RobotInfo[] turretsNotBeingBroadcast = RobotUtil.removeRobots(sensedEnemyTurrets, enemyTurrets);
         if (turretsNotBeingBroadcast.length > 0) {
             tryPairWithOneRobot(turretsNotBeingBroadcast);
@@ -468,11 +476,17 @@ public class Scout extends Robot {
             return;
         }
 
+        setIndicatorString(0, "move away from zombies");
         tryMove(DirectionUtil.getDirectionAwayFrom(nearbyZombies, nearbyEnemies, currentLocation));
     }
 
     private void explore() throws GameActionException {
         if (!rc.isCoreReady()) {
+            return;
+        }
+
+        if (currentLocation.distanceSquaredTo(center) > 36
+                && moveTowardCenterRound + ROUNDS_TO_MOVE_TO_CENTER > roundNumber) {
             return;
         }
 
@@ -494,23 +508,25 @@ public class Scout extends Robot {
             exploreDirection = getExploreDirection(null);
         }
 
-        if (RobotUtil.anyCanAttack(nearbyEnemies, currentLocation)
-                && roundNumber > ignoreEnemiesRound + ROUNDS_TO_REVERSE) {
-            exploreDirection = exploreDirection.opposite();
-            ignoreEnemiesRound = roundNumber;
+        RobotInfo[] nonScoutEnemies = RobotUtil.removeRobotsOfType(nearbyEnemies, RobotType.SCOUT);
+        if ((nonScoutEnemies != null
+                && nonScoutEnemies.length > 2)
+                || RobotUtil.anyCanAttack(nearbyEnemies, currentLocation)) {
+            moveTowardCenterRound = roundNumber;
+            exploreDirection = null;
+            return;
         }
-        else {
-            //--check ahead
-            MapLocation lookaheadLocation = currentLocation.add(exploreDirection, LOOKAHEAD_LENGTH);
-            Direction newDirection = null;
-            while (!rc.onTheMap(lookaheadLocation)) {
-                newDirection = getExploreDirection(exploreDirection);
-                lookaheadLocation = currentLocation.add(newDirection, LOOKAHEAD_LENGTH);
-            }
 
-            if (newDirection != null) {
-                exploreDirection = newDirection;
-            }
+        //--check ahead
+        MapLocation lookaheadLocation = currentLocation.add(exploreDirection, LOOKAHEAD_LENGTH);
+        Direction newDirection = null;
+        while (!rc.onTheMap(lookaheadLocation)) {
+            newDirection = getExploreDirection(exploreDirection);
+            lookaheadLocation = currentLocation.add(newDirection, LOOKAHEAD_LENGTH);
+        }
+
+        if (newDirection != null) {
+            exploreDirection = newDirection;
         }
 
         if (RobotUtil.anyCanAttack(nearbyZombies, currentLocation.add(exploreDirection, 2))) {
@@ -518,10 +534,9 @@ public class Scout extends Robot {
         }
 
         if (rc.isCoreReady()) {
-            tryMove(exploreDirection);
+            trySafeMove(exploreDirection, nearbyEnemies, nearbyZombies);
         }
     }
-
 
     private Direction getExploreDirection(Direction previousDirection) {
         if (previousDirection == null) {

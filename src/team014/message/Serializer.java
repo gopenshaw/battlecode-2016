@@ -18,7 +18,7 @@ public class Serializer {
 
     private static final Subject[] SUBJECT_ENCODING = { Subject.ZOMBIES_DEAD };
     private static final AnnouncementMode[] announcementModeEncoding = { AnnouncementMode.PROPOSE,
-        AnnouncementMode.DENY };
+        AnnouncementMode.DENY, AnnouncementMode.AFFIRM };
 
     public static int encode(MapLocation location) {
         return (location.x % 1000) * 1000 + (location.y % 1000);
