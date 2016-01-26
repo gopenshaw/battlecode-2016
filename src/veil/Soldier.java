@@ -20,7 +20,6 @@ public class Soldier extends Robot {
     private static RobotInfo[] infectedEnemies;
 
     private static LocationCollection zombieDens = new LocationCollection(20);
-    private static RobotData zombieToAttack;
     private static RobotData enemyToApproach;
     private static RobotData zombieDen;
     private static boolean[] denDestroyed = new boolean[32001];
@@ -57,7 +56,6 @@ public class Soldier extends Robot {
         shootDen();
         microAwayFromZombiesAndInfected();
         microAwayFromEnemies();
-        moveTowardZombie();
         moveTowardDen();
         moveTowardEnemy();
         moveTowardHelpLocation();
@@ -157,7 +155,6 @@ public class Soldier extends Robot {
     private void processAllBroadcasts() {
         int helpLocationCount = 0;
         enemyTurretCount = 0;
-        zombieToAttack = null;
         spreadRequested = false;
 
         roundSignals = rc.emptySignalQueue();
@@ -191,9 +188,6 @@ public class Soldier extends Robot {
             RobotData zombie = MessageParser.getRobotData(message[0], message[1]);
             if (zombie.type == RobotType.ZOMBIEDEN) {
                 updateZombieDen(zombie);
-            }
-            else {
-                zombieToAttack = zombie;
             }
         }
         else if (messageType == MessageType.ENEMY) {
@@ -577,24 +571,6 @@ public class Soldier extends Robot {
 
         rc.attackLocation(den.location);
     }
-
-    private void moveTowardZombie() throws GameActionException {
-        if (!rc.isCoreReady()
-                || attackableEnemies.length > 0) {
-            return;
-        }
-
-        if (zombieToAttack == null) {
-            return;
-        }
-
-        if (rc.canSenseRobot(zombieToAttack.id)) {
-            return;
-        }
-
-        setIndicatorString(2, "move toward broadcast zombie");
-        tryMoveToward(zombieToAttack.location);
-   }
 
     private boolean shouldMove(Direction direction) {
         return true;
