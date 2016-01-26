@@ -490,6 +490,10 @@ public class Scout extends Robot {
 
         if (nearbyEnemies.length > 0) {
             RobotInfo highPriority = RobotUtil.getHighestPriorityEnemyUnit(nearbyEnemies);
+            if (highPriority == null) {
+                return;
+            }
+
             if (lastEnemy == null
                     || RobotUtil.getPriority(highPriority.type) >= RobotUtil.getPriority(lastEnemy.type)) {
                 lastEnemy = highPriority;
