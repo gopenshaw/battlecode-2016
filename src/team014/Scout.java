@@ -2,11 +2,11 @@ package team014;
 
 import battlecode.common.*;
 import team014.message.Message;
+import team014.message.MessageBuilder;
+import team014.message.MessageParser;
 import team014.message.consensus.ZombiesDeadConsensus;
 import team014.nav.SquarePath;
 import team014.util.*;
-import team014.message.MessageBuilder;
-import team014.message.MessageParser;
 
 public class Scout extends Robot {
     private static final int ROUNDS_TO_REVERSE = 4;
@@ -490,6 +490,10 @@ public class Scout extends Robot {
 
         if (nearbyEnemies.length > 0) {
             RobotInfo highPriority = RobotUtil.getHighestPriorityEnemyUnit(nearbyEnemies);
+            if (highPriority == null) {
+                return;
+            }
+
             if (lastEnemy == null
                     || RobotUtil.getPriority(highPriority.type) >= RobotUtil.getPriority(lastEnemy.type)) {
                 lastEnemy = highPriority;
