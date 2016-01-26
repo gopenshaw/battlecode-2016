@@ -17,6 +17,8 @@ public class Soldier extends Robot {
     private static RobotInfo[] nearbyZombies;
     private static RobotInfo[] attackableEnemies;
     private static RobotInfo[] adjacentTeammates;
+    private static RobotInfo[] closeTeammates;
+    private static RobotInfo[] closeFighters;
     private static RobotInfo[] nearbyEnemies;
     private static RobotInfo[] nearbyFriendlies;
     private static RobotInfo[] infectedEnemies;
@@ -94,8 +96,7 @@ public class Soldier extends Robot {
             return false;
         }
 
-        RobotInfo[] armyUnits = RobotUtil.removeRobotsOfType(nearbyFriendlies, RobotType.ARCHON, RobotType.SCOUT);
-        if (armyUnits.length > 5) {
+        if (closeFighters.length > 6) {
             return false;
         }
 
@@ -247,6 +248,10 @@ public class Soldier extends Robot {
         }
 
         if (canAttackMe == 0) {
+            return;
+        }
+
+        if (closeFighters.length > 6) {
             return;
         }
 
@@ -516,6 +521,8 @@ public class Soldier extends Robot {
         infectedEnemies = RobotUtil.getRobotsAreInfected(nearbyEnemies);
         nearbyFriendlies = senseNearbyFriendlies();
         adjacentTeammates = rc.senseNearbyRobots(2, team);
+        closeTeammates = rc.senseNearbyRobots(5, team);
+        closeFighters = RobotUtil.removeRobotsOfType(closeTeammates, RobotType.ARCHON, RobotType.SCOUT);
 
         int maxEnemies = 6;
         enemiesCanAttackMe = RobotUtil.getEnemiesThatCanAttack(nearbyEnemies, currentLocation, maxEnemies);
