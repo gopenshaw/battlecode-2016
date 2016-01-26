@@ -597,21 +597,22 @@ public class Soldier extends Robot {
    }
 
     private boolean shouldMove(Direction direction) {
-        int behind = 0;
-        int ahead = 0;
-
-        for (RobotInfo friendly : nearbyFriendlies) {
-            double dotProd = direction.dx * (friendly.location.x - currentLocation.x)
-                    + direction.dy * (friendly.location.y - currentLocation.y);
-            if (dotProd >= 0) {
-                ahead++;
-            } else {
-                behind++;
-            }
-        }
-
-        boolean shouldMove = ahead >= behind || nearbyFriendlies.length > THRESHOLD_DENSITY;
-        rc.setIndicatorString(1, roundNumber + ", " + direction + ", " + shouldMove + ", " + behind + ", " + ahead + ", " + nearbyFriendlies.length);
-        return shouldMove;
+        return true;
+//        int behind = 0;
+//        int ahead = 0;
+//
+//        for (RobotInfo friendly : nearbyFriendlies) {
+//            double dotProd = direction.dx * (friendly.location.x - currentLocation.x)
+//                    + direction.dy * (friendly.location.y - currentLocation.y);
+//            if (dotProd >= 0) {
+//                ahead++;
+//            } else {
+//                behind++;
+//            }
+//        }
+//
+//        boolean shouldMove = ahead >= behind || nearbyFriendlies.length > THRESHOLD_DENSITY;
+//        rc.setIndicatorString(1, roundNumber + ", " + direction + ", " + shouldMove + ", " + behind + ", " + ahead + ", " + nearbyFriendlies.length);
+//        return shouldMove;
     }
 }
