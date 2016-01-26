@@ -1,12 +1,12 @@
 package team014;
 
 import battlecode.common.*;
-import team014.util.*;
 import team014.message.Message;
 import team014.message.MessageBuilder;
 import team014.message.MessageParser;
 import team014.message.consensus.ZombiesDeadConsensus;
 import team014.nav.SquarePath;
+import team014.util.*;
 
 public class Scout extends Robot {
     private static final int ROUNDS_TO_REVERSE = 4;
@@ -38,6 +38,7 @@ public class Scout extends Robot {
     private boolean shouldDoInitialPath;
     private int moveTowardCenterRound;
     private int ROUNDS_TO_MOVE_TO_CENTER = 10;
+    private boolean enemyCloseToArchon;
 
     public Scout(RobotController rc) {
         super(rc);
@@ -431,7 +432,8 @@ public class Scout extends Robot {
             return;
         }
 
-        if (!zombiesDead.isConsensusReached()
+        if (!enemyCloseToArchon
+                && !zombiesDead.isConsensusReached()
                 && roundNumber < 1800) {
             return;
         }
@@ -470,6 +472,7 @@ public class Scout extends Robot {
             if (lastEnemy == null
                     || RobotUtil.getPriority(highPriority.type) >= RobotUtil.getPriority(lastEnemy.type)) {
                 lastEnemy = highPriority;
+                enemyCloseToArchon = RobotUtil.getCountOfType(nearbyFriendlies, RobotType.ARCHON) > 0;
             }
         }
     }

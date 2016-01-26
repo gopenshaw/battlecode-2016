@@ -1,9 +1,9 @@
 package team014;
 
 import battlecode.common.*;
-import team014.util.*;
 import team014.message.MessageParser;
 import team014.nav.Bug;
+import team014.util.*;
 
 public class Soldier extends Robot {
     private static final int MIN_SAFE_MOVE_ROUND = 300;
@@ -633,11 +633,12 @@ public class Soldier extends Robot {
 
     private void moveTowardCenter() throws GameActionException {
         if (!rc.isCoreReady()
-                || nearbyZombies.length > 0) {
+                || nearbyZombies.length > 0
+                || nearbyEnemies.length > 0) {
             return;
         }
 
-        if (currentLocation.distanceSquaredTo(center) > 25) {
+        if (currentLocation.distanceSquaredTo(center) > 70) {
             setIndicatorString(2, "move toward center");
             trySafeMoveToward(center, nearbyEnemies, nearbyZombies);
         }

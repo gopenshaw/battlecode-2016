@@ -2,9 +2,9 @@ package team014;
 
 import battlecode.common.*;
 import team014.message.*;
-import team014.util.*;
 import team014.message.consensus.ZombiesDeadConsensus;
 import team014.nav.Bug;
+import team014.util.*;
 
 public class Archon extends Robot {
 
