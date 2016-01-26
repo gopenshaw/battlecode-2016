@@ -3,8 +3,8 @@ package team014.message;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
-import team014.MessageType;
 import team014.DestroyedDenData;
+import team014.MessageType;
 import team014.RobotData;
 
 public class MessageBuilder {

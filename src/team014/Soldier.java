@@ -1,9 +1,9 @@
 package team014;
 
 import battlecode.common.*;
+import team014.util.*;
 import team014.message.MessageParser;
 import team014.nav.Bug;
-import team014.util.*;
 
 public class Soldier extends Robot {
     private static final int MIN_SAFE_MOVE_ROUND = 300;
@@ -345,6 +345,10 @@ public class Soldier extends Robot {
             }
         }
         else { // Viper
+            if (nearbyEnemies.length == 1) {
+                return;
+            }
+
             if (roundNumber < 2000) {
                 enemyToAttack = RobotUtil.getLowestHealthNonInfectedRobot(attackableEnemies);
             }
@@ -374,6 +378,10 @@ public class Soldier extends Robot {
         if (!rc.isCoreReady()
                 || nearbyEnemies.length > 0
                 || id % 3 == 0) {
+            return;
+        }
+
+        if (roundNumber > 2000) {
             return;
         }
 
@@ -412,7 +420,8 @@ public class Soldier extends Robot {
                     || tooMuchRubble(direction)) {
                 Bug.setDestination(zombieDen.location);
                 buggingTo[zombieDen.id] = true;
-                if (roundNumber < MIN_SAFE_MOVE_ROUND) {
+                if (roundNumber < MIN_SAFE_MOVE_ROUND
+                        || enemyTurretCount == 0) {
                     Direction d = Bug.getDirection(currentLocation);
                     if (shouldMove(d)) {
                         tryMove(d);
@@ -426,7 +435,8 @@ public class Soldier extends Robot {
                 }
             }
             else {
-                if (roundNumber < MIN_SAFE_MOVE_ROUND) {
+                if (roundNumber < MIN_SAFE_MOVE_ROUND
+                        || enemyTurretCount == 0) {
                     if (shouldMove(currentLocation.directionTo(zombieDen.location))) {
                         tryMoveToward(zombieDen.location);
                     }

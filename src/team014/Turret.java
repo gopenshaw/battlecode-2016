@@ -1,8 +1,8 @@
 package team014;
 
 import battlecode.common.*;
-import team014.message.MessageParser;
 import team014.util.ZombieUtil;
+import team014.message.MessageParser;
 
 public class Turret extends Robot {
     private static final int RANDOM_MOVE_DELAY = 20;
