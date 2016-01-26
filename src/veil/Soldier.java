@@ -94,6 +94,11 @@ public class Soldier extends Robot {
             return false;
         }
 
+        RobotInfo[] armyUnits = RobotUtil.removeRobotsOfType(nearbyFriendlies, RobotType.ARCHON, RobotType.SCOUT);
+        if (armyUnits.length > 5) {
+            return false;
+        }
+
         if (rc.getViperInfectedTurns() == 0
                 || canAttackMe == 0) {
             return false;
@@ -109,11 +114,11 @@ public class Soldier extends Robot {
         }
 
         if (rc.isCoreReady()) {
-            setIndicatorString(2, "suicide!");
+            setIndicatorString(2, "suic!");
             tryMove(DirectionUtil.getDirectionToward(nearbyEnemies, currentLocation));
         }
         else {
-            setIndicatorString(2, "waiting to suicide");
+            setIndicatorString(2, "w.t.s");
         }
 
         //--we can't do anything until we are closer to enemy
@@ -252,8 +257,6 @@ public class Soldier extends Robot {
             return;
         }
 
-        setIndicatorString(0, "can attack me " + canAttackMe);
-        setIndicatorString(0, "can attack enemy " + canAttackEnemy);
         if (canAttackMe + advantage > canAttackEnemy) {
             Direction directionAwayFrom = DirectionUtil.getDirectionAwayFrom(nearbyEnemies, currentLocation);
             if (directionAwayFrom == Direction.NONE) {

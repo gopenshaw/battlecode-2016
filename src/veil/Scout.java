@@ -72,7 +72,7 @@ public class Scout extends Robot {
 
     @Override
     protected void doTurn() throws GameActionException {
-        setIndicatorString(1, "zombies dead" + zombiesDead.isConsensusReached());
+        setIndicatorString(1, "zombies dead " + zombiesDead.isConsensusReached());
         roundSignals = rc.emptySignalQueue();
         getTurretBroadcasts(roundSignals);
         senseRobots();
@@ -124,7 +124,6 @@ public class Scout extends Robot {
         }
 
         if (!trySafeMoveToward(center, nearbyEnemies, nearbyZombies)) {
-            setIndicatorString(0, "moving toward center");
             tryMove(safestDirectionTooRunTo(nearbyEnemies, nearbyZombies));
         }
     }
@@ -500,7 +499,6 @@ public class Scout extends Robot {
                 initialPathCompleted = true;
             }
             else {
-                setIndicatorString(0, "move on initial path");
                 trySafeMove(pathDirection, nearbyEnemies, nearbyZombies);
                 return;
             }
@@ -536,7 +534,6 @@ public class Scout extends Robot {
         }
 
         if (rc.isCoreReady()) {
-            setIndicatorString(0, "move on explore direction");
             trySafeMove(exploreDirection, nearbyEnemies, nearbyZombies);
         }
     }
