@@ -125,6 +125,7 @@ public class Scout extends Robot {
         }
 
         if (!trySafeMoveToward(center, nearbyEnemies, nearbyZombies)) {
+            setIndicatorString(0, "move toward center");
             tryMove(safestDirectionTooRunTo(nearbyEnemies, nearbyZombies));
         }
     }
@@ -472,7 +473,8 @@ public class Scout extends Robot {
             if (lastEnemy == null
                     || RobotUtil.getPriority(highPriority.type) >= RobotUtil.getPriority(lastEnemy.type)) {
                 lastEnemy = highPriority;
-                enemyCloseToArchon = RobotUtil.getCountOfType(nearbyFriendlies, RobotType.ARCHON) > 0;
+                enemyCloseToArchon = RobotUtil.getCountOfType(nearbyFriendlies, RobotType.ARCHON) > 0
+                                        && RobotUtil.getCountOfType(nearbyEnemies, RobotType.TTM, RobotType.TURRET) == 0;
             }
         }
     }
@@ -506,6 +508,7 @@ public class Scout extends Robot {
                 initialPathCompleted = true;
             }
             else {
+                setIndicatorString(0, "move in path direction");
                 trySafeMove(pathDirection, nearbyEnemies, nearbyZombies);
                 return;
             }
@@ -518,7 +521,8 @@ public class Scout extends Robot {
         RobotInfo[] nonScoutEnemies = RobotUtil.removeRobotsOfType(nearbyEnemies, RobotType.SCOUT);
         if ((nonScoutEnemies != null
                 && nonScoutEnemies.length > 2)
-                || RobotUtil.anyCanAttack(nearbyEnemies, currentLocation)) {
+                || RobotUtil.anyCanAttack(nearbyEnemies, currentLocation)
+                || RobotUtil.getCountOfType(nearbyZombies, RobotType.FASTZOMBIE) > 0) {
             moveTowardCenterRound = roundNumber;
             exploreDirection = null;
             return;
@@ -541,6 +545,7 @@ public class Scout extends Robot {
         }
 
         if (rc.isCoreReady()) {
+            setIndicatorString(0, "move in path direction");
             trySafeMove(exploreDirection, nearbyEnemies, nearbyZombies);
         }
     }

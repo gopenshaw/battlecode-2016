@@ -637,4 +637,17 @@ public class RobotUtil {
 
         return minIndex < 0 ? null : robots[minIndex];
     }
+
+    public static int getCountOfType(RobotInfo[] robots, RobotType type1, RobotType type2) {
+        int count = 0;
+        for (int i = 0; i < robots.length; i++) {
+            RobotType type = robots[i].type;
+            if (type == type1
+                    || type == type2) {
+                count++;
+            }
+        }
+
+        return count;
+    }
 }
