@@ -1,12 +1,12 @@
 package team014;
 
 import battlecode.common.*;
+import team014.util.*;
 import team014.message.Message;
+import team014.message.MessageBuilder;
 import team014.message.MessageParser;
 import team014.message.consensus.ZombiesDeadConsensus;
 import team014.nav.SquarePath;
-import team014.message.MessageBuilder;
-import team014.util.*;
 
 public class Scout extends Robot {
     private static final int ROUNDS_TO_REVERSE = 4;
@@ -45,7 +45,7 @@ public class Scout extends Robot {
         MapLocation[] initialArchonLocations = rc.getInitialArchonLocations(rc.getTeam());
         mapEstimate = MapUtil.getBoundsThatEncloseLocations(initialArchonLocations,
                 rc.getInitialArchonLocations(rc.getTeam().opponent()));
-        int pathRadius = Math.min(mapEstimate.getHeight(), mapEstimate.getWidth()) / 4;
+        int pathRadius = Math.min(mapEstimate.getHeight(), mapEstimate.getWidth()) / 2;
         decideShouldDoInitialPath(pathRadius, initialArchonLocations);
         System.out.printf("height %d width %d radius %d\n", mapEstimate.getHeight(), mapEstimate.getWidth(), pathRadius);
         System.out.printf("map bound: %s\n", mapEstimate);

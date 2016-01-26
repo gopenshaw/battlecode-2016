@@ -1,10 +1,10 @@
 package team014;
 
 import battlecode.common.*;
-import team014.message.Message;
-import team014.message.MessageParser;
 import team014.message.MessageBuilder;
+import team014.message.MessageParser;
 import team014.util.LocationUtil;
+import team014.message.Message;
 import team014.util.RobotUtil;
 
 import java.util.Random;

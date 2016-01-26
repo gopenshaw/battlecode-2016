@@ -117,4 +117,22 @@ public class LocationUtil {
 
         return true;
     }
+
+    public static MapLocation findAverageLocation(MapLocation[] mapLocations, MapLocation[] mapLocations2) {
+        int x = 0;
+        int y = 0;
+        int count = mapLocations.length;
+        for (MapLocation location : mapLocations) {
+            x += location.x;
+            y += location.y;
+        }
+
+        count += mapLocations2.length;
+        for (MapLocation location : mapLocations2) {
+            x += location.x;
+            y += location.y;
+        }
+
+        return new MapLocation(x / count, y / count);
+    }
 }

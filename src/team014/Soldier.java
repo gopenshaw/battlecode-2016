@@ -1,12 +1,15 @@
 package team014;
 
 import battlecode.common.*;
+import team014.util.*;
 import team014.message.MessageParser;
 import team014.nav.Bug;
-import team014.util.*;
 
 public class Soldier extends Robot {
     private static final int MIN_SAFE_MOVE_ROUND = 300;
+    private static final int THRESHOLD_DENSITY = 6;
+
+    private static MapLocation center;
 
     private Signal[] roundSignals;
 
@@ -19,7 +22,6 @@ public class Soldier extends Robot {
     private static RobotInfo[] infectedEnemies;
 
     private static LocationCollection zombieDens = new LocationCollection(20);
-    private static RobotData zombieToAttack;
     private static RobotData enemyToApproach;
     private static RobotData zombieDen;
     private static boolean[] denDestroyed = new boolean[32001];
@@ -37,10 +39,13 @@ public class Soldier extends Robot {
     private LocationMemory locationMemory = new LocationMemory();
     private int announceRound;
     private boolean spreadRequested;
+    private int initialRound;
 
     public Soldier(RobotController rc) {
         super(rc);
         Bug.init(rc);
+        center = LocationUtil.findAverageLocation(rc.getInitialArchonLocations(team), rc.getInitialArchonLocations(enemy));
+        initialRound = rc.getRoundNum();
     }
 
     @Override
@@ -56,7 +61,6 @@ public class Soldier extends Robot {
         shootDen();
         microAwayFromZombiesAndInfected();
         microAwayFromEnemies();
-        moveTowardZombie();
         moveTowardDen();
         moveTowardEnemy();
         moveTowardHelpLocation();
@@ -65,6 +69,7 @@ public class Soldier extends Robot {
         recordZombieLocations();
         announceEnemy();
         spread();
+        moveTowardCenter();
     }
 
     private void spread() throws GameActionException {
@@ -156,7 +161,6 @@ public class Soldier extends Robot {
     private void processAllBroadcasts() {
         int helpLocationCount = 0;
         enemyTurretCount = 0;
-        zombieToAttack = null;
         spreadRequested = false;
 
         roundSignals = rc.emptySignalQueue();
@@ -190,9 +194,6 @@ public class Soldier extends Robot {
             RobotData zombie = MessageParser.getRobotData(message[0], message[1]);
             if (zombie.type == RobotType.ZOMBIEDEN) {
                 updateZombieDen(zombie);
-            }
-            else {
-                zombieToAttack = zombie;
             }
         }
         else if (messageType == MessageType.ENEMY) {
@@ -257,6 +258,9 @@ public class Soldier extends Robot {
             }
 
             Direction moveDirection = getTryMoveDirection(directionAwayFrom);
+            if (moveDirection == null) {
+                return;
+            }
             int distanceToClosestEnemy =
                     currentLocation.distanceSquaredTo(
                             RobotUtil.getClosestRobotToLocation(nearbyEnemies, currentLocation).location);
@@ -295,14 +299,20 @@ public class Soldier extends Robot {
 
         setIndicatorString(2, "try move to enemy location");
         if (enemyTurrets.length > 0) {
-            trySafeMoveToward(enemyToApproach.location, enemyTurretLocations);
+            if (shouldMove(currentLocation.directionTo(enemyToApproach.location))) {
+                trySafeMoveToward(enemyToApproach.location, enemyTurretLocations);
+            }
         }
         else {
             if (enemyToApproach.type != RobotType.TURRET) {
-                tryMoveToward(enemyToApproach.location);
+                if (shouldMove(currentLocation.directionTo(enemyToApproach.location))) {
+                    tryMoveToward(enemyToApproach.location);
+                }
             }
             else {
-                trySafeMoveTowardTurret(enemyToApproach);
+                if (shouldMove(currentLocation.directionTo(enemyToApproach.location))) {
+                    trySafeMoveTowardTurret(enemyToApproach);
+                }
             }
         }
     }
@@ -345,7 +355,8 @@ public class Soldier extends Robot {
 
     private void moveTowardDen() throws GameActionException {
         if (!rc.isCoreReady()
-                || nearbyEnemies.length > 0) {
+                || nearbyEnemies.length > 0
+                || id % 3 == 0) {
             return;
         }
 
@@ -385,18 +396,28 @@ public class Soldier extends Robot {
                 Bug.setDestination(zombieDen.location);
                 buggingTo[zombieDen.id] = true;
                 if (roundNumber < MIN_SAFE_MOVE_ROUND) {
-                    tryMove(Bug.getDirection(currentLocation));
+                    Direction d = Bug.getDirection(currentLocation);
+                    if (shouldMove(d)) {
+                        tryMove(d);
+                    }
                 }
                 else {
-                    trySafeMove(Bug.getDirection(currentLocation), enemyTurretLocations);
+                    Direction d = Bug.getDirection(currentLocation);
+                    if (shouldMove(d)) {
+                        trySafeMove(d, enemyTurretLocations);
+                    }
                 }
             }
             else {
                 if (roundNumber < MIN_SAFE_MOVE_ROUND) {
-                    tryMoveToward(zombieDen.location);
+                    if (shouldMove(currentLocation.directionTo(zombieDen.location))) {
+                        tryMoveToward(zombieDen.location);
+                    }
                 }
                 else {
-                    trySafeMoveToward(zombieDen.location, enemyTurretLocations);
+                    if (shouldMove(currentLocation.directionTo(zombieDen.location))) {
+                        trySafeMoveToward(zombieDen.location, enemyTurretLocations);
+                    }
                 }
             }
         }
@@ -458,7 +479,6 @@ public class Soldier extends Robot {
         }
 
         Direction zombieDirection = DirectionUtil.getDirection(x, y);
-        setIndicatorString(2, "zombie direction " + zombieDirection);
         if (zombieDirection == Direction.NONE) {
             return;
         }
@@ -503,6 +523,10 @@ public class Soldier extends Robot {
 
     private void moveAwayFromArchon() throws GameActionException {
         if (!rc.isCoreReady()) {
+            return;
+        }
+
+        if (roundNumber - initialRound > 4) {
             return;
         }
 
@@ -558,21 +582,33 @@ public class Soldier extends Robot {
         rc.attackLocation(den.location);
     }
 
-    private void moveTowardZombie() throws GameActionException {
-        if (!rc.isCoreReady()
-                || attackableEnemies.length > 0) {
+    private boolean shouldMove(Direction direction) {
+        return true;
+//        int behind = 0;
+//        int ahead = 0;
+//
+//        for (RobotInfo friendly : nearbyFriendlies) {
+//            double dotProd = direction.dx * (friendly.location.x - currentLocation.x)
+//                    + direction.dy * (friendly.location.y - currentLocation.y);
+//            if (dotProd >= 0) {
+//                ahead++;
+//            } else {
+//                behind++;
+//            }
+//        }
+//
+//        boolean shouldMove = ahead >= behind || nearbyFriendlies.length > THRESHOLD_DENSITY;
+//        rc.setIndicatorString(1, roundNumber + ", " + direction + ", " + shouldMove + ", " + behind + ", " + ahead + ", " + nearbyFriendlies.length);
+//        return shouldMove;
+    }
+
+    private void moveTowardCenter() throws GameActionException {
+        if (!rc.isCoreReady()) {
             return;
         }
 
-        if (zombieToAttack == null) {
-            return;
+        if (currentLocation.distanceSquaredTo(center) > 25) {
+            trySafeMoveToward(center, nearbyEnemies, nearbyZombies);
         }
-
-        if (rc.canSenseRobot(zombieToAttack.id)) {
-            return;
-        }
-
-        setIndicatorString(2, "move toward broadcast zombie");
-        tryMoveToward(zombieToAttack.location);
-   }
+    }
 }
