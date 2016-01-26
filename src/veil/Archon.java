@@ -12,9 +12,6 @@ public class Archon extends Robot {
     private RobotType[] lowUnitCountBuildQueue = {
             RobotType.SCOUT, RobotType.SOLDIER, RobotType.SOLDIER,
             RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER,
-            RobotType.SOLDIER, RobotType.SOLDIER, RobotType.VIPER, RobotType.SOLDIER,
-            RobotType.SCOUT, RobotType.SOLDIER, RobotType.SOLDIER,
-            RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER,
             RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER, RobotType.SOLDIER,
             RobotType.SCOUT, RobotType.SOLDIER, RobotType.SOLDIER,
             RobotType.SOLDIER, RobotType.VIPER, RobotType.SOLDIER, RobotType.SOLDIER,
@@ -243,9 +240,18 @@ public class Archon extends Robot {
         if (zombiesAreDangerous()
                 || RobotUtil.anyCanAttack(nearbyEnemies, currentLocation)) {
             Direction runDirection = safestDirectionTooRunTo(nearbyEnemies, nearbyZombies);
-            //--TODO check if we are going into a corner or some other trap
             tryMove(runDirection);
             rc.broadcastSignal(senseRadius - 3);
+            return;
+        }
+
+        if (roundNumber > 1100
+                && (nearbyZombies.length > 0
+                    || nearbyEnemies.length > 0)) {
+            Direction runDirection = safestDirectionTooRunTo(nearbyEnemies, nearbyZombies);
+            tryMove(runDirection);
+            rc.broadcastSignal(senseRadius - 3);
+            return;
         }
     }
 
@@ -262,9 +268,7 @@ public class Archon extends Robot {
     }
 
     private void buildRobots() throws GameActionException {
-        if (!rc.isCoreReady()
-                || (roundNumber > 1000
-                    && nearbyZombies.length > 0)) {
+        if (!rc.isCoreReady()) {
             return;
         }
 
