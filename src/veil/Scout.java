@@ -468,6 +468,7 @@ public class Scout extends Robot {
             return;
         }
 
+        setIndicatorString(0, "move away from zombies");
         tryMove(DirectionUtil.getDirectionAwayFrom(nearbyZombies, nearbyEnemies, currentLocation));
     }
 
@@ -485,6 +486,7 @@ public class Scout extends Robot {
                 initialPathCompleted = true;
             }
             else {
+                setIndicatorString(0, "move on initial path");
                 trySafeMove(pathDirection, nearbyEnemies, nearbyZombies);
                 return;
             }
@@ -496,6 +498,7 @@ public class Scout extends Robot {
 
         if (RobotUtil.anyCanAttack(nearbyEnemies, currentLocation)
                 && roundNumber > ignoreEnemiesRound + ROUNDS_TO_REVERSE) {
+            setIndicatorString(0, "taking opposite direction");
             exploreDirection = exploreDirection.opposite();
             ignoreEnemiesRound = roundNumber;
         }
@@ -518,6 +521,7 @@ public class Scout extends Robot {
         }
 
         if (rc.isCoreReady()) {
+            setIndicatorString(0, "move on explore direction");
             tryMove(exploreDirection);
         }
     }

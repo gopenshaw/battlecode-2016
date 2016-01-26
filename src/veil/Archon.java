@@ -43,11 +43,6 @@ public class Archon extends Robot {
     private int scoutCountEstimate;
     private RobotData enemyToApproach;
 
-    private static final int sensorRadius =  (int) Math.pow(RobotType.ARCHON.sensorRadiusSquared, 0.5) ;
-    private RobotInfo[][] locationsOfNearbyEnemies = new RobotInfo[2 * sensorRadius + 1][2 * sensorRadius + 1];
-    private int[][] locationLastFilled = new int[2 * sensorRadius + 1][2 * sensorRadius + 1];
-    private Direction previousRoundsSafestDirection = Direction.NONE;
-
     public Archon(RobotController rc) {
         super(rc);
         Bug.init(rc);
@@ -233,95 +228,11 @@ public class Archon extends Robot {
 
         if (zombiesAreDangerous()
                 || RobotUtil.anyCanAttack(nearbyEnemies, currentLocation)) {
-            Direction runDirection = safestDirectionTooRunTo();
+            Direction runDirection = safestDirectionTooRunTo(nearbyEnemies, nearbyZombies);
             //--TODO check if we are going into a corner or some other trap
             tryMove(runDirection);
             rc.broadcastSignal(senseRadius - 3);
         }
-    }
-
-    static final int MAX_ENEMIES_IN_DIRECTION = 5;
-    static final int MAX_DISTANCE_TO_RUBBLE = 35;
-    static final int MAX_DISTANCE_TO_OFF_MAP = 35;
-
-    private Direction safestDirectionTooRunTo() throws GameActionException {
-        Direction directionAwayFromEnemies = DirectionUtil.getDirectionAwayFrom(nearbyEnemies, nearbyZombies, currentLocation);
-
-        setLocationsOfEnemies(nearbyEnemies);
-        setLocationsOfEnemies(nearbyZombies);
-
-        Direction safestDirection = Direction.EAST;
-        double safestDirectionScore = 0;
-
-        for (int i = 0; i < directions.length; i++) {
-            Direction direction = directions[i];
-
-            int enemyCountInCurrentDirection = 0;
-            int rubbleDistanceInCurrentDirection = MAX_DISTANCE_TO_RUBBLE;
-            int offMapDistanceInCurrentDirection = MAX_DISTANCE_TO_OFF_MAP;
-
-            for (int j = 1; j <= sensorRadius; j++) {
-                int x = j * direction.dx + currentLocation.x;
-                int y = j * direction.dy + currentLocation.y;
-                MapLocation location = new MapLocation(x, y);
-
-                if (rc.canSenseLocation(location) && !rc.onTheMap(location)) {
-                    offMapDistanceInCurrentDirection = currentLocation.distanceSquaredTo(location);
-                    break;
-                }
-
-                if (rc.senseRubble(location) > 100) {
-                    rubbleDistanceInCurrentDirection = currentLocation.distanceSquaredTo(location);
-                    break;
-                }
-
-                int normalizedX = j * direction.dx + sensorRadius;
-                int normalizedY = j * direction.dy + sensorRadius;
-
-                if (locationLastFilled[normalizedX][normalizedY] == roundNumber) {
-                    enemyCountInCurrentDirection++;
-                }
-            }
-
-            double currentDirectionScore = (1.0 - (double) enemyCountInCurrentDirection / (double) MAX_ENEMIES_IN_DIRECTION)
-                    * ((double) offMapDistanceInCurrentDirection / (double) MAX_DISTANCE_TO_OFF_MAP)
-                    * ((double) rubbleDistanceInCurrentDirection / (double) MAX_DISTANCE_TO_RUBBLE)
-                    * (direction.equals(directionAwayFromEnemies) ? 1.0 : 0.8)
-                    * (direction.equals(previousRoundsSafestDirection) ? 1.0 : 0.9);
-
-            if (currentDirectionScore > safestDirectionScore) {
-                safestDirectionScore = currentDirectionScore;
-                safestDirection = direction;
-            }
-        }
-
-        return previousRoundsSafestDirection = safestDirection;
-    }
-
-    private void setLocationsOfEnemies(RobotInfo[] locationsOfEnemies) {
-        for (RobotInfo zombie : locationsOfEnemies) {
-            int xLocation = zombie.location.x - currentLocation.x + sensorRadius;
-            int yLocation = zombie.location.y - currentLocation. y+ sensorRadius;
-
-            if (xLocation >= 2 * sensorRadius + 1
-                    || xLocation < 0
-                    || yLocation >= 2 * sensorRadius + 1
-                    || yLocation < 0) {
-                continue;
-            }
-
-            locationsOfNearbyEnemies[xLocation][yLocation] = zombie;
-            locationLastFilled[xLocation][yLocation] = roundNumber;
-        }
-    }
-
-    private boolean zombiesAreDangerous() {
-        if (nearbyZombies.length == 0) {
-            return false;
-        }
-
-        return nearbyZombies.length > nearbyFriendlies.length
-                || RobotUtil.canAttackInOneMove(nearbyZombies, currentLocation);
     }
 
     private void senseRobots() {
@@ -460,5 +371,14 @@ public class Archon extends Robot {
             trySafeMoveDigOnto(previousPartLocation, enemyTurrets, enemyTurretCount);
             rc.broadcastSignal(31);
         }
+    }
+
+    private boolean zombiesAreDangerous() {
+        if (nearbyZombies.length == 0) {
+            return false;
+        }
+
+        return nearbyZombies.length > nearbyFriendlies.length
+                || RobotUtil.canAttackInOneMove(nearbyZombies, currentLocation);
     }
 }
