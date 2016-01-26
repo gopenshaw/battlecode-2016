@@ -66,7 +66,13 @@ public abstract class ConsensusManager {
 
                 if (MessageParser.getMessageType(message[0], message[1]) == MessageType.ANNOUNCEMENT
                         && MessageParser.getSubject(message[0], message[1]) == getSubject()) {
-                    addToRecord(message, currentRound);
+                    if (MessageParser.getAnnouncementMode(message[0], message[1]) == AnnouncementMode.AFFIRM) {
+                        consensusReached = true;
+                        break;
+                    }
+                    else {
+                        addToRecord(message, currentRound);
+                    }
                 }
             }
         }

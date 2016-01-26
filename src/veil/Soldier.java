@@ -69,7 +69,10 @@ public class Soldier extends Robot {
         recordZombieLocations();
         announceEnemy();
         spread();
-        moveTowardCenter();
+
+        if (enemyToApproach == null) {
+            moveTowardCenter();
+        }
     }
 
     private void spread() throws GameActionException {
@@ -603,11 +606,13 @@ public class Soldier extends Robot {
     }
 
     private void moveTowardCenter() throws GameActionException {
-        if (!rc.isCoreReady()) {
+        if (!rc.isCoreReady()
+                || nearbyZombies.length > 0) {
             return;
         }
 
         if (currentLocation.distanceSquaredTo(center) > 25) {
+            setIndicatorString(2, "move toward center");
             trySafeMoveToward(center, nearbyEnemies, nearbyZombies);
         }
     }

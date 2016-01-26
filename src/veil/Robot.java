@@ -396,7 +396,12 @@ public abstract class Robot {
             }
         }
 
-        return tryClearRubble(direction);
+        if (type.canClearRubble()) {
+            return tryClearRubble(direction);
+        }
+        else {
+            return false;
+        }
     }
 
     private boolean canMoveSafely(Direction direction, MapLocation next, RobotInfo[] nearbyEnemies, RobotInfo[] nearbyZombies) {

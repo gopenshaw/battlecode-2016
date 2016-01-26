@@ -1,10 +1,8 @@
 package veil;
 
 import battlecode.common.*;
-import veil.message.Message;
-import veil.message.MessageParser;
+import veil.message.*;
 import veil.message.consensus.ZombiesDeadConsensus;
-import veil.message.MessageBuilder;
 import veil.nav.Bug;
 import veil.util.*;
 
@@ -53,6 +51,7 @@ public class Archon extends Robot {
     protected void doTurn() throws GameActionException {
         processAllBroadcasts();
         broadcastEnemyToApproach();
+        broadcastZombiesDead();
         senseRobots();
         estimateScoutCount();
 
@@ -71,6 +70,18 @@ public class Archon extends Robot {
         requestHelpIfUnderAttack();
 
         lastRoundHealth = rc.getHealth();
+    }
+
+    private void broadcastZombiesDead() throws GameActionException {
+        if (enemyToApproach == null
+                || roundNumber % 10 != 8) {
+            return;
+        }
+
+        //--broadcast so the information goes to robots we are spawning
+        setIndicatorString(1, "broadcast zombies dead");
+        Message message = MessageBuilder.buildAnnouncement(Subject.ZOMBIES_DEAD, AnnouncementMode.AFFIRM);
+        rc.broadcastMessageSignal(message.getFirst(), message.getSecond(), 2);
     }
 
     private void goTowardNeutral() throws GameActionException {
