@@ -7,10 +7,8 @@ import veil.RobotData;
 
 public class RobotUtil {
     private static final RobotType[] ENEMY_PRIORITY = {
-            RobotType.SCOUT, RobotType.VIPER,
-            RobotType.SOLDIER, RobotType.GUARD,
-            RobotType.TTM,
-            RobotType.TURRET, RobotType.ARCHON
+            RobotType.VIPER, RobotType.SOLDIER, RobotType.GUARD,
+            RobotType.TTM, RobotType.TURRET, RobotType.ARCHON
     };
 
     public static RobotInfo getLowestHealthRobot(RobotInfo[] robots) {

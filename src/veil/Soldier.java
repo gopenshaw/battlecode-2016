@@ -296,7 +296,8 @@ public class Soldier extends Robot {
 
     private void moveTowardEnemy() throws GameActionException {
         if (attackableEnemies.length > 0
-                || !rc.isCoreReady()) {
+                || !rc.isCoreReady()
+                || nearbyZombies.length > 0) {
             return;
         }
 

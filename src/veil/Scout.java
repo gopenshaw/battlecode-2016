@@ -39,6 +39,7 @@ public class Scout extends Robot {
     private int moveTowardCenterRound;
     private int ROUNDS_TO_MOVE_TO_CENTER = 10;
     private boolean enemyCloseToArchon;
+    private int lastEnemySet;
 
     public Scout(RobotController rc) {
         super(rc);
@@ -445,14 +446,17 @@ public class Scout extends Robot {
             return;
         }
 
-        if (!enemyCloseToArchon
-                && !zombiesDead.isConsensusReached()
-                && roundNumber < 1800) {
+        if (zombiesDead.isConsensusReached()) {
+            Message enemyMessage = MessageBuilder.buildEnemyMessage(lastEnemy);
+            rc.broadcastMessageSignal(enemyMessage.getFirst(), enemyMessage.getSecond(), senseRadius * 4);
             return;
         }
 
-        Message enemyMessage = MessageBuilder.buildEnemyMessage(lastEnemy);
-        rc.broadcastMessageSignal(enemyMessage.getFirst(), enemyMessage.getSecond(), senseRadius * 4);
+        if (enemyCloseToArchon
+                && roundNumber > 1800) {
+            Message enemyMessage = MessageBuilder.buildEnemyMessage(lastEnemy);
+            rc.broadcastMessageSignal(enemyMessage.getFirst(), enemyMessage.getSecond(), senseRadius * 4);
+        }
     }
 
 
@@ -480,6 +484,10 @@ public class Scout extends Robot {
         nearbyEnemies = senseNearbyEnemies();
         nearbyFriendlies = senseNearbyFriendlies();
 
+        if (lastEnemySet + 9 < roundNumber) {
+            lastEnemy = null;
+        }
+
         if (nearbyEnemies.length > 0) {
             RobotInfo highPriority = RobotUtil.getHighestPriorityEnemyUnit(nearbyEnemies);
             if (lastEnemy == null
@@ -488,6 +496,8 @@ public class Scout extends Robot {
                 enemyCloseToArchon = RobotUtil.getCountOfType(nearbyFriendlies, RobotType.ARCHON) > 0
                                         && RobotUtil.getCountOfType(nearbyEnemies, RobotType.TTM, RobotType.TURRET) == 0;
             }
+
+            lastEnemySet = roundNumber;
         }
     }
 
