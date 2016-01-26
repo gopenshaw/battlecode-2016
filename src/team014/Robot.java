@@ -1,11 +1,11 @@
 package team014;
 
 import battlecode.common.*;
+import team014.util.LocationUtil;
 import team014.message.Message;
 import team014.message.MessageBuilder;
 import team014.message.MessageParser;
 import team014.util.DirectionUtil;
-import team014.util.LocationUtil;
 import team014.util.RobotUtil;
 
 import java.util.Random;
@@ -216,6 +216,11 @@ public abstract class Robot {
         return trySafeMove(direction, nearbyEnemies, nearbyZombies);
     }
 
+    protected boolean trySafeMoveTowardGrid(MapLocation location, MapLocation[] enemyTurretLocations) throws GameActionException {
+        Direction direction = currentLocation.directionTo(location);
+        return trySafeMoveGrid(direction, enemyTurretLocations);
+    }
+
     protected boolean trySafeMoveToward(MapLocation location, MapLocation[] enemyTurretLocations) throws GameActionException {
         Direction direction = currentLocation.directionTo(location);
         return trySafeMove(direction, enemyTurretLocations);
@@ -269,6 +274,34 @@ public abstract class Robot {
         }
 
         tryClearRubble(targetDirection);
+    }
+
+    protected boolean trySafeMoveGrid(Direction direction, MapLocation[] enemyTurretLocations) throws GameActionException {
+        MapLocation currentLocation = rc.getLocation();
+        int initialDirection = getDirectionNumber(direction);
+        if (initialDirection < 0) {
+            return false;
+        }
+
+        for (int i = 0; i < moveSequence1.length; i++) {
+            Direction d = directions[(initialDirection + moveSequence1[i]) % 8];
+            MapLocation next = currentLocation.add(d);
+            if (canMoveSafelyGrid(d, next, enemyTurretLocations)) {
+                rc.move(d);
+                return true;
+            }
+        }
+
+        for (int i = 0; i < moveSequence2.length; i++) {
+            Direction d = directions[(initialDirection + moveSequence2[i]) % 8];
+            MapLocation next = currentLocation.add(d);
+            if (canMoveSafelyGrid(d, next, enemyTurretLocations)) {
+                rc.move(d);
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected boolean trySafeMove(Direction direction, MapLocation[] enemyTurretLocations) throws GameActionException {
@@ -329,6 +362,16 @@ public abstract class Robot {
     private boolean canMoveSafely(Direction direction, MapLocation next, RobotData[] nearbyEnemies) {
         return rc.canMove(direction)
                 && !RobotUtil.anyCanAttack(nearbyEnemies, next);
+    }
+
+    private boolean canMoveSafelyGrid(Direction direction, MapLocation next, MapLocation[] nearbyTurrets) {
+        if (next.x  % 2 == next.y % 2) {
+            return false;
+        }
+
+        int turretAttackRange = RobotType.TURRET.attackRadiusSquared;
+        return rc.canMove(direction)
+                && !LocationUtil.anyWithinRange(nearbyTurrets, next, turretAttackRange);
     }
 
     private boolean canMoveSafely(Direction direction, MapLocation next, MapLocation[] nearbyTurrets) {

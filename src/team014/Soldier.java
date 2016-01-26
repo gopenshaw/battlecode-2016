@@ -2,8 +2,8 @@ package team014;
 
 import battlecode.common.*;
 import team014.message.MessageParser;
-import team014.nav.Bug;
 import team014.util.*;
+import team014.nav.Bug;
 
 public class Soldier extends Robot {
     private static final int MIN_SAFE_MOVE_ROUND = 300;
@@ -42,6 +42,7 @@ public class Soldier extends Robot {
     private int announceRound;
     private boolean spreadRequested;
     private int initialRound;
+    private RobotData zombieToAttack;
 
     public Soldier(RobotController rc) {
         super(rc);
@@ -73,8 +74,11 @@ public class Soldier extends Robot {
         spread();
 
         if (enemyToApproach == null) {
+            moveTowardZombie();
             moveTowardCenter();
+            zombieToAttack = null;
         }
+
     }
 
     private void spread() throws GameActionException {
@@ -204,6 +208,9 @@ public class Soldier extends Robot {
             if (zombie.type == RobotType.ZOMBIEDEN) {
                 updateZombieDen(zombie);
             }
+            else {
+                zombieToAttack = zombie;
+            }
         }
         else if (messageType == MessageType.ENEMY) {
             enemyToApproach = MessageParser.getRobotData(message[0], message[1]);
@@ -308,24 +315,48 @@ public class Soldier extends Robot {
             return;
         }
 
-        setIndicatorString(2, "try move to enemy location");
-        if (enemyTurrets.length > 0) {
-            if (shouldMove(currentLocation.directionTo(enemyToApproach.location))) {
-                trySafeMoveToward(enemyToApproach.location, enemyTurretLocations);
-            }
+        if (enemyTurretCount > 3) {
+            trySafeMoveTowardGrid(enemyToApproach.location, enemyTurretLocations);
         }
         else {
-            if (enemyToApproach.type != RobotType.TURRET) {
+            setIndicatorString(2, "try move to enemy location");
+            if (enemyTurrets.length > 0) {
                 if (shouldMove(currentLocation.directionTo(enemyToApproach.location))) {
-                    tryMoveToward(enemyToApproach.location);
+                    trySafeMoveToward(enemyToApproach.location, enemyTurretLocations);
                 }
             }
             else {
-                if (shouldMove(currentLocation.directionTo(enemyToApproach.location))) {
-                    trySafeMoveTowardTurret(enemyToApproach);
+                if (enemyToApproach.type != RobotType.TURRET) {
+                    if (shouldMove(currentLocation.directionTo(enemyToApproach.location))) {
+                        tryMoveToward(enemyToApproach.location);
+                    }
+                }
+                else {
+                    if (shouldMove(currentLocation.directionTo(enemyToApproach.location))) {
+                        trySafeMoveTowardTurret(enemyToApproach);
+                    }
                 }
             }
         }
+    }
+
+    private void moveTowardZombie() throws GameActionException {
+        if (id % 3 != 0
+                || !rc.isCoreReady()
+                || nearbyEnemies.length > 0) {
+            return;
+        }
+
+        if (zombieToAttack == null) {
+            return;
+        }
+
+        if (rc.canSenseRobot(zombieToAttack.id)) {
+            return;
+        }
+
+        setIndicatorString(2, "move toward broadcast zombie");
+        tryMoveToward(zombieToAttack.location);
     }
 
     private void shootEnemies() throws GameActionException {
