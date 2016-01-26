@@ -349,7 +349,8 @@ public class Soldier extends Robot {
 
     private void moveTowardDen() throws GameActionException {
         if (!rc.isCoreReady()
-                || nearbyEnemies.length > 0) {
+                || nearbyEnemies.length > 0
+                || id % 3 == 0) {
             return;
         }
 
