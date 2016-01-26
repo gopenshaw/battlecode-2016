@@ -1,8 +1,8 @@
 package team014;
 
 import battlecode.common.*;
-import team014.util.DirectionUtil;
 import team014.util.RobotUtil;
+import team014.util.DirectionUtil;
 
 public class Guard extends Robot {
     private RobotInfo[] attackableZombies;

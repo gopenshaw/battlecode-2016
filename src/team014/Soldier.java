@@ -1,8 +1,8 @@
 package team014;
 
 import battlecode.common.*;
-import team014.message.MessageParser;
 import team014.util.*;
+import team014.message.MessageParser;
 import team014.nav.Bug;
 
 public class Soldier extends Robot {
@@ -296,7 +296,8 @@ public class Soldier extends Robot {
 
     private void moveTowardEnemy() throws GameActionException {
         if (attackableEnemies.length > 0
-                || !rc.isCoreReady()) {
+                || !rc.isCoreReady()
+                || nearbyZombies.length > 0) {
             return;
         }
 
