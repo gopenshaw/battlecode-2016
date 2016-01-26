@@ -337,7 +337,9 @@ public class Archon extends Robot {
     }
 
     private void buildRobots() throws GameActionException {
-        if (!rc.isCoreReady()) {
+        if (!rc.isCoreReady()
+                || (roundNumber > 1000
+                    && nearbyZombies.length > 0)) {
             return;
         }
 
