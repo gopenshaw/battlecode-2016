@@ -45,7 +45,7 @@ public class Scout extends Robot {
         MapLocation[] initialArchonLocations = rc.getInitialArchonLocations(rc.getTeam());
         mapEstimate = MapUtil.getBoundsThatEncloseLocations(initialArchonLocations,
                 rc.getInitialArchonLocations(rc.getTeam().opponent()));
-        int pathRadius = Math.min(mapEstimate.getHeight(), mapEstimate.getWidth()) / 4;
+        int pathRadius = Math.min(mapEstimate.getHeight(), mapEstimate.getWidth()) / 2;
         decideShouldDoInitialPath(pathRadius, initialArchonLocations);
         System.out.printf("height %d width %d radius %d\n", mapEstimate.getHeight(), mapEstimate.getWidth(), pathRadius);
         System.out.printf("map bound: %s\n", mapEstimate);

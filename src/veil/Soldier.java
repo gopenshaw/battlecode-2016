@@ -9,6 +9,8 @@ public class Soldier extends Robot {
     private static final int MIN_SAFE_MOVE_ROUND = 300;
     private static final int THRESHOLD_DENSITY = 6;
 
+    private static MapLocation center;
+
     private Signal[] roundSignals;
 
     private static RobotInfo[] attackableZombies;
@@ -37,10 +39,13 @@ public class Soldier extends Robot {
     private LocationMemory locationMemory = new LocationMemory();
     private int announceRound;
     private boolean spreadRequested;
+    private int initialRound;
 
     public Soldier(RobotController rc) {
         super(rc);
         Bug.init(rc);
+        center = LocationUtil.findAverageLocation(rc.getInitialArchonLocations(team), rc.getInitialArchonLocations(enemy));
+        initialRound = rc.getRoundNum();
     }
 
     @Override
@@ -64,6 +69,7 @@ public class Soldier extends Robot {
         recordZombieLocations();
         announceEnemy();
         spread();
+        moveTowardCenter();
     }
 
     private void spread() throws GameActionException {
@@ -473,7 +479,6 @@ public class Soldier extends Robot {
         }
 
         Direction zombieDirection = DirectionUtil.getDirection(x, y);
-        setIndicatorString(2, "zombie direction " + zombieDirection);
         if (zombieDirection == Direction.NONE) {
             return;
         }
@@ -518,6 +523,10 @@ public class Soldier extends Robot {
 
     private void moveAwayFromArchon() throws GameActionException {
         if (!rc.isCoreReady()) {
+            return;
+        }
+
+        if (roundNumber - initialRound > 4) {
             return;
         }
 
@@ -591,5 +600,15 @@ public class Soldier extends Robot {
 //        boolean shouldMove = ahead >= behind || nearbyFriendlies.length > THRESHOLD_DENSITY;
 //        rc.setIndicatorString(1, roundNumber + ", " + direction + ", " + shouldMove + ", " + behind + ", " + ahead + ", " + nearbyFriendlies.length);
 //        return shouldMove;
+    }
+
+    private void moveTowardCenter() throws GameActionException {
+        if (!rc.isCoreReady()) {
+            return;
+        }
+
+        if (currentLocation.distanceSquaredTo(center) > 25) {
+            trySafeMoveToward(center, nearbyEnemies, nearbyZombies);
+        }
     }
 }
