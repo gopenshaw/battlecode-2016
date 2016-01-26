@@ -49,6 +49,7 @@ public class Archon extends Robot {
 
     @Override
     protected void doTurn() throws GameActionException {
+        setIndicatorString(2, "enemy turret count " + enemyTurretCount);
         processAllBroadcasts();
         broadcastEnemyToApproach();
         broadcastZombiesDead();
@@ -273,7 +274,8 @@ public class Archon extends Robot {
         }
 
         boolean useHighQueue = rc.getRobotCount() > Config.HIGH_UNIT_COUNT
-                || (roundNumber > 600 && rc.getTeamParts() > 500);
+                || (roundNumber > 600 && rc.getTeamParts() > 500)
+                || enemyTurretCount >= 5;
 
         RobotType typeToBuild;
         if (useHighQueue) {

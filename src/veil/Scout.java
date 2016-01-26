@@ -164,8 +164,13 @@ public class Scout extends Robot {
         }
 
         RobotInfo[] robotsCanAttackMe = RobotUtil.getRobotsCanAttack(nearbyEnemies, currentLocation);
+        setIndicatorString(2, "robots can attack me");
         if (robotsCanAttackMe != null
                 && robotsCanAttackMe.length > 0) {
+            for (int i = 0; i < robotsCanAttackMe.length; i++) {
+                setIndicatorString(2, " " + robotsCanAttackMe[i].ID);
+            }
+
             setIndicatorString(2, "move to safety");
             tryMove(DirectionUtil.getDirectionAwayFrom(robotsCanAttackMe, currentLocation));
         }
