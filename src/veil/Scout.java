@@ -341,8 +341,15 @@ public class Scout extends Robot {
             return;
         }
 
-        if (!currentLocation.isAdjacentTo(myPair.location)) {
-            setIndicatorString(2, "move toward my pair");
+        if (currentLocation.isAdjacentTo(myPair.location)) {
+            return;
+        }
+
+        setIndicatorString(2, "move toward my pair");
+        if (enemyTurretCount > 0) {
+            trySafeMove(currentLocation.directionTo(myPair.location), enemyTurretLocations);
+        }
+        else {
             tryMove(currentLocation.directionTo(myPair.location));
         }
     }

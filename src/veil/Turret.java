@@ -178,7 +178,13 @@ public class Turret extends Robot {
             return false;
         }
 
-        tryMove(getRandomDirection());
+        if (enemyTurretCount > 0) {
+            trySafeMove(getRandomDirection(), enemyTurretLocations);
+        }
+        else {
+            tryMove(getRandomDirection());
+        }
+
         return false;
     }
 
