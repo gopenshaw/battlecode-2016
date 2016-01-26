@@ -38,6 +38,7 @@ public class Scout extends Robot {
     private boolean shouldDoInitialPath;
     private int moveTowardCenterRound;
     private int ROUNDS_TO_MOVE_TO_CENTER = 10;
+    private boolean enemyCloseToArchon;
 
     public Scout(RobotController rc) {
         super(rc);
@@ -431,7 +432,8 @@ public class Scout extends Robot {
             return;
         }
 
-        if (!zombiesDead.isConsensusReached()
+        if (!enemyCloseToArchon
+                && !zombiesDead.isConsensusReached()
                 && roundNumber < 1800) {
             return;
         }
@@ -470,6 +472,7 @@ public class Scout extends Robot {
             if (lastEnemy == null
                     || RobotUtil.getPriority(highPriority.type) >= RobotUtil.getPriority(lastEnemy.type)) {
                 lastEnemy = highPriority;
+                enemyCloseToArchon = RobotUtil.getCountOfType(nearbyFriendlies, RobotType.ARCHON) > 0;
             }
         }
     }
