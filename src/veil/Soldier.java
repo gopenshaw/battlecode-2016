@@ -96,7 +96,7 @@ public class Soldier extends Robot {
             return false;
         }
 
-        if (closeFighters.length > 6) {
+        if (closeFighters.length > 8) {
             return false;
         }
 
@@ -251,7 +251,7 @@ public class Soldier extends Robot {
             return;
         }
 
-        if (closeFighters.length > 6) {
+        if (closeFighters.length > 8) {
             return;
         }
 
@@ -345,7 +345,13 @@ public class Soldier extends Robot {
             }
         }
         else { // Viper
-            enemyToAttack = RobotUtil.getLowestHealthNonInfectedRobot(attackableEnemies);
+            if (roundNumber < 2000) {
+                enemyToAttack = RobotUtil.getLowestHealthNonInfectedRobot(attackableEnemies);
+            }
+            else {
+                enemyToAttack = RobotUtil.getLowestHealthRobotNotOfType(attackableEnemies, RobotType.ARCHON);
+            }
+
             if (enemyToAttack == null) {
                 return;
             }

@@ -616,4 +616,25 @@ public class RobotUtil {
 
         return infected;
     }
+
+    public static RobotInfo getLowestHealthRobotNotOfType(RobotInfo[] robots, RobotType type) {
+        double minHealth = Double.MAX_VALUE;
+        int minIndex = -1;
+
+        for (int i = 0; i < robots.length; i++) {
+            RobotInfo robot = robots[i];
+            if (robot.type == type) {
+                continue;
+            }
+
+            if (robot.viperInfectedTurns == 0
+                    && robot.zombieInfectedTurns == 0
+                    && robot.health < minHealth) {
+                minIndex = i;
+                minHealth = robot.health;
+            }
+        }
+
+        return minIndex < 0 ? null : robots[minIndex];
+    }
 }
