@@ -427,8 +427,12 @@ public class Scout extends Robot {
     }
 
     private void broadcastEnemy() throws GameActionException {
+        if (lastEnemy == null) {
+            return;
+        }
+
         if (!zombiesDead.isConsensusReached()
-                || lastEnemy == null) {
+                && roundNumber < 1800) {
             return;
         }
 
